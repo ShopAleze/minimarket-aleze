@@ -8,6 +8,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/JsBarcode/3.11.6/JsBarcode.all.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://unpkg.com/@zxing/library@0.18.6/umd/index.min.js"></script>
 <style>
   :root {
     --primary: #7C3AED;
@@ -1112,10 +1113,16 @@
     </div>
     <div class="form-group">
       <label>Código de barras</label>
-      <div style="display:flex;gap:0.5rem">
-        <input type="text" class="form-control" id="prod-codigo" placeholder="Ingresa o genera automático" oninput="previsualizarCodigo()" />
-        <button class="btn btn-outline btn-sm" onclick="generarCodigo()">🔖 Generar</button>
-        <button class="btn btn-outline btn-sm" onclick="imprimirCodigoBarras()" title="Imprimir código de barras">🖨️</button>
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
+        <input type="text" class="form-control" id="prod-codigo" placeholder="Escanea o escribe el código" oninput="previsualizarCodigo()" style="flex:1;min-width:150px" />
+        <button class="btn btn-primary btn-sm" onclick="abrirScannerInventario()" title="Escanear código ya impreso en el producto">📷 Escanear</button>
+        <button class="btn btn-outline btn-sm" onclick="generarCodigo()" title="Generar código nuevo para productos sin código">🔖 Generar</button>
+        <button class="btn btn-outline btn-sm" onclick="imprimirCodigoBarras()" title="Imprimir etiquetas para pegar">🖨️</button>
+      </div>
+      <div style="font-size:0.72rem;color:var(--gray-500);margin-top:0.3rem;line-height:1.5">
+        📷 <strong>Escanear</strong> — lee el código ya impreso en el producto (EAN-13, EAN-8, QR, Code128)<br>
+        🔖 <strong>Generar</strong> — crea código nuevo para productos que no tienen<br>
+        🖨️ <strong>Imprimir</strong> — genera etiquetas para pegar
       </div>
       <div id="barcode-container" style="margin-top:.75rem;display:none;border:1px dashed var(--gray-300);border-radius:8px;padding:.75rem;text-align:center;background:white">
         <div style="font-size:.72rem;color:var(--gray-500);margin-bottom:.4rem" id="barcode-prod-nombre-label"></div>
@@ -1470,22 +1477,54 @@
   </div>
 </div>
 
-<!-- Modal Cámara Barras -->
+<!-- Modal Escáner ZXing — POS e Inventario -->
 <div class="modal-overlay" id="modal-scanner">
   <div class="modal">
     <div class="modal-header">
-      <h3>📷 Escáner de código de barras</h3>
+      <h3 id="scanner-titulo">📷 Escanear código de barras</h3>
       <button class="modal-close" onclick="cerrarScanner()">✕</button>
     </div>
-    <div style="text-align:center">
-      <video id="scanner-video" style="width:100%;border-radius:8px;background:#000" autoplay></video>
-      <p style="font-size:0.8rem;color:var(--gray-500);margin-top:0.5rem">Apunta la cámara al código de barras</p>
-      <div style="margin-top:0.75rem">
-        <label style="font-size:0.8rem;font-weight:600">O ingresa el código manualmente:</label>
-        <div style="display:flex;gap:0.5rem;margin-top:0.25rem">
-          <input type="text" class="form-control" id="scanner-manual" placeholder="Código de barras" />
-          <button class="btn btn-primary btn-sm" onclick="buscarPorCodigo()">Buscar</button>
-        </div>
+
+    <!-- Estado del escáner -->
+    <div id="scanner-status" style="text-align:center;padding:0.5rem;font-size:0.82rem;border-radius:8px;margin-bottom:0.75rem;background:var(--info-light);color:var(--info)">
+      🔄 Iniciando cámara...
+    </div>
+
+    <!-- Video ZXing -->
+    <div style="position:relative;border-radius:10px;overflow:hidden;background:#000;margin-bottom:0.75rem">
+      <video id="scanner-video" style="width:100%;display:block;border-radius:10px" autoplay muted playsinline></video>
+      <!-- Línea guía de escaneo -->
+      <div style="position:absolute;top:50%;left:10%;right:10%;height:2px;background:rgba(124,58,237,0.8);transform:translateY(-50%);box-shadow:0 0 8px rgba(124,58,237,0.6)"></div>
+      <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);border:2px solid rgba(124,58,237,0.7);width:60%;height:40%;border-radius:8px;pointer-events:none"></div>
+    </div>
+
+    <p style="font-size:0.78rem;color:var(--gray-500);text-align:center;margin-bottom:0.75rem">
+      Centra el código de barras dentro del recuadro — el sistema lo detecta automáticamente
+    </p>
+
+    <!-- Resultado detectado -->
+    <div id="scanner-resultado" style="display:none;background:var(--accent-light);border-left:4px solid var(--accent);border-radius:8px;padding:0.65rem;margin-bottom:0.75rem">
+      <div style="font-size:0.78rem;color:var(--gray-600)">Código detectado:</div>
+      <div id="scanner-codigo-detectado" style="font-family:monospace;font-size:1.1rem;font-weight:700;color:var(--accent-dark)"></div>
+      <div id="scanner-prod-nombre" style="font-size:0.82rem;color:var(--gray-700);margin-top:0.25rem"></div>
+    </div>
+
+    <!-- Selector de cámara si hay varias -->
+    <div id="scanner-cam-wrap" style="display:none;margin-bottom:0.75rem">
+      <label style="font-size:0.78rem;font-weight:600;color:var(--gray-600)">Cambiar cámara:</label>
+      <select class="form-control" id="scanner-cam-select" onchange="cambiarCamara()" style="font-size:0.82rem;margin-top:0.25rem"></select>
+    </div>
+
+    <!-- Entrada manual fallback -->
+    <div>
+      <label style="font-size:0.78rem;font-weight:600;color:var(--gray-600)">O ingresa el código manualmente:</label>
+      <div style="display:flex;gap:0.5rem;margin-top:0.3rem">
+        <input type="text" class="form-control" id="scanner-manual"
+          placeholder="Ej: 7501234567890"
+          onkeydown="if(event.key==='Enter') procesarCodigoEscaneado(this.value.trim())" />
+        <button class="btn btn-primary btn-sm" onclick="procesarCodigoEscaneado(document.getElementById('scanner-manual').value.trim())">
+          Buscar
+        </button>
       </div>
     </div>
   </div>
@@ -3018,27 +3057,207 @@ function testSheets() {
   }, 1500);
 }
 
-// ===================== SCANNER =====================
+// ===================== ESCÁNER ZXING =====================
+let zxingReader = null;
+let scannerStream = null;
+let scannerModo = 'pos'; // 'pos' | 'inventario'
+let scannerActivo = false;
+let camarasDisponibles = [];
+let camaraActualIdx = 0;
+
+function setStatusScanner(msg, tipo) {
+  const el = document.getElementById('scanner-status');
+  if (!el) return;
+  const colores = {
+    ok: 'background:var(--accent-light);color:var(--accent-dark)',
+    error: 'background:var(--danger-light);color:var(--danger)',
+    info: 'background:var(--info-light);color:var(--info)',
+    warn: 'background:var(--warning-light);color:var(--warning)'
+  };
+  el.style.cssText = `text-align:center;padding:0.5rem;font-size:0.82rem;border-radius:8px;margin-bottom:0.75rem;${colores[tipo]||colores.info}`;
+  el.textContent = msg;
+}
+
+// Abrir escáner desde POS
 function openCamScanner() {
+  scannerModo = 'pos';
+  document.getElementById('scanner-titulo').textContent = '📷 Escanear producto';
   document.getElementById('scanner-manual').value = '';
+  document.getElementById('scanner-resultado').style.display = 'none';
   abrirModal('modal-scanner');
-  if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
-      .then(stream => { scannerStream = stream; document.getElementById('scanner-video').srcObject = stream; })
-      .catch(() => { document.getElementById('scanner-video').style.display = 'none'; });
+  iniciarZXing();
+}
+
+// Abrir escáner desde modal de producto (inventario)
+function abrirScannerInventario() {
+  scannerModo = 'inventario';
+  document.getElementById('scanner-titulo').textContent = '📷 Escanear código del producto';
+  document.getElementById('scanner-manual').value = '';
+  document.getElementById('scanner-resultado').style.display = 'none';
+  abrirModal('modal-scanner');
+  iniciarZXing();
+}
+
+async function iniciarZXing() {
+  scannerActivo = true;
+  setStatusScanner('🔄 Cargando escáner...', 'info');
+
+  // Verificar que ZXing esté disponible
+  if (typeof ZXing === 'undefined') {
+    setStatusScanner('⚠️ Librería no cargada — usa entrada manual abajo', 'warn');
+    return;
+  }
+
+  try {
+    zxingReader = new ZXing.BrowserMultiFormatReader();
+
+    // Listar cámaras disponibles
+    camarasDisponibles = await ZXing.BrowserMultiFormatReader.listVideoInputDevices();
+
+    if (camarasDisponibles.length === 0) {
+      setStatusScanner('❌ No se detectó cámara — usa entrada manual', 'error');
+      return;
+    }
+
+    // Mostrar selector si hay más de una cámara
+    if (camarasDisponibles.length > 1) {
+      const sel = document.getElementById('scanner-cam-select');
+      sel.innerHTML = camarasDisponibles.map((c, i) =>
+        `<option value="${i}">${c.label || 'Cámara ' + (i+1)}</option>`
+      ).join('');
+      // Preferir cámara trasera
+      const traseraIdx = camarasDisponibles.findIndex(c =>
+        c.label.toLowerCase().includes('back') ||
+        c.label.toLowerCase().includes('rear') ||
+        c.label.toLowerCase().includes('trasera') ||
+        c.label.toLowerCase().includes('environment')
+      );
+      camaraActualIdx = traseraIdx >= 0 ? traseraIdx : camarasDisponibles.length - 1;
+      sel.value = camaraActualIdx;
+      document.getElementById('scanner-cam-wrap').style.display = 'block';
+    } else {
+      camaraActualIdx = 0;
+      document.getElementById('scanner-cam-wrap').style.display = 'none';
+    }
+
+    await arrancarLectura();
+
+  } catch (err) {
+    console.error('ZXing error:', err);
+    setStatusScanner('❌ Error al acceder a la cámara — permite el permiso e intenta de nuevo', 'error');
+  }
+}
+
+async function arrancarLectura() {
+  if (!zxingReader || !scannerActivo) return;
+  const deviceId = camarasDisponibles[camaraActualIdx]?.deviceId;
+  const videoEl = document.getElementById('scanner-video');
+
+  try {
+    setStatusScanner('📷 Apunta al código de barras del producto...', 'info');
+
+    await zxingReader.decodeFromVideoDevice(deviceId, videoEl, (result, err) => {
+      if (!scannerActivo) return;
+      if (result) {
+        const codigo = result.getText();
+        manejarCodigoDetectado(codigo);
+      }
+      // err es normal cuando no hay código en frame — no hacer nada
+    });
+
+  } catch (err) {
+    if (err && err.name !== 'NotFoundException') {
+      setStatusScanner('❌ ' + (err.message || 'Error de cámara'), 'error');
+    }
+  }
+}
+
+function manejarCodigoDetectado(codigo) {
+  if (!codigo) return;
+  scannerActivo = false; // Pausar para evitar múltiples lecturas
+
+  // Vibrar si disponible
+  if (navigator.vibrate) navigator.vibrate(100);
+
+  // Mostrar resultado visual
+  document.getElementById('scanner-resultado').style.display = 'block';
+  document.getElementById('scanner-codigo-detectado').textContent = codigo;
+
+  if (scannerModo === 'pos') {
+    // Buscar en inventario y agregar al carrito
+    const prod = DB.productos.find(p => p.codigo === codigo);
+    if (prod) {
+      document.getElementById('scanner-prod-nombre').textContent = '✅ ' + prod.nombre + ' — ' + sol(prod.precio);
+      setStatusScanner('✅ Producto encontrado: ' + prod.nombre, 'ok');
+      setTimeout(() => {
+        addToCart(prod.id);
+        cerrarScanner();
+        // En móvil, cambiar a tab carrito automáticamente
+        if (window.innerWidth <= 900) switchPosTab('carrito');
+      }, 800);
+    } else {
+      document.getElementById('scanner-prod-nombre').textContent = '⚠️ Código no registrado en inventario';
+      setStatusScanner('⚠️ Código ' + codigo + ' no encontrado — agrégalo al inventario primero', 'warn');
+      document.getElementById('scanner-manual').value = codigo;
+      scannerActivo = true; // Reactivar para seguir buscando
+    }
+
+  } else if (scannerModo === 'inventario') {
+    // Rellenar campo código en modal de producto
+    document.getElementById('scanner-prod-nombre').textContent = '✅ Código capturado — se aplicará al producto';
+    setStatusScanner('✅ Código escaneado correctamente', 'ok');
+    setTimeout(() => {
+      cerrarScanner();
+      // Llenar campo y previsualizar
+      document.getElementById('prod-codigo').value = codigo;
+      previsualizarCodigo();
+      // Verificar si ya existe en inventario
+      const existe = DB.productos.find(p => p.codigo === codigo);
+      if (existe) {
+        alert(`ℹ️ Este código ya pertenece a "${existe.nombre}". Si es un producto diferente considera generar un código nuevo.`);
+      }
+    }, 700);
+  }
+}
+
+function procesarCodigoEscaneado(codigo) {
+  if (!codigo) { alert('Ingresa un código'); return; }
+  manejarCodigoDetectado(codigo);
+}
+
+async function cambiarCamara() {
+  const sel = document.getElementById('scanner-cam-select');
+  camaraActualIdx = parseInt(sel.value);
+  if (zxingReader) {
+    zxingReader.reset();
+    scannerActivo = true;
+    await arrancarLectura();
   }
 }
 
 function cerrarScanner() {
-  if (scannerStream) { scannerStream.getTracks().forEach(t => t.stop()); scannerStream = null; }
+  scannerActivo = false;
+  if (zxingReader) {
+    try { zxingReader.reset(); } catch(e) {}
+    zxingReader = null;
+  }
+  if (scannerStream) {
+    scannerStream.getTracks().forEach(t => t.stop());
+    scannerStream = null;
+  }
+  const video = document.getElementById('scanner-video');
+  if (video && video.srcObject) {
+    video.srcObject.getTracks().forEach(t => t.stop());
+    video.srcObject = null;
+  }
+  document.getElementById('scanner-cam-wrap').style.display = 'none';
+  document.getElementById('scanner-resultado').style.display = 'none';
   cerrarModal('modal-scanner');
 }
 
+// Mantener compatibilidad con llamadas antiguas
 function buscarPorCodigo() {
-  const codigo = document.getElementById('scanner-manual').value.trim();
-  const prod = DB.productos.find(p => p.codigo === codigo);
-  if (prod) { addToCart(prod.id); cerrarScanner(); }
-  else alert('Producto no encontrado con código: ' + codigo);
+  procesarCodigoEscaneado(document.getElementById('scanner-manual').value.trim());
 }
 
 // ===================== WHATSAPP IMAGEN =====================
