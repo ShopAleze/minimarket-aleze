@@ -463,7 +463,6 @@
   .nav-item.active { background: var(--primary-light); color: var(--primary); font-weight: 600; }
   .nav-item .icon { font-size: 1.15rem; width: 22px; text-align: center; flex-shrink: 0; }
   .nav-label { white-space: nowrap; overflow: hidden; }
-</style>
 </head>
 <body>
 
@@ -2178,56 +2177,77 @@ function imprimirCodigoBarras() {
   const nombre = document.getElementById('prod-nombre').value || 'Producto';
   if (!codigo) { alert('Primero ingresa o escanea un código de barras'); return; }
 
-  // Construir HTML de etiquetas sin template literals problemáticos
-  const titulo = 'Etiquetas: ' + nombre;
-  const nombreCorto = nombre.substring(0, 22);
-  const cantEtiquetas = 12;
-
-  // Generar SVGs usando JsBarcode en memoria (en el documento actual)
-  // luego serializar y pasar a la ventana de impresión
+  // Generar 12 SVGs en el documento actual con JsBarcode
   let svgsHTML = '';
+  const nombreCorto = nombre.length > 22 ? nombre.substring(0, 22) + '...' : nombre;
   try {
-    for (let i = 0; i < cantEtiquetas; i++) {
-      const svgEl = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-      JsBarcode(svgEl, codigo, { width: 1.5, height: 38, fontSize: 10, displayValue: true, margin: 4 });
-      const svgStr = new XMLSerializer().serializeToString(svgEl);
-      svgsHTML += '<div class="etiqueta"><div class="nombre">' + nombreCorto + '</div>' + svgStr + '</div>\n';
+    for (let i = 0; i < 12; i++) {
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      JsBarcode(svg, codigo, { width: 1.5, height: 38, fontSize: 10, displayValue: true, margin: 4 });
+      const svgStr = new XMLSerializer().serializeToString(svg);
+      svgsHTML += [
+        '<div class="etiqueta">',
+          '<div class="nombre">', nombreCorto, '</div>',
+          svgStr,
+        '</div>'
+      ].join('');
     }
   } catch (e) {
     alert('Error generando código de barras: ' + e.message);
     return;
   }
 
-  const htmlCompleto = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>' + titulo + '</title>' +
-    '<style>' +
-    'body{margin:0;padding:10px;font-family:Arial,sans-serif;background:#fff}' +
-    '.header{margin-bottom:10px;font-size:13px;color:#444;border-bottom:1px solid #ccc;padding-bottom:8px}' +
-    '.header strong{font-size:15px;color:#333}' +
-    '.etiquetas{display:flex;flex-wrap:wrap;gap:6px}' +
-    '.etiqueta{border:1px dashed #aaa;padding:5px 8px;text-align:center;border-radius:4px;page-break-inside:avoid}' +
-    '.nombre{font-size:9px;font-weight:bold;max-width:110px;word-wrap:break-word;margin-bottom:2px;color:#333}' +
-    '.etiqueta svg{display:block;max-width:120px}' +
-    '@media print{.no-print{display:none}body{padding:4px}.etiqueta{border:1px dashed #999}}' +
-    '</style></head><body>' +
-    '<div class="header">' +
-    '<strong>' + nombre + '</strong> &nbsp;|&nbsp; Código: ' + codigo +
-    ' &nbsp;|&nbsp; <em>' + cantEtiquetas + ' etiquetas</em>' +
-    ' &nbsp;<button class="no-print" onclick="window.print()" style="padding:5px 14px;background:#7C3AED;color:white;border:none;border-radius:6px;cursor:pointer;font-size:13px">🖨️ Imprimir</button>' +
-    ' <button class="no-print" onclick="window.close()" style="padding:5px 10px;margin-left:6px;border:1px solid #ccc;border-radius:6px;cursor:pointer;font-size:13px">✕ Cerrar</button>' +
-    '</div>' +
-    '<div class="etiquetas">' + svgsHTML + '</div>' +
-    '</body></html>';
+  // Construir HTML completo usando array para evitar problemas de comillas
+  const partes = [
+    '<!DOCTYPE html><html><head><meta charset="UTF-8">',
+    '<title>Etiquetas - ', nombre, '</title>',
+    '<style>',
+      '*{box-sizing:border-box}',
+      'body{margin:0;padding:12px;font-family:Arial,sans-serif;background:#f9f9f9}',
+      '.header{background:#7C3AED;color:white;padding:10px 14px;border-radius:8px;margin-bottom:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}',
+      '.header h2{margin:0;font-size:14px;flex:1}',
+      '.header span{font-size:12px;opacity:.85}',
+      '.btn{padding:6px 14px;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:bold}',
+      '.btn-print{background:white;color:#7C3AED}',
+      '.btn-close{background:rgba(255,255,255,.2);color:white}',
+      '.info{font-size:11px;color:#666;margin-bottom:10px;padding:6px 10px;background:#fff;border-radius:6px;border:1px solid #e5e7eb}',
+      '.etiquetas{display:flex;flex-wrap:wrap;gap:8px}',
+      '.etiqueta{border:1px dashed #aaa;padding:6px 8px;text-align:center;border-radius:6px;background:white;page-break-inside:avoid}',
+      '.nombre{font-size:9px;font-weight:bold;max-width:120px;word-break:break-word;margin-bottom:3px;color:#333;line-height:1.2}',
+      '.etiqueta svg{display:block;max-width:130px}',
+      '@media print{',
+        '.header .btn,.info{display:none}',
+        'body{background:white;padding:4px}',
+        '.etiqueta{border:1px dashed #999}',
+      '}',
+    '</style></head><body>',
+    '<div class="header">',
+      '<h2>🏷️ Etiquetas: ', nombre, '</h2>',
+      '<span>Código: ', codigo, '</span>',
+      '<button class="btn btn-print" onclick="window.print()">🖨️ Imprimir</button>',
+      '<button class="btn btn-close" onclick="window.close()">✕ Cerrar</button>',
+    '</div>',
+    '<div class="info">✂️ Recorta cada etiqueta y pégala en el producto. Total: 12 etiquetas generadas.</div>',
+    '<div class="etiquetas">', svgsHTML, '</div>',
+    '</body></html>'
+  ];
 
-  const win = window.open('', '_blank', 'width=650,height=520');
+  const htmlFinal = partes.join('');
+
+  // Usar Blob para evitar cualquier problema con window.open + document.write
+  const blob = new Blob([htmlFinal], { type: 'text/html;charset=utf-8' });
+  const url  = URL.createObjectURL(blob);
+  const win  = window.open(url, '_blank');
   if (!win) {
-    alert('Bloqueador de popups activo. Permite ventanas emergentes para imprimir etiquetas.');
-    return;
+    // Fallback si popups bloqueados: descargar como archivo
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'etiquetas-' + codigo + '.html';
+    a.click();
+    alert('Popups bloqueados. Se descargó el archivo de etiquetas — ábrelo en el navegador e imprime.');
   }
-  win.document.open();
-  win.document.write(htmlCompleto);
-  win.document.close();
-  // Auto-imprimir después de cargar
-  win.onload = function() { win.focus(); };
+  // Limpiar URL del blob después de un momento
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
 }
 
 // Categoría rápida desde modal producto
@@ -4054,3 +4074,4 @@ window.onload = function() {
 </script>
 </body>
 </html>
+
