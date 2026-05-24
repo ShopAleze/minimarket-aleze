@@ -6,7 +6,19 @@
 <title>Minimarket Aleze v2</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/JsBarcode/3.11.6/JsBarcode.all.min.js"></script>
+<script>
+// Carga de JsBarcode con fallback a CDN secundaria
+(function() {
+  var s = document.createElement('script');
+  s.src = 'https://cdnjs.cloudflare.com/ajax/libs/JsBarcode/3.11.6/JsBarcode.all.min.js';
+  s.onerror = function() {
+    var s2 = document.createElement('script');
+    s2.src = 'https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js';
+    document.head.appendChild(s2);
+  };
+  document.head.appendChild(s);
+})();
+</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://unpkg.com/@zxing/library@0.18.6/umd/index.min.js"></script>
 <style>
@@ -2133,7 +2145,13 @@ function editarProducto(id) {
   if (p.codigo) {
     document.getElementById('barcode-container').style.display = 'block';
     document.getElementById('barcode-prod-nombre-label').textContent = p.nombre;
-    JsBarcode('#barcode-preview', p.codigo, { width: 2, height: 55, fontSize: 12, displayValue: true });
+    try {
+      if (typeof JsBarcode !== 'undefined') {
+        JsBarcode('#barcode-preview', p.codigo, { width: 2, height: 55, fontSize: 12, displayValue: true });
+      }
+    } catch(e) {
+      console.warn('Error al renderizar código de barras:', e.message);
+    }
   } else {
     document.getElementById('barcode-container').style.display = 'none';
   }
@@ -2212,7 +2230,11 @@ function generarCodigo() {
   document.getElementById('prod-codigo').value = codigo;
   document.getElementById('barcode-container').style.display = 'block';
   document.getElementById('barcode-prod-nombre-label').textContent = document.getElementById('prod-nombre').value || 'Producto';
-  JsBarcode('#barcode-preview', codigo, { width: 2, height: 55, fontSize: 12, displayValue: true });
+  try {
+    if (typeof JsBarcode !== 'undefined') {
+      JsBarcode('#barcode-preview', codigo, { width: 2, height: 55, fontSize: 12, displayValue: true });
+    }
+  } catch(e) { console.warn('JsBarcode error:', e.message); }
 }
 
 function imprimirCodigoBarras() {
@@ -2226,7 +2248,8 @@ function imprimirCodigoBarras() {
   try {
     for (let i = 0; i < 12; i++) {
       const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-      JsBarcode(svg, codigo, { width: 1.5, height: 38, fontSize: 10, displayValue: true, margin: 4 });
+      if (typeof JsBarcode === 'undefined') throw new Error('La librería de códigos de barras no está disponible. Recarga la página.');
+    JsBarcode(svg, codigo, { width: 1.5, height: 38, fontSize: 10, displayValue: true, margin: 4 });
       const svgStr = new XMLSerializer().serializeToString(svg);
       svgsHTML += [
         '<div class="etiqueta">',
@@ -2331,10 +2354,13 @@ function verCodigoBarras(id) {
   const lbl = document.getElementById('prod-margen-cat-label');
   if (lbl) lbl.textContent = '';
   try {
-    JsBarcode('#barcode-preview', p.codigo, { width: 2, height: 55, fontSize: 12, displayValue: true });
+    if (typeof JsBarcode !== 'undefined') {
+      JsBarcode('#barcode-preview', p.codigo, { width: 2, height: 55, fontSize: 12, displayValue: true });
+    } else {
+      console.warn('JsBarcode no disponible, mostrando código como texto');
+    }
   } catch(e) {
-    alert('Error mostrando código de barras: ' + e.message);
-    return;
+    console.warn('Error al renderizar código de barras:', e.message);
   }
   abrirModal('modal-producto');
 }
