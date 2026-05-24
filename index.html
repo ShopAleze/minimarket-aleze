@@ -475,11 +475,13 @@
     /* ============================================
        POS MÓVIL — pantalla completa productos
        ============================================ */
-    #page-pos {
-      height: calc(100vh - var(--header-h) - 62px); /* 62px = bottom bar */
+    /* page-pos oculto cuando no está activo — fix especificidad */
+    #page-pos { display: none !important; }
+    #page-pos.active {
+      height: calc(100vh - var(--header-h) - 62px);
       padding: 0;
       overflow: hidden;
-      display: flex;
+      display: flex !important;
       flex-direction: column;
     }
 
