@@ -871,8 +871,11 @@
 
       <!-- DASHBOARD -->
       <div id="page-dashboard" class="page active">
-        <div class="page-title">Dashboard</div>
-        <div class="grid-5" style="margin-bottom:1rem">
+        <div class="flex-between" style="margin-bottom:0">
+          <div class="page-title" style="margin:0">Dashboard</div>
+          <button class="btn btn-danger btn-sm" onclick="abrirReset('dashboard')" style="font-size:0.78rem">🗑️ Limpiar datos</button>
+        </div>
+        <div class="grid-5" style="margin-bottom:1rem;margin-top:1rem">
           <div class="stat-card">
             <div class="stat-label">Ventas Hoy</div>
             <div class="stat-value" id="dash-ventas">S/ 0.00</div>
@@ -1112,7 +1115,10 @@
 
       <!-- FIADOS -->
       <div id="page-fiados" class="page">
-        <div class="page-title">Control de Fiados</div>
+        <div class="flex-between" style="margin-bottom:1rem">
+          <div class="page-title" style="margin:0">Control de Fiados</div>
+          <button class="btn btn-danger btn-sm" onclick="abrirReset('fiados')" style="font-size:0.78rem">🗑️ Limpiar fiados</button>
+        </div>
         <div class="grid-3" style="margin-bottom:1rem">
           <div class="stat-card red">
             <div class="stat-label">Total en Fiados</div>
@@ -1209,7 +1215,10 @@
       <div id="page-mermas" class="page">
         <div class="flex-between" style="margin-bottom:1rem">
           <div class="page-title" style="margin:0">Control de Mermas</div>
-          <button class="btn btn-primary btn-sm" onclick="abrirModalMerma()">+ Registrar Merma</button>
+          <div style="display:flex;gap:0.5rem">
+            <button class="btn btn-danger btn-sm" onclick="abrirReset('mermas')" style="font-size:0.78rem">🗑️ Limpiar mermas</button>
+            <button class="btn btn-primary btn-sm" onclick="abrirModalMerma()">+ Registrar Merma</button>
+          </div>
         </div>
         <div class="grid-3" style="margin-bottom:1rem">
           <div class="stat-card red"><div class="stat-label">Pérdida total (costo)</div><div class="stat-value" id="merma-total">S/ 0.00</div></div>
@@ -1226,7 +1235,10 @@
 
       <!-- REPORTES -->
       <div id="page-reportes" class="page">
-        <div class="page-title">Reportes</div>
+        <div class="flex-between" style="margin-bottom:0">
+          <div class="page-title" style="margin:0">Reportes</div>
+          <button class="btn btn-danger btn-sm" onclick="abrirReset('reportes')" style="font-size:0.78rem">🗑️ Limpiar reportes</button>
+        </div>
         <div class="card" style="margin-bottom:1rem">
           <div style="display:flex;gap:0.75rem;flex-wrap:wrap;align-items:center">
             <select class="form-control" id="rep-tipo" style="width:200px" onchange="generarReporte()">
@@ -1335,7 +1347,10 @@
       <div id="page-gastos" class="page">
         <div class="flex-between" style="margin-bottom:1rem">
           <div class="page-title" style="margin:0">Gastos Operativos</div>
-          <button class="btn btn-primary btn-sm" onclick="abrirModalGasto()">+ Registrar Gasto</button>
+          <div style="display:flex;gap:0.5rem">
+            <button class="btn btn-danger btn-sm" onclick="abrirReset('gastos')" style="font-size:0.78rem">🗑️ Limpiar gastos</button>
+            <button class="btn btn-primary btn-sm" onclick="abrirModalGasto()">+ Registrar Gasto</button>
+          </div>
         </div>
         <div class="grid-4" style="margin-bottom:1rem">
           <div class="stat-card red"><div class="stat-label">Total gastos mes</div><div class="stat-value" id="g-mes">S/ 0.00</div></div>
@@ -1358,7 +1373,10 @@
 
       <!-- CAPITAL -->
       <div id="page-capital" class="page">
-        <div class="page-title">🏦 Control de Capital e Inversión</div>
+        <div class="flex-between" style="margin-bottom:1rem">
+          <div class="page-title" style="margin:0">🏦 Control de Capital e Inversión</div>
+          <button class="btn btn-danger btn-sm" onclick="abrirReset('capital')" style="font-size:0.78rem">🗑️ Limpiar capital</button>
+        </div>
         <div class="grid-4" style="margin-bottom:1rem">
           <div class="stat-card"><div class="stat-label">Capital total invertido</div><div class="stat-value" id="cap-total">S/ 0.00</div></div>
           <div class="stat-card green"><div class="stat-label">Capital recuperado</div><div class="stat-value" id="cap-recup">S/ 0.00</div></div>
@@ -1842,6 +1860,39 @@
       <button class="btn btn-outline" onclick="compartirFiadoWhatsapp()">💬 WhatsApp</button>
       <button class="btn btn-outline" onclick="cerrarModal('modal-pago-fiado')">Cancelar</button>
       <button class="btn btn-accent" onclick="confirmarPagoFiado()">Registrar pago</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Reset de Datos — Solo Admin -->
+<div class="modal-overlay" id="modal-reset">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header" style="background:var(--danger-light);border-radius:12px 12px 0 0">
+      <h3 style="color:var(--danger)">⚠️ Limpiar datos</h3>
+      <button class="modal-close" onclick="cerrarModal('modal-reset')">✕</button>
+    </div>
+    <div style="padding:1.25rem">
+      <p style="margin-bottom:0.75rem;color:var(--gray-700)">
+        Estás a punto de eliminar permanentemente los datos de <strong id="reset-modulo-nombre">este módulo</strong>.
+        Esta acción <strong style="color:var(--danger)">no se puede deshacer</strong>.
+      </p>
+      <div style="background:var(--danger-light);border-radius:8px;padding:0.75rem;margin-bottom:1rem;font-size:0.85rem;color:#B91C1C">
+        <strong>Se eliminarán:</strong>
+        <div id="reset-detalle" style="margin-top:0.4rem;line-height:1.6"></div>
+      </div>
+      <p style="font-size:0.85rem;color:var(--gray-500);margin-bottom:1.25rem">
+        Escribe <strong>LIMPIAR</strong> para confirmar:
+      </p>
+      <input type="text" class="form-control" id="reset-confirm-input"
+        placeholder="Escribe LIMPIAR"
+        oninput="document.getElementById('btn-reset-ejecutar').disabled = this.value !== 'LIMPIAR'"
+        style="margin-bottom:1rem" />
+      <div style="display:flex;gap:0.75rem;justify-content:flex-end">
+        <button class="btn btn-outline" onclick="cerrarModal('modal-reset')">Cancelar</button>
+        <button class="btn btn-danger" id="btn-reset-ejecutar" disabled onclick="ejecutarReset()">
+          🗑️ Sí, limpiar datos
+        </button>
+      </div>
     </div>
   </div>
 </div>
@@ -3923,11 +3974,7 @@ function manejarCodigoDetectado(codigo) {
       document.getElementById('scanner-prod-nombre').textContent = '✅ ' + prod.nombre + ' — ' + sol(prod.precio);
       setStatusScanner('✅ Producto encontrado: ' + prod.nombre, 'ok');
       setTimeout(() => {
-        if (window.innerWidth <= 900) {
-          mobAddToCart(prod.id);
-        } else {
-          addToCart(prod.id);
-        }
+        addToCart(prod.id);
         cerrarScanner();
         if (window.innerWidth <= 900) switchPosTab('carrito');
       }, 700);
@@ -5279,6 +5326,110 @@ function _semillaDemo(hoy) {
   DB.clientes[1].total=87.00;  DB.clientes[1].alias='Carlos';   DB.clientes[1].cumple='1990-07-22';
   DB.clientes[2].total=230.00; DB.clientes[2].alias='Doña Rosa';DB.clientes[2].cumple='1978-12-01';
 }
+
+
+// ===================== RESET DE DATOS — SOLO ADMIN =====================
+
+const RESET_CONFIG = {
+  dashboard: {
+    nombre: 'Dashboard (todos los datos operativos)',
+    detalle: '• Todas las ventas registradas<br>• Todos los gastos<br>• Todas las mermas<br>• Todos los fiados y deudas<br>• Historial de capital<br>• Historial de movimientos de caja<br>• Totales acumulados de clientes',
+    accion: () => {
+      DB.ventas = [];
+      DB.fiados = [];
+      DB.mermas = [];
+      DB.movimientos = [];
+      DB.caja = { abierta: false, inicial: 0, ingresos: 0, egresos: 0, turnoInicio: null, cajero: '' };
+      DB.clientes.forEach(c => { c.compras = 0; c.total = 0; c.deuda = 0; });
+      DB_EXT.gastos = [];
+      DB_EXT.capital = { total: 0, cuota: 0, meta: 0, recuperado: 0, hist: [] };
+      fbGuardar(); fbGuardarExt();
+      try { renderDashboard(); } catch(e) {}
+      try { updateAlertCount(); } catch(e) {}
+    }
+  },
+  fiados: {
+    nombre: 'Fiados',
+    detalle: '• Todos los registros de fiados<br>• Deudas pendientes de todos los clientes<br>• Totales de deuda por cliente',
+    accion: () => {
+      DB.fiados = [];
+      DB.clientes.forEach(c => { c.deuda = 0; });
+      fbGuardar();
+      try { renderFiados(); } catch(e) {}
+      try { renderDashboard(); } catch(e) {}
+    }
+  },
+  mermas: {
+    nombre: 'Mermas',
+    detalle: '• Todos los registros de mermas y pérdidas',
+    accion: () => {
+      DB.mermas = [];
+      fbGuardar();
+      try { renderMermas(); } catch(e) {}
+    }
+  },
+  gastos: {
+    nombre: 'Gastos Operativos',
+    detalle: '• Todo el historial de gastos registrados<br>• (Los gastos recurrentes configurados se conservan)',
+    accion: () => {
+      DB_EXT.gastos = [];
+      fbGuardarExt();
+      try { renderGastos(); } catch(e) {}
+      try { renderDashboard(); } catch(e) {}
+    }
+  },
+  capital: {
+    nombre: 'Capital e Inversión',
+    detalle: '• Capital total, cuota y meta se reinician a 0<br>• Todo el historial de movimientos de capital',
+    accion: () => {
+      DB_EXT.capital = { total: 0, cuota: 0, meta: 0, recuperado: 0, hist: [] };
+      fbGuardarExt();
+      try { renderCapital(); } catch(e) {}
+      try { renderDashboard(); } catch(e) {}
+    }
+  },
+  reportes: {
+    nombre: 'Reportes (ventas y gastos)',
+    detalle: '• Todas las ventas registradas<br>• Todos los gastos<br>• Totales acumulados de clientes',
+    accion: () => {
+      DB.ventas = [];
+      DB_EXT.gastos = [];
+      DB.clientes.forEach(c => { c.compras = 0; c.total = 0; });
+      fbGuardar(); fbGuardarExt();
+      try { generarReporte(); } catch(e) {}
+      try { renderDashboard(); } catch(e) {}
+    }
+  }
+};
+
+let _resetModuloActual = null;
+
+function abrirReset(modulo) {
+  if (currentRole !== 'admin') {
+    alert('⛔ Solo el administrador puede limpiar datos.');
+    return;
+  }
+  const cfg = RESET_CONFIG[modulo];
+  if (!cfg) return;
+  _resetModuloActual = modulo;
+  document.getElementById('reset-modulo-nombre').textContent = cfg.nombre;
+  document.getElementById('reset-detalle').innerHTML = cfg.detalle;
+  document.getElementById('reset-confirm-input').value = '';
+  document.getElementById('btn-reset-ejecutar').disabled = true;
+  abrirModal('modal-reset');
+}
+
+function ejecutarReset() {
+  const input = document.getElementById('reset-confirm-input').value;
+  if (input !== 'LIMPIAR') return;
+  const cfg = RESET_CONFIG[_resetModuloActual];
+  if (!cfg) return;
+  cerrarModal('modal-reset');
+  cfg.accion();
+  _resetModuloActual = null;
+}
+
+// ===================== FIN RESET =====================
 
 function _initLocal(hoy) {
   _semillaDemo(hoy || today());
