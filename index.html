@@ -5060,6 +5060,14 @@ function renderMobPos() {
   if (mainEl) mainEl.style.paddingBottom = '62px';
 }
 
+// ===================== ADVERTENCIA AL RECARGAR =====================
+window.addEventListener('beforeunload', function(e) {
+  const msg = 'La página se está actualizando. Se perderá toda la información no guardada.';
+  e.preventDefault();
+  e.returnValue = msg;
+  return msg;
+});
+
 // ===================== INIT =====================
 window.onload = function() {
   const hoy = today();
