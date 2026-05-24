@@ -2030,6 +2030,23 @@ function navigate(page) {
   if (page === 'configuracion') renderConfiguracion();
   // Close mobile sidebar on navigation
   closeMobSidebar();
+  // Show mob-cart-bar only on POS page (mobile)
+  const mobBar = document.getElementById('mob-cart-bar');
+  if (mobBar) {
+    mobBar.style.display = (page === 'pos' && isMobile()) ? 'flex' : 'none';
+  }
+  // Also hide drawer when navigating away from POS
+  if (page !== 'pos') {
+    const drawer = document.getElementById('mob-cart-drawer');
+    const overlay = document.getElementById('mob-cart-drawer-overlay');
+    if (drawer) drawer.classList.remove('open');
+    if (overlay) overlay.classList.remove('open');
+  }
+  // Adjust main padding-bottom so content isn't hidden behind bar
+  const mainEl = document.getElementById('main-content');
+  if (mainEl) {
+    mainEl.style.paddingBottom = (page === 'pos' && isMobile()) ? '62px' : '';
+  }
 }
 
 // ===================== UTILS =====================
@@ -4935,10 +4952,42 @@ function toggleMobCart() {
 }
 
 function mobCobrarFiado() {
-  // sync data to desktop fields then call original
-  syncMobToDesktop();
+  if (mobCart.length === 0) { alert('El carrito está vacío'); return; }
+  const clienteId = parseInt(document.getElementById('mob-pos-cliente')?.value) || 0;
+  if (!clienteId) { alert('Selecciona un cliente para registrar el fiado'); return; }
+  const sub = mobCart.reduce((s, i) => s + i.precio * i.cant, 0);
+  const desc = parseFloat(document.getElementById('mob-pos-descuento')?.value) || 0;
+  const total = Math.max(0, sub - desc);
+
+  const fiado = {
+    id: getId(), clienteId,
+    items: mobCart.map(i => ({ nombre: i.nombre, cant: i.cant, precio: i.precio })),
+    total, pagado: 0, fecha: today()
+  };
+  DB.fiados.push(fiado);
+
+  // Descontar stock
+  mobCart.forEach(item => {
+    const prod = DB.productos.find(p => p.id === item.prodId);
+    if (prod) prod.stock = Math.max(0, prod.stock - item.cant);
+  });
+
+  // Actualizar deuda del cliente
+  const cli = DB.clientes.find(c => c.id === clienteId);
+  if (cli) cli.deuda = (cli.deuda || 0) + total;
+
+  alert('Fiado registrado para ' + getClienteNombre(clienteId) + ': ' + sol(total));
+
+  // Limpiar carrito móvil completamente
+  mobCart = [];
+  mobRenderCart();
+  mobCalcTotal();
+  mobUpdateBar();
+  const descEl = document.getElementById('mob-pos-descuento');
+  if (descEl) descEl.value = '';
+  renderMobPosGrid();
   toggleMobCart();
-  cobrarFiado();
+  updateAlertCount();
 }
 
 function mobProcesarVenta() {
@@ -4975,6 +5024,8 @@ function mobProcesarVenta() {
   mobRenderCart();
   mobCalcTotal();
   mobUpdateBar();
+  const descEl2 = document.getElementById('mob-pos-descuento');
+  if (descEl2) descEl2.value = '';
   renderMobPosGrid();
   updateAlertCount();
   // Show ticket in desktop modal reusing existing logic
@@ -5000,6 +5051,11 @@ function renderMobPos() {
   updateMobPosClientes();
   mobRenderCart();
   mobUpdateBar();
+  // Show bar only on POS
+  const mobBar = document.getElementById('mob-cart-bar');
+  if (mobBar) mobBar.style.display = 'flex';
+  const mainEl = document.getElementById('main-content');
+  if (mainEl) mainEl.style.paddingBottom = '62px';
 }
 
 // ===================== INIT =====================
