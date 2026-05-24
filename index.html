@@ -2485,6 +2485,37 @@ function guardarProveedor() {
 
 function eliminarProveedor(id) { if (!confirm('¿Eliminar proveedor?')) return; DB.proveedores = DB.proveedores.filter(p => p.id !== id); renderProveedores(); }
 
+let editingBoletaProvId = null;
+function verBoletas(provId) {
+  editingBoletaProvId = provId;
+  const p = DB.proveedores.find(x => x.id === provId);
+  document.getElementById('vb-titulo').textContent = 'Boletas de ' + (p ? p.nombre : '');
+  filtrarBoletas();
+  abrirModal('modal-ver-boletas');
+}
+function filtrarBoletas() {
+  const prov = DB.proveedores.find(x => x.id === editingBoletaProvId);
+  const q = (document.getElementById('bol-buscar').value || '').toLowerCase();
+  const boletas = (prov && prov.boletas) ? prov.boletas : [];
+  const filtradas = q ? boletas.filter(b => (b.num+b.fecha+b.desc).toLowerCase().includes(q)) : boletas;
+  document.getElementById('boletas-tbody').innerHTML = filtradas.map(b => `<tr>
+    <td>${b.num}</td><td>${formatDate(b.fecha)}</td><td>${b.desc||'-'}</td>
+    <td>${sol(b.monto||0)}</td><td>${b.archivo?'📎 '+b.archivo:'-'}</td>
+  </tr>`).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--gray-400);padding:1rem">Sin boletas registradas</td></tr>';
+}
+function guardarBoleta() {
+  const num = document.getElementById('b2-num').value.trim();
+  const fecha = document.getElementById('b2-fecha').value;
+  if (!num || !fecha) { alert('Ingresa número y fecha'); return; }
+  const prov = DB.proveedores.find(x => x.id === editingBoletaProvId);
+  if (!prov) return;
+  if (!prov.boletas) prov.boletas = [];
+  prov.boletas.push({ num, fecha, monto: parseFloat(document.getElementById('b2-monto').value)||0, desc: document.getElementById('b2-desc').value, archivo: document.getElementById('b2-file').files[0]?.name||'' });
+  cerrarModal('modal-boleta');
+  renderProveedores();
+  if (document.getElementById('modal-ver-boletas').classList.contains('open')) filtrarBoletas();
+}
+
 // ===================== CLIENTES =====================
 let editingCliId = null;
 
@@ -3988,7 +4019,7 @@ function guardarComboSinergia() {
 }
 
 // Interceptar addToCart para combos
-const _addToCartOrig = window.addToCart;
+const _addToCartOrig = addToCart;
 window.addToCart = function(prodId) {
   const prod = DB.productos.find(p=>p.id===prodId);
   if (prod&&prod.esCombo&&prod.componentes) {
