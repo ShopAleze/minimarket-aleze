@@ -20,7 +20,7 @@
 })();
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<script src="https://unpkg.com/@zxing/library@0.18.6/umd/index.min.js"></script>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <!-- Firebase SDK (Compat — funciona sin bundler) -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
@@ -1846,11 +1846,11 @@
   </div>
 </div>
 
-<!-- Modal Escáner ZXing — POS e Inventario -->
+<!-- Modal Escáner QR/Barras — POS e Inventario -->
 <div class="modal-overlay" id="modal-scanner">
   <div class="modal">
     <div class="modal-header">
-      <h3 id="scanner-titulo">📷 Escanear código de barras</h3>
+      <h3 id="scanner-titulo">📷 Escanear código</h3>
       <button class="modal-close" onclick="cerrarScanner()">✕</button>
     </div>
 
@@ -1859,29 +1859,14 @@
       🔄 Iniciando cámara...
     </div>
 
-    <!-- Video ZXing -->
-    <div style="position:relative;border-radius:10px;overflow:hidden;background:#000;margin-bottom:0.75rem">
-      <video id="scanner-video" style="width:100%;display:block;border-radius:10px" autoplay muted playsinline></video>
-      <!-- Línea guía de escaneo -->
-      <div style="position:absolute;top:50%;left:10%;right:10%;height:2px;background:rgba(124,58,237,0.8);transform:translateY(-50%);box-shadow:0 0 8px rgba(124,58,237,0.6)"></div>
-      <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);border:2px solid rgba(124,58,237,0.7);width:60%;height:40%;border-radius:8px;pointer-events:none"></div>
-    </div>
-
-    <p style="font-size:0.78rem;color:var(--gray-500);text-align:center;margin-bottom:0.75rem">
-      Centra el código de barras dentro del recuadro — el sistema lo detecta automáticamente
-    </p>
+    <!-- Contenedor html5-qrcode (la librería inyecta el video aquí) -->
+    <div id="html5-qrcode-reader" style="border-radius:10px;overflow:hidden;margin-bottom:0.75rem"></div>
 
     <!-- Resultado detectado -->
     <div id="scanner-resultado" style="display:none;background:var(--accent-light);border-left:4px solid var(--accent);border-radius:8px;padding:0.65rem;margin-bottom:0.75rem">
       <div style="font-size:0.78rem;color:var(--gray-600)">Código detectado:</div>
       <div id="scanner-codigo-detectado" style="font-family:monospace;font-size:1.1rem;font-weight:700;color:var(--accent-dark)"></div>
       <div id="scanner-prod-nombre" style="font-size:0.82rem;color:var(--gray-700);margin-top:0.25rem"></div>
-    </div>
-
-    <!-- Selector de cámara si hay varias -->
-    <div id="scanner-cam-wrap" style="display:none;margin-bottom:0.75rem">
-      <label style="font-size:0.78rem;font-weight:600;color:var(--gray-600)">Cambiar cámara:</label>
-      <select class="form-control" id="scanner-cam-select" onchange="cambiarCamara()" style="font-size:0.82rem;margin-top:0.25rem"></select>
     </div>
 
     <!-- Entrada manual fallback -->
@@ -1972,7 +1957,7 @@ let editingProductId = null;
 let editingFiadoId = null;
 let chartVentas = null, chartMetodos = null, chartReporte = null;
 let posFilterCat = '';
-let scannerStream = null;
+// scannerStream eliminado — html5-qrcode gestiona su propio stream
 
 // ===================== LOGIN =====================
 function doLogin() {
@@ -2329,6 +2314,7 @@ function procesarVenta() {
     if (cli) { cli.compras++; cli.total += total; }
   }
 
+  fbGuardar();
   mostrarTicket(venta);
   clearCart();
   updateAlertCount();
@@ -2353,6 +2339,7 @@ function cobrarFiado() {
   const cli = DB.clientes.find(c => c.id === clienteId);
   if (cli) cli.deuda += total;
 
+  fbGuardar();
   alert('Fiado registrado para ' + getClienteNombre(clienteId) + ': ' + sol(total));
   clearCart();
   updateAlertCount();
@@ -2499,7 +2486,7 @@ function editarProducto(id) {
 
 function eliminarProducto(id) {
   if (!confirm('¿Eliminar este producto?')) return;
-  DB.productos = DB.productos.filter(p => p.id !== id);
+  DB.productos = DB.productos.filter(p => p.id !== id); fbGuardar();
   renderInvTable();
 }
 
@@ -2673,6 +2660,7 @@ function guardarCatRapida() {
     margen: parseFloat(document.getElementById('catr-margen').value) || 0
   };
   DB.categorias.push(nueva);
+  fbGuardar();
   // Actualizar el select del modal producto y seleccionar la nueva
   updateModalCats();
   document.getElementById('prod-cat').value = nueva.id;
@@ -2806,6 +2794,7 @@ function actualizarPreciosCat(modo) {
       p.precio = nuevo;
       actualizados++;
     });
+    fbGuardar();
     cerrarModal('modal-categoria');
     renderCategorias();
     renderInvTable();
@@ -2840,6 +2829,7 @@ function aplicarPreciosCatSeleccionados() {
       n++;
     }
   });
+  fbGuardar();
   cerrarModal('modal-cat-update-precios');
   cerrarModal('modal-categoria');
   renderInvTable();
@@ -2849,7 +2839,7 @@ function aplicarPreciosCatSeleccionados() {
 function eliminarCategoria(id) {
   if (DB.productos.some(p => p.cat == id)) { alert('No puedes eliminar una categoría con productos asignados'); return; }
   if (!confirm('¿Eliminar esta categoría?')) return;
-  DB.categorias = DB.categorias.filter(c => c.id !== id);
+  DB.categorias = DB.categorias.filter(c => c.id !== id); fbGuardar();
   renderCategorias();
 }
 
@@ -2895,12 +2885,13 @@ function guardarProveedor() {
     Object.assign(p, data);
   } else {
     DB.proveedores.push({ id: getId(), ...data, boletas: [] });
+    fbGuardar();
   }
   cerrarModal('modal-proveedor');
   renderProveedores();
 }
 
-function eliminarProveedor(id) { if (!confirm('¿Eliminar proveedor?')) return; DB.proveedores = DB.proveedores.filter(p => p.id !== id); renderProveedores(); }
+function eliminarProveedor(id) { if (!confirm('¿Eliminar proveedor?')) return; DB.proveedores = DB.proveedores.filter(p => p.id !== id); fbGuardar(); renderProveedores(); }
 
 let editingBoletaProvId = null;
 function verBoletas(provId) {
@@ -2928,6 +2919,7 @@ function guardarBoleta() {
   if (!prov) return;
   if (!prov.boletas) prov.boletas = [];
   prov.boletas.push({ num, fecha, monto: parseFloat(document.getElementById('b2-monto').value)||0, desc: document.getElementById('b2-desc').value, archivo: document.getElementById('b2-file').files[0]?.name||'' });
+  fbGuardar();
   cerrarModal('modal-boleta');
   renderProveedores();
   if (document.getElementById('modal-ver-boletas').classList.contains('open')) filtrarBoletas();
@@ -2981,13 +2973,14 @@ function guardarCliente() {
   } else {
     DB.clientes.push({ id: getId(), ...data, compras: 0, total: 0, deuda: 0 });
   }
+  fbGuardar();
   cerrarModal('modal-cliente');
   renderClientes();
   updatePosClientes();
   updateAlertCount();
 }
 
-function eliminarCliente(id) { if (!confirm('¿Eliminar cliente?')) return; DB.clientes = DB.clientes.filter(c => c.id !== id); renderClientes(); }
+function eliminarCliente(id) { if (!confirm('¿Eliminar cliente?')) return; DB.clientes = DB.clientes.filter(c => c.id !== id); fbGuardar(); renderClientes(); }
 
 // ===================== FIADOS =====================
 function renderFiados() {
@@ -3113,6 +3106,7 @@ function confirmarPagoFiado() {
   const cli = DB.clientes.find(c => c.id === f.clienteId);
   if (cli) cli.deuda = Math.max(0, cli.deuda - monto);
   if (DB.caja.abierta) { DB.caja.ingresos += monto; DB.movimientos.push({ tipo: 'ingreso', desc: 'Pago fiado: ' + getClienteNombre(f.clienteId), monto, hora: nowTime() }); }
+  fbGuardar();
   cerrarModal('modal-pago-fiado'); renderFiados(); updateAlertCount();
 }
 
@@ -3287,13 +3281,14 @@ function abrirCaja() {
   const monto = parseFloat(document.getElementById('caja-monto-inicial').value) || 0;
   DB.caja = { abierta: true, inicial: monto, ingresos: 0, egresos: 0, turnoInicio: nowTime(), cajero: currentUser };
   DB.movimientos = [{ tipo: 'ingreso', desc: 'Apertura de caja', monto, hora: nowTime() }];
+  fbGuardar();
   renderCaja();
 }
 
 function cerrarCaja() {
   const saldo = DB.caja.inicial + DB.caja.ingresos - DB.caja.egresos;
   if (!confirm(`Cerrar caja. Saldo final: ${sol(saldo)}\n¿Confirmar cierre de turno?`)) return;
-  DB.caja.abierta = false; renderCaja();
+  DB.caja.abierta = false; fbGuardar(); renderCaja();
 }
 
 function updateCajaStats() {
@@ -3330,6 +3325,7 @@ function registrarMovimiento() {
   if (monto <= 0) { alert('Ingresa un monto válido'); return; }
   if (tipo === 'ingreso') DB.caja.ingresos += monto; else DB.caja.egresos += monto;
   DB.movimientos.push({ tipo, desc: desc || tipo, monto, hora: nowTime() });
+  fbGuardar();
   document.getElementById('mov-monto').value = ''; document.getElementById('mov-desc').value = '';
   updateCajaStats();
 }
@@ -3432,12 +3428,14 @@ function guardarMerma() {
     if (cant > prod.stock) { alert('La cantidad supera el stock disponible'); if(oldProd) oldProd.stock -= old.cant; return; }
     old.prodId = prodId; old.cant = cant; old.motivo = motivo; old.obs = obs;
     prod.stock -= cant;
+    fbGuardar();
   } else {
     if (cant > prod.stock) { alert('La cantidad supera el stock disponible'); return; }
     DB.mermas.push({ id: getId(), prodId, cant, motivo, obs, fecha: today(), usuario: currentUser });
+    fbGuardar();
     prod.stock -= cant;
     // Descontar del capital recuperado
-    if (DB_EXT && DB_EXT.capital) DB_EXT.capital.recuperado -= prod.costo * cant;
+    if (DB_EXT && DB_EXT.capital) { DB_EXT.capital.recuperado -= prod.costo * cant; fbGuardarExt(); }
   }
   cerrarModal('modal-merma');
   renderMermas();
@@ -3447,6 +3445,7 @@ function guardarMerma() {
 function eliminarMerma(id) {
   if (!confirm('¿Eliminar este registro de merma?\nNota: el stock no se restaurará automáticamente.')) return;
   DB.mermas = DB.mermas.filter(m => m.id !== id);
+  fbGuardar();
   renderMermas();
 }
 
@@ -3729,6 +3728,7 @@ function guardarConfig() {
   DB.config.telefono  = document.getElementById('cfg-telefono').value;
   DB.config.ticketMsg = document.getElementById('cfg-ticket-msg').value;
   DB.config.diasVenc  = parseInt(document.getElementById('cfg-dias-venc').value) || 7;
+  fbGuardar();
   alert('✅ Configuración guardada');
 }
 
@@ -3736,12 +3736,14 @@ function guardarSueldos() {
   DB_EXT.sueldos['Jose Carlos'] = parseFloat(document.getElementById('sueldo-jc').value) || 0;
   DB_EXT.sueldos['Shessira']    = parseFloat(document.getElementById('sueldo-sh').value) || 0;
   DB_EXT.sueldos['José Luis']   = parseFloat(document.getElementById('sueldo-jl').value) || 0;
+  fbGuardarExt();
   alert('✅ Sueldos guardados');
 }
 
 function guardarNavidad() {
   DB_EXT.navidad.n     = parseInt(document.getElementById('cfg-nav-n').value) || 3;
   DB_EXT.navidad.valor = parseFloat(document.getElementById('cfg-nav-v').value) || 50;
+  fbGuardarExt();
   alert('✅ Config. navideña guardada');
 }
 
@@ -3750,6 +3752,7 @@ function guardarNiveles() {
     n.umbral = parseFloat(document.getElementById('nv-u-' + i)?.value) || n.umbral;
     n.max    = parseFloat(document.getElementById('nv-m-' + i)?.value) || n.max;
   });
+  fbGuardarExt();
   alert('✅ Niveles de premio guardados');
 }
 
@@ -3780,21 +3783,19 @@ function testSheets() {
   }, 1500);
 }
 
-// ===================== ESCÁNER ZXING =====================
-let zxingReader = null;
-let scannerModo = 'pos'; // 'pos' | 'inventario'
-let scannerActivo = false;
-let camarasDisponibles = [];
-let camaraActualIdx = 0;
+// ===================== ESCÁNER html5-qrcode =====================
+let html5QrScanner = null;
+let scannerModo    = 'pos'; // 'pos' | 'inventario'
+let _scannerCooldown = false; // evita disparos dobles
 
 function setStatusScanner(msg, tipo) {
   const el = document.getElementById('scanner-status');
   if (!el) return;
   const colores = {
-    ok: 'background:var(--accent-light);color:var(--accent-dark)',
+    ok:    'background:var(--accent-light);color:var(--accent-dark)',
     error: 'background:var(--danger-light);color:var(--danger)',
-    info: 'background:var(--info-light);color:var(--info)',
-    warn: 'background:var(--warning-light);color:var(--warning)'
+    info:  'background:var(--info-light);color:var(--info)',
+    warn:  'background:var(--warning-light);color:var(--warning)'
   };
   el.style.cssText = `text-align:center;padding:0.5rem;font-size:0.82rem;border-radius:8px;margin-bottom:0.75rem;${colores[tipo]||colores.info}`;
   el.textContent = msg;
@@ -3807,7 +3808,7 @@ function openCamScanner() {
   document.getElementById('scanner-manual').value = '';
   document.getElementById('scanner-resultado').style.display = 'none';
   abrirModal('modal-scanner');
-  iniciarZXing();
+  _iniciarHtml5Qr();
 }
 
 // Abrir escáner desde modal de producto (inventario)
@@ -3817,142 +3818,76 @@ function abrirScannerInventario() {
   document.getElementById('scanner-manual').value = '';
   document.getElementById('scanner-resultado').style.display = 'none';
   abrirModal('modal-scanner');
-  iniciarZXing();
+  _iniciarHtml5Qr();
 }
 
-async function iniciarZXing() {
-  scannerActivo = true;
-  setStatusScanner('🔄 Cargando escáner...', 'info');
+function _iniciarHtml5Qr() {
+  _scannerCooldown = false;
+  setStatusScanner('🔄 Iniciando cámara...', 'info');
 
-  // Verificar que ZXing esté disponible
-  if (typeof ZXing === 'undefined') {
+  if (typeof Html5Qrcode === 'undefined') {
     setStatusScanner('⚠️ Librería no cargada — usa entrada manual abajo', 'warn');
     return;
   }
 
-  // Verificar soporte de getUserMedia
-  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    setStatusScanner('❌ Tu navegador no soporta cámara — usa entrada manual', 'error');
-    return;
-  }
+  // Detener instancia previa si existiera
+  _detenerHtml5Qr().then(() => {
+    const config = {
+      fps: 12,
+      qrbox: { width: 250, height: 180 },
+      aspectRatio: 1.4,
+      formatsToSupport: [
+        Html5QrcodeSupportedFormats.EAN_13,
+        Html5QrcodeSupportedFormats.EAN_8,
+        Html5QrcodeSupportedFormats.CODE_128,
+        Html5QrcodeSupportedFormats.CODE_39,
+        Html5QrcodeSupportedFormats.UPC_A,
+        Html5QrcodeSupportedFormats.UPC_E,
+        Html5QrcodeSupportedFormats.QR_CODE,
+        Html5QrcodeSupportedFormats.DATA_MATRIX
+      ]
+    };
 
-  try {
-    zxingReader = new ZXing.BrowserMultiFormatReader();
+    html5QrScanner = new Html5Qrcode('html5-qrcode-reader', { verbose: false });
 
-    // Solicitar permiso explícito primero (requerido en Chrome Android para
-    // que enumerateDevices exponga labels y deviceIds)
-    let permStream = null;
-    try {
-      permStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-    } catch(permErr) {
-      setStatusScanner('❌ Permiso de cámara denegado — habilítalo en ajustes del navegador', 'error');
-      return;
-    }
-    // Detener stream de prueba
-    permStream.getTracks().forEach(t => t.stop());
-
-    // Enumerar dispositivos (ahora con permiso concedido, labels disponibles)
-    let devices = [];
-    try {
-      const allDevices = await navigator.mediaDevices.enumerateDevices();
-      devices = allDevices.filter(d => d.kind === 'videoinput');
-    } catch(e) { devices = []; }
-
-    camarasDisponibles = devices;
-
-    if (camarasDisponibles.length > 1) {
-      const sel = document.getElementById('scanner-cam-select');
-      sel.innerHTML = camarasDisponibles.map((c, i) =>
-        `<option value="${i}">${c.label || 'Cámara ' + (i+1)}</option>`
-      ).join('');
-      // Preferir cámara trasera
-      const traseraIdx = camarasDisponibles.findIndex(c =>
-        /back|rear|trasera|environment/i.test(c.label)
-      );
-      camaraActualIdx = traseraIdx >= 0 ? traseraIdx : camarasDisponibles.length - 1;
-      sel.value = camaraActualIdx;
-      document.getElementById('scanner-cam-wrap').style.display = 'block';
-    } else {
-      camaraActualIdx = 0;
-      document.getElementById('scanner-cam-wrap').style.display = 'none';
-    }
-
-    await arrancarLectura();
-
-  } catch (err) {
-    console.error('ZXing error:', err);
-    setStatusScanner('❌ Error al iniciar cámara: ' + (err.message || err), 'error');
-  }
+    // Preferir cámara trasera automáticamente
+    html5QrScanner.start(
+      { facingMode: 'environment' },
+      config,
+      (decodedText) => { manejarCodigoDetectado(decodedText); },
+      () => {} // errores de frame ignorados (normales entre lecturas)
+    ).then(() => {
+      setStatusScanner('📷 Apunta al código del producto...', 'info');
+    }).catch(err => {
+      // Si environment falla, intentar con cualquier cámara disponible
+      if (html5QrScanner) {
+        html5QrScanner.start(
+          { facingMode: 'user' },
+          config,
+          (decodedText) => { manejarCodigoDetectado(decodedText); },
+          () => {}
+        ).then(() => {
+          setStatusScanner('📷 Cámara activa — apunta al código...', 'info');
+        }).catch(() => {
+          setStatusScanner('❌ No se pudo acceder a la cámara — usa entrada manual', 'error');
+        });
+      }
+    });
+  });
 }
 
-async function arrancarLectura() {
-  if (!zxingReader || !scannerActivo) return;
-  const videoEl = document.getElementById('scanner-video');
-
-  try {
-    setStatusScanner('📷 Apunta al código de barras del producto...', 'info');
-
-    const deviceId = camarasDisponibles[camaraActualIdx]?.deviceId;
-
-    if (deviceId) {
-      await zxingReader.decodeFromVideoDevice(deviceId, videoEl, (result, err) => {
-        if (!scannerActivo) return;
-        if (result) manejarCodigoDetectado(result.getText());
-      });
-    } else {
-      const constraints = { video: { facingMode: { ideal: 'environment' } }, audio: false };
-      await zxingReader.decodeFromConstraints(constraints, videoEl, (result, err) => {
-        if (!scannerActivo) return;
-        if (result) manejarCodigoDetectado(result.getText());
-      });
-    }
-
-    // Aplicar zoom tras iniciar el stream (esperar a que el video tenga srcObject)
-    await aplicarZoomCamara(videoEl);
-
-  } catch (err) {
-    if (err && err.name !== 'NotFoundException') {
-      console.error('arrancarLectura error:', err);
-      setStatusScanner('❌ ' + (err.message || 'Error de cámara'), 'error');
-    }
-  }
-}
-
-// Aplica zoom óptico (API nativa) o visual (CSS transform) según soporte del dispositivo
-async function aplicarZoomCamara(videoEl) {
-  // Esperar hasta que el video tenga stream activo (máx 3s)
-  for (let i = 0; i < 30; i++) {
-    if (videoEl.srcObject && videoEl.srcObject.getVideoTracks().length > 0) break;
-    await new Promise(r => setTimeout(r, 100));
-  }
-  if (!videoEl.srcObject) return;
-
-  const track = videoEl.srcObject.getVideoTracks()[0];
-  if (!track) return;
-
-  const ZOOM_FACTOR = 2.0; // Zoom 2x — ajustable
-
-  try {
-    const caps = track.getCapabilities ? track.getCapabilities() : {};
-    if (caps.zoom && caps.zoom.min !== undefined) {
-      // Zoom óptico nativo (disponible en Android Chrome moderno)
-      const zoomVal = Math.min(caps.zoom.min * ZOOM_FACTOR + caps.zoom.min, caps.zoom.max);
-      await track.applyConstraints({ advanced: [{ zoom: zoomVal }] });
-    } else {
-      // Fallback: zoom visual CSS — escala el video sin recortar el stream
-      videoEl.style.transform = `scale(${ZOOM_FACTOR})`;
-      videoEl.style.transformOrigin = 'center center';
-    }
-  } catch(e) {
-    // Si falla zoom óptico, aplicar CSS como respaldo
-    videoEl.style.transform = `scale(${ZOOM_FACTOR})`;
-    videoEl.style.transformOrigin = 'center center';
-  }
+function _detenerHtml5Qr() {
+  if (!html5QrScanner) return Promise.resolve();
+  return html5QrScanner.stop().catch(() => {}).finally(() => {
+    // Limpiar el contenedor para re-uso limpio
+    try { html5QrScanner.clear(); } catch(e) {}
+    html5QrScanner = null;
+  });
 }
 
 function manejarCodigoDetectado(codigo) {
-  if (!codigo) return;
-  scannerActivo = false; // Pausar para evitar múltiples lecturas
+  if (!codigo || _scannerCooldown) return;
+  _scannerCooldown = true; // bloquear re-disparos hasta procesar
 
   // Vibrar si disponible
   if (navigator.vibrate) navigator.vibrate(100);
@@ -3962,7 +3897,6 @@ function manejarCodigoDetectado(codigo) {
   document.getElementById('scanner-codigo-detectado').textContent = codigo;
 
   if (scannerModo === 'pos') {
-    // Buscar en inventario y agregar al carrito
     const prod = DB.productos.find(p => p.codigo === codigo);
     if (prod) {
       document.getElementById('scanner-prod-nombre').textContent = '✅ ' + prod.nombre + ' — ' + sol(prod.precio);
@@ -3970,31 +3904,37 @@ function manejarCodigoDetectado(codigo) {
       setTimeout(() => {
         addToCart(prod.id);
         cerrarScanner();
-        // En móvil, cambiar a tab carrito automáticamente
         if (window.innerWidth <= 900) switchPosTab('carrito');
-      }, 800);
+      }, 700);
     } else {
       document.getElementById('scanner-prod-nombre').textContent = '⚠️ Código no registrado en inventario';
       setStatusScanner('⚠️ Código ' + codigo + ' no encontrado — agrégalo al inventario primero', 'warn');
       document.getElementById('scanner-manual').value = codigo;
-      scannerActivo = true; // Reactivar para seguir buscando
+      // Reactivar lectura tras 2s para seguir buscando
+      setTimeout(() => { _scannerCooldown = false; }, 2000);
     }
 
   } else if (scannerModo === 'inventario') {
-    // Rellenar campo código en modal de producto
-    document.getElementById('scanner-prod-nombre').textContent = '✅ Código capturado — se aplicará al producto';
-    setStatusScanner('✅ Código escaneado correctamente', 'ok');
-    setTimeout(() => {
-      cerrarScanner();
-      // Llenar campo y previsualizar
-      document.getElementById('prod-codigo').value = codigo;
-      previsualizarCodigo();
-      // Verificar si ya existe en inventario
-      const existe = DB.productos.find(p => p.codigo === codigo);
-      if (existe) {
-        alert(`ℹ️ Este código ya pertenece a "${existe.nombre}". Si es un producto diferente considera generar un código nuevo.`);
-      }
-    }, 700);
+    const existe = DB.productos.find(p => p.codigo === codigo);
+    if (existe) {
+      // Producto ya registrado — pre-rellenar formulario con sus datos
+      document.getElementById('scanner-prod-nombre').textContent = '✅ Código encontrado: ' + existe.nombre;
+      setStatusScanner('✅ Producto existente detectado — cargando datos...', 'ok');
+      setTimeout(() => {
+        cerrarScanner();
+        // Abrir el modal con los datos del producto existente para editar/confirmar
+        editarProducto(existe.id);
+      }, 700);
+    } else {
+      // Producto nuevo — solo pasar el código al campo
+      document.getElementById('scanner-prod-nombre').textContent = '✅ Código capturado — completa los datos del producto';
+      setStatusScanner('✅ Código escaneado — rellena el formulario', 'ok');
+      setTimeout(() => {
+        cerrarScanner();
+        document.getElementById('prod-codigo').value = codigo;
+        previsualizarCodigo();
+      }, 700);
+    }
   }
 }
 
@@ -4003,33 +3943,8 @@ function procesarCodigoEscaneado(codigo) {
   manejarCodigoDetectado(codigo);
 }
 
-async function cambiarCamara() {
-  const sel = document.getElementById('scanner-cam-select');
-  camaraActualIdx = parseInt(sel.value);
-  if (zxingReader) {
-    zxingReader.reset();
-    scannerActivo = true;
-    await arrancarLectura();
-  }
-}
-
 function cerrarScanner() {
-  scannerActivo = false;
-  if (zxingReader) {
-    try { zxingReader.reset(); } catch(e) {}
-    zxingReader = null;
-  }
-  if (scannerStream) {
-    scannerStream.getTracks().forEach(t => t.stop());
-    scannerStream = null;
-  }
-  const video = document.getElementById('scanner-video');
-  if (video && video.srcObject) {
-    video.srcObject.getTracks().forEach(t => t.stop());
-    video.srcObject = null;
-  }
-  if (video) { video.style.transform = ''; video.style.transformOrigin = ''; }
-  document.getElementById('scanner-cam-wrap').style.display = 'none';
+  _detenerHtml5Qr().catch(() => {});
   document.getElementById('scanner-resultado').style.display = 'none';
   cerrarModal('modal-scanner');
 }
@@ -4160,6 +4075,7 @@ function guardarCliRapido() {
   if (!nombre) { alert('Ingresa un nombre'); return; }
   const c = { id: getId(), nombre, alias: nombre, tel: document.getElementById('cr-tel').value, dir: '', cumple: '', compras: 0, total: 0, deuda: 0 };
   DB.clientes.push(c);
+  fbGuardar();
   updatePosClientes();
   document.getElementById('pos-cliente').value = c.id;
   onClienteChange();
@@ -4241,6 +4157,7 @@ function guardarGasto() {
     monto,
     fecha: document.getElementById('g-fecha').value
   });
+  fbGuardarExt();
   cerrarModal('modal-gasto');
   renderGastos();
 }
@@ -4255,6 +4172,7 @@ function guardarGastoRec() {
   const monto = parseFloat(document.getElementById('gr-monto').value) || 0;
   if (!desc || monto <= 0) { alert('Completa los campos'); return; }
   DB_EXT.gastosRec.push({ id: getId(), desc, tipo: document.getElementById('gr-tipo').value, monto });
+  fbGuardarExt();
   cerrarModal('modal-gasto-rec');
   renderGastos();
 }
@@ -4262,6 +4180,7 @@ function guardarGastoRec() {
 function elimGastoRec(id) {
   if (!confirm('¿Eliminar este gasto recurrente?')) return;
   DB_EXT.gastosRec = DB_EXT.gastosRec.filter(g => g.id !== id);
+  fbGuardarExt();
   renderGastos();
 }
 
@@ -4337,6 +4256,7 @@ function guardarCapital() {
   if (!DB_EXT.capital.hist.length && DB_EXT.capital.total > 0) {
     DB_EXT.capital.hist.push({ fecha: today(), desc: 'Capital inicial', monto: DB_EXT.capital.total, acum: DB_EXT.capital.total });
   }
+  fbGuardarExt();
   updateCapStats();
   alert('✅ Capital guardado');
 }
@@ -4354,6 +4274,7 @@ function confirmarAddCapital() {
   DB_EXT.capital.total += monto;
   const acum = DB_EXT.capital.hist.reduce((s,h) => s+h.monto, 0) + monto;
   DB_EXT.capital.hist.push({ fecha: today(), desc, monto, acum });
+  fbGuardarExt();
   cerrarModal('modal-add-capital');
   renderCapital();
 }
@@ -4456,6 +4377,7 @@ function sincronizarMermasInventario() {
     }
   });
   if (registradas > 0) {
+    fbGuardar();
     alert('✅ ' + registradas + ' diferencia(s) sincronizadas con mermas y stock actualizado.');
     updateAlertCount();
   } else {
@@ -4480,6 +4402,7 @@ function guardarInventarioMensual() {
     }))
   };
   DB_EXT.inventariosMensuales.push(resumen);
+  fbGuardarExt();
   alert('✅ Inventario guardado. Total ítems verificados: ' + invMensualData.filter(d=>d.verificado).length);
 }
 
@@ -4531,6 +4454,7 @@ function aplicarSug(i, id) {
   const p = DB.productos.find(x => x.id === id);
   if (p) {
     p.precio = v;
+    fbGuardar();
     const row = input.closest('tr');
     if (row) {
       const btn = row.querySelector('button');
@@ -4549,6 +4473,7 @@ function aplicarTodosPrecios() {
     if (!isNaN(v) && v > 0) { const p = DB.productos.find(x => x.id===sd.id); if(p) p.precio = v; }
   });
   cerrarModal('modal-sugerir-precios');
+  fbGuardar();
   renderInvTable();
   alert('✅ Todos los precios actualizados');
 }
@@ -4636,12 +4561,13 @@ function guardarPromocion() {
   } else {
     DB.promociones.push({ id: getId(), ...data });
   }
+  fbGuardar();
   cerrarModal('modal-promocion');
   renderPromociones();
 }
 
-function togglePromo(id) { const p = DB.promociones.find(x => x.id === id); if (p) p.activa = !p.activa; renderPromociones(); }
-function eliminarPromo(id) { if (!confirm('¿Eliminar?')) return; DB.promociones = DB.promociones.filter(p => p.id !== id); renderPromociones(); }
+function togglePromo(id) { const p = DB.promociones.find(x => x.id === id); if (p) { p.activa = !p.activa; fbGuardar(); } renderPromociones(); }
+function eliminarPromo(id) { if (!confirm('¿Eliminar?')) return; DB.promociones = DB.promociones.filter(p => p.id !== id); fbGuardar(); renderPromociones(); }
 
 // ===================== COMBO SINERGIA (Punto 8) =====================
 function abrirModalComboSinergia() {
@@ -4719,6 +4645,7 @@ function guardarComboSinergia() {
     precioOrig:(p1.precio*cant1)+(p2.precio*cant2), precioPromo:precio,
     desde:today(), hasta, activa:true
   });
+  fbGuardar();
   cerrarModal('modal-combo-sinergia');
   renderInvTable();
   alert(`✅ Combo "${nombre}" creado.\nAl venderse descuenta: ${cant1} de ${p1.nombre} y ${cant2} de ${p2.nombre}`);
@@ -5039,6 +4966,7 @@ function mobCobrarFiado() {
   const cli = DB.clientes.find(c => c.id === clienteId);
   if (cli) cli.deuda = (cli.deuda || 0) + total;
 
+  fbGuardar();
   alert('Fiado registrado para ' + getClienteNombre(clienteId) + ': ' + sol(total));
 
   // Limpiar carrito móvil completamente
@@ -5082,6 +5010,7 @@ function mobProcesarVenta() {
     if (cli) { cli.total = (cli.total || 0) + total; cli.puntos = (cli.puntos || 0) + Math.floor(total); }
   }
   DB.ventas.push(venta);
+  fbGuardar();
   toggleMobCart();
   mobCart = [];
   mobRenderCart();
@@ -5174,6 +5103,19 @@ function iniciarFirebase() {
   }
 }
 
+// ── Referencia al documento DB_EXT (sueldos, gastos, capital, niveles, etc.) ──
+function fbGuardarExt() {
+  if (!fbFS) return;
+  clearTimeout(window._fbExtTimer);
+  window._fbExtTimer = setTimeout(() => {
+    _fbEscribiendo = true;
+    fbFS.collection('aleze').doc('db_ext')
+      .set(JSON.parse(JSON.stringify(DB_EXT)))
+      .then(() => { setTimeout(() => { _fbEscribiendo = false; }, 300); })
+      .catch(e => { _fbEscribiendo = false; console.warn('Firestore db_ext write error:', e); });
+  }, 1200);
+}
+
 // ── Referencia al único documento que contiene toda la DB ──
 function fbDocRef() {
   return fbFS.collection('aleze').doc('db');
@@ -5203,27 +5145,56 @@ function fbGuardar() {
 function fbEscuchar() {
   if (!fbFS) return;
   _fbSnapshotUnsub = fbDocRef().onSnapshot(snapshot => {
-    if (_fbEscribiendo) return; // somos nosotros quien escribió — ignorar
+    if (_fbEscribiendo) return;
     if (!snapshot.exists) return;
     const data = snapshot.data();
     if (!data) return;
-    // Mezclar solo colecciones conocidas en DB local
     Object.keys(data).forEach(k => { if (k in DB) DB[k] = data[k]; });
-    // Re-renderizar secciones activas
-    try { renderDashboard(); }  catch(e){}
-    try { renderInvTable(); }   catch(e){}
-    try { renderPosProducts(); } catch(e){}
-    try { updateAlertCount(); } catch(e){}
-    try { if (typeof renderMobPos === 'function') renderMobPos(); } catch(e){}
-  }, err => {
-    console.warn('Firestore listener error:', err.code);
-  });
+    // Refrescar siempre
+    try { renderDashboard(); }    catch(e){}
+    try { updateAlertCount(); }   catch(e){}
+    // Refrescar el módulo visible actualmente
+    const activePage = document.querySelector('.page.active');
+    const pageId = activePage ? activePage.id.replace('page-','') : '';
+    try {
+      if (pageId === 'pos')         { renderPosProducts(); if (typeof renderMobPos === 'function') renderMobPos(); }
+      if (pageId === 'inventario')  { renderInvTable(); }
+      if (pageId === 'clientes')    { renderClientes(); }
+      if (pageId === 'fiados')      { renderFiados(); }
+      if (pageId === 'mermas')      { renderMermas(); }
+      if (pageId === 'caja')        { renderCaja(); }
+      if (pageId === 'promociones') { renderPromociones(); }
+      if (pageId === 'proveedores') { renderProveedores(); }
+      if (pageId === 'categorias')  { renderCategorias(); }
+      if (pageId === 'frecuentes')  { renderFrecuentes(); }
+      if (pageId === 'reportes')    { generarReporte(); }
+    } catch(e){}
+  }, err => { console.warn('Firestore listener error:', err.code); });
+
+  // Listener para DB_EXT (sueldos, gastos, capital, niveles, navidad)
+  fbFS.collection('aleze').doc('db_ext').onSnapshot(snapshot => {
+    if (_fbEscribiendo) return;
+    if (!snapshot.exists) return;
+    const ext = snapshot.data();
+    if (!ext) return;
+    Object.keys(ext).forEach(k => { if (k in DB_EXT) DB_EXT[k] = ext[k]; });
+    try { renderDashboard(); } catch(e){}
+    const activePage = document.querySelector('.page.active');
+    const pageId = activePage ? activePage.id.replace('page-','') : '';
+    try {
+      if (pageId === 'gastos')        { renderGastos(); }
+      if (pageId === 'capital')       { renderCapital(); }
+      if (pageId === 'frecuentes')    { renderFrecuentes(); }
+      if (pageId === 'configuracion') { renderConfiguracion(); }
+      if (pageId === 'reportes')      { generarReporte(); }
+    } catch(e){}
+  }, err => { console.warn('Firestore db_ext listener error:', err.code); });
 }
 
 // ── Patch DB: interceptar asignaciones de array para auto-guardar ──
 // Solo las colecciones que el usuario modifica activamente
 const _fbPatchCols = ['productos','ventas','clientes','fiados','mermas',
-                      'movimientos','categorias','proveedores','promociones','caja'];
+                      'movimientos','categorias','proveedores','promociones','caja','config'];
 function fbPatchDB() {
   _fbPatchCols.forEach(col => {
     let _val = DB[col];
@@ -5248,6 +5219,13 @@ window.onload = function() {
         const data = snapshot.data();
         Object.keys(data).forEach(k => { if (k in DB) DB[k] = data[k]; });
         console.log('Datos cargados desde Firestore ✓');
+        // Cargar también DB_EXT
+        fbFS.collection('aleze').doc('db_ext').get().then(extSnap => {
+          if (extSnap.exists) {
+            const ext = extSnap.data();
+            Object.keys(ext).forEach(k => { if (k in DB_EXT) DB_EXT[k] = ext[k]; });
+          }
+        }).catch(e => console.warn('db_ext load error:', e));
       } else {
         // Primera vez — sembrar datos demo y subirlos
         _semillaDemo(hoy);
