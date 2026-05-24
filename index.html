@@ -331,7 +331,7 @@
   .pos-search input:focus { border-color: var(--primary); }
   .pos-search-icon { position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); color: var(--gray-400); }
   .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 0.75rem; }
-  .product-card { background: white; border-radius: 10px; padding: 0.75rem; cursor: pointer; box-shadow: var(--shadow); transition: all 0.15s; border: 2px solid transparent; text-align: center; }
+  .product-card { background: white; border-radius: 10px; padding: 0.75rem; cursor: pointer; box-shadow: var(--shadow); transition: all 0.15s; border: 2px solid transparent; text-align: center; position: relative; }
   .product-card:hover { border-color: var(--primary); transform: translateY(-2px); }
   .product-card .p-name { font-size: 0.8rem; font-weight: 600; color: var(--gray-800); margin-bottom: 0.25rem; }
   .product-card .p-price { font-size: 1rem; font-weight: 700; color: var(--primary); }
@@ -378,6 +378,73 @@
   /* Tabs para móvil — hidden, replaced by split view */
   .pos-tabs { display: none; }
 
+  /* ===== BOTTOM CART BAR (mobile POS) ===== */
+  .mob-cart-bar {
+    display: none;
+  }
+
+  /* ===== CART DRAWER (bottom sheet mobile) ===== */
+  .mob-cart-drawer-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 490;
+    backdrop-filter: blur(2px);
+  }
+  .mob-cart-drawer-overlay.open { display: block; }
+
+  .mob-cart-drawer {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: white;
+    border-radius: 20px 20px 0 0;
+    z-index: 500;
+    max-height: 88vh;
+    display: flex;
+    flex-direction: column;
+    transform: translateY(100%);
+    transition: transform 0.32s cubic-bezier(0.4,0,0.2,1);
+    box-shadow: 0 -8px 32px rgba(0,0,0,0.18);
+  }
+  .mob-cart-drawer.open {
+    transform: translateY(0);
+  }
+  .mob-cart-drawer-handle {
+    width: 40px; height: 4px;
+    background: var(--gray-300);
+    border-radius: 2px;
+    margin: 10px auto 0;
+    flex-shrink: 0;
+  }
+  .mob-cart-drawer-header {
+    padding: 0.75rem 1rem 0.6rem;
+    border-bottom: 1px solid var(--gray-100);
+    flex-shrink: 0;
+  }
+  .mob-cart-drawer-title {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 0.5rem;
+  }
+  .mob-cart-drawer-title h3 { font-size: 1rem; font-weight: 700; color: var(--gray-900); }
+  .mob-cart-drawer-close {
+    background: var(--gray-100); border: none;
+    width: 30px; height: 30px; border-radius: 50%;
+    font-size: 1rem; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .mob-cart-drawer-body {
+    flex: 1; overflow-y: auto;
+    padding: 0.5rem 1rem;
+    min-height: 0;
+  }
+  .mob-cart-drawer-footer {
+    padding: 0.75rem 1rem;
+    border-top: 1px solid var(--gray-100);
+    flex-shrink: 0;
+    background: white;
+    padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+  }
+
   @media (max-width: 760px) {
     /* --- HEADER compacto --- */
     .btn-hamburger { display: flex; }
@@ -391,101 +458,186 @@
       top: var(--header-h);
       left: 0;
       height: calc(100vh - var(--header-h));
-      width: 220px !important;
+      width: 230px !important;
       z-index: 300;
       transform: translateX(-100%);
       transition: transform 0.25s ease;
-      box-shadow: 4px 0 16px rgba(0,0,0,0.18);
+      box-shadow: 4px 0 20px rgba(0,0,0,0.2);
     }
-    aside.mob-open {
-      transform: translateX(0);
-    }
-    aside.collapsed {
-      width: 220px !important;
-      transform: translateX(-100%);
-    }
-    aside.collapsed.mob-open {
-      transform: translateX(0);
-    }
+    aside.mob-open { transform: translateX(0); }
+    aside.collapsed { width: 230px !important; transform: translateX(-100%); }
+    aside.collapsed.mob-open { transform: translateX(0); }
 
-    /* --- MAIN WRAP: ocupa todo el ancho --- */
+    /* --- MAIN WRAP ocupa todo el ancho --- */
     .main-wrap { width: 100%; }
+    main { padding: 0.75rem; }
 
-    /* --- POS: split vertical 50/50 --- */
+    /* ============================================
+       POS MÓVIL — pantalla completa productos
+       ============================================ */
     #page-pos {
-      height: calc(100vh - var(--header-h));
+      height: calc(100vh - var(--header-h) - 62px); /* 62px = bottom bar */
       padding: 0;
       overflow: hidden;
-    }
-    .pos-wrap {
       display: flex;
-      flex-direction: row !important;
-      height: 100%;
-      gap: 0;
-      overflow: hidden;
-    }
-    /* Panel izquierdo — productos */
-    .pos-products {
-      flex: 1;
-      min-width: 0;
-      overflow-y: auto;
-      border-right: 2px solid var(--gray-200);
-      padding: 0.5rem 0.4rem;
-      background: var(--gray-50);
-      display: flex !important;
-    }
-    /* Panel derecho — carrito */
-    .pos-cart {
-      width: 48%;
-      min-width: 155px;
-      max-width: 220px;
-      flex-shrink: 0;
-      overflow: hidden;
-      display: flex !important;
       flex-direction: column;
     }
-    /* productos compactos */
-    .product-grid {
-      grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
-      gap: 0.4rem;
+
+    /* Barra superior del POS: buscador + escanear + cliente */
+    .mob-pos-topbar {
+      background: white;
+      padding: 0.6rem 0.75rem 0.5rem;
+      border-bottom: 1px solid var(--gray-200);
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
     }
-    .product-card { padding: 0.45rem 0.3rem; }
-    .product-card .p-icon { font-size: 1.5rem; margin-bottom: 0.2rem; }
-    .product-card .p-name { font-size: 0.7rem; }
-    .product-card .p-price { font-size: 0.85rem; }
-    .product-card .p-stock { font-size: 0.62rem; }
+    .mob-pos-topbar-row1 {
+      display: flex; gap: 0.5rem; align-items: center;
+    }
+    .mob-pos-topbar-row1 .pos-search {
+      flex: 1; margin: 0;
+    }
+    .mob-pos-topbar-row1 .pos-search input {
+      padding: 0.55rem 0.55rem 0.55rem 2.1rem;
+      font-size: 0.875rem;
+      border-radius: 10px;
+    }
+    .mob-scan-btn {
+      background: var(--primary);
+      color: white; border: none;
+      border-radius: 10px;
+      padding: 0.55rem 0.7rem;
+      font-size: 0.85rem; font-weight: 600;
+      white-space: nowrap; cursor: pointer;
+      display: flex; align-items: center; gap: 0.3rem;
+      flex-shrink: 0;
+    }
+    .mob-pos-topbar-row2 {
+      display: flex; gap: 0.4rem; align-items: center;
+    }
+    .mob-pos-topbar-row2 select {
+      flex: 1;
+      font-size: 0.82rem !important;
+      padding: 0.42rem 0.5rem !important;
+      border-radius: 8px;
+    }
+    .mob-add-cliente-btn {
+      background: var(--gray-100);
+      border: 1px solid var(--gray-300);
+      color: var(--gray-700);
+      border-radius: 8px;
+      padding: 0.42rem 0.65rem;
+      font-size: 0.8rem; font-weight: 600;
+      cursor: pointer; white-space: nowrap;
+      flex-shrink: 0;
+    }
 
-    /* pos-search + categorias compactos */
-    .pos-search input { font-size: 0.8rem; padding: 0.5rem 0.5rem 0.5rem 2rem; }
-    #pos-categorias { gap: 0.3rem; margin-bottom: 0.4rem; }
-    #pos-categorias .tag { font-size: 0.68rem; padding: 0.15rem 0.45rem; }
+    /* Categorías chips */
+    .mob-pos-cats {
+      background: white;
+      padding: 0.4rem 0.75rem;
+      border-bottom: 1px solid var(--gray-100);
+      flex-shrink: 0;
+      overflow-x: auto;
+      white-space: nowrap;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .mob-pos-cats::-webkit-scrollbar { display: none; }
+    .mob-pos-cats .tag {
+      display: inline-block;
+      margin-right: 0.35rem;
+      font-size: 0.78rem;
+      padding: 0.25rem 0.6rem;
+    }
 
-    /* carrito compacto */
-    .cart-header { padding: 0.45rem 0.5rem; }
-    .cart-header h3 { font-size: 0.82rem; }
-    .cart-header .btn-sm { font-size: 0.7rem; padding: 0.28rem 0.45rem; }
-    .cart-header select { font-size: 0.72rem !important; padding: 0.3rem !important; }
-    .cart-header .btn-outline.btn-sm { display: none; } /* ocultar "+ Cliente" en compacto */
-    .cart-items { padding: 0.3rem 0.4rem; }
-    .cart-item { padding: 0.3rem; gap: 0.25rem; }
-    .cart-item-name { font-size: 0.72rem; }
-    .qty-btn { width: 22px; height: 22px; font-size: 0.85rem; }
-    .qty-val { font-size: 0.8rem; min-width: 20px; }
-    .cart-item-price { font-size: 0.75rem; min-width: 44px; }
-    .cart-footer { padding: 0.4rem 0.45rem; }
-    .cart-total-label { font-size: 0.8rem; }
-    .cart-total-val { font-size: 1.1rem; }
-    #pos-descuento { font-size: 0.75rem !important; padding: 0.35rem !important; }
-    #pos-metodo-pago { font-size: 0.75rem; margin-bottom: 0.4rem; }
-    .cart-footer > div:last-child { grid-template-columns: 1fr 1fr; gap: 0.35rem; }
-    .cart-footer .btn { padding: 0.5rem 0.3rem; font-size: 0.78rem; }
+    /* Grid de productos */
+    .mob-pos-grid-wrap {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0.6rem 0.75rem;
+      background: var(--gray-50);
+      -webkit-overflow-scrolling: touch;
+    }
+    .product-grid {
+      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+      gap: 0.55rem;
+    }
+    .product-card { padding: 0.6rem 0.4rem; }
+    .product-card .p-icon { font-size: 1.75rem; margin-bottom: 0.3rem; }
+    .product-card .p-name { font-size: 0.75rem; line-height: 1.2; }
+    .product-card .p-price { font-size: 0.9rem; }
+    .product-card .p-stock { font-size: 0.65rem; }
 
-    /* Ocultar tabs (no se usan en split) */
+    /* Ocultar elementos del POS desktop en móvil */
     .pos-tabs { display: none !important; }
+    .pos-wrap { display: none !important; }
 
-    /* main padding */
-    main { padding: 0; }
-    #page-pos { padding: 0; }
+    /* ============================================
+       BARRA INFERIOR FIJA — abre carrito
+       ============================================ */
+    .mob-cart-bar {
+      display: flex;
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      height: 62px;
+      background: var(--primary);
+      z-index: 400;
+      align-items: center;
+      padding: 0 1rem;
+      gap: 0.75rem;
+      cursor: pointer;
+      box-shadow: 0 -2px 16px rgba(124,58,237,0.25);
+    }
+    .mob-cart-bar-icon {
+      font-size: 1.4rem;
+      position: relative;
+      flex-shrink: 0;
+    }
+    .mob-cart-bar-badge {
+      position: absolute;
+      top: -6px; right: -8px;
+      background: var(--danger);
+      color: white;
+      border-radius: 10px;
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 1px 5px;
+      min-width: 18px;
+      text-align: center;
+    }
+    .mob-cart-bar-info {
+      flex: 1;
+    }
+    .mob-cart-bar-label {
+      font-size: 0.7rem;
+      color: rgba(255,255,255,0.75);
+      line-height: 1;
+      margin-bottom: 2px;
+    }
+    .mob-cart-bar-total {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: white;
+      line-height: 1;
+    }
+    .mob-cart-bar-cta {
+      background: rgba(255,255,255,0.2);
+      border: 1.5px solid rgba(255,255,255,0.4);
+      color: white;
+      border-radius: 10px;
+      padding: 0.45rem 0.9rem;
+      font-size: 0.82rem;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .mob-cart-bar-empty {
+      background: rgba(255,255,255,0.1);
+      color: rgba(255,255,255,0.55);
+      border-color: transparent;
+    }
   }
 
   /* PROMO TAG */
@@ -776,11 +928,11 @@
 
       <!-- POS -->
       <div id="page-pos" class="page">
-        <!-- Tabs para móvil -->
-        <div class="pos-tabs">
-          <button class="pos-tab-btn active" id="tab-productos" onclick="switchPosTab('productos')">🛍️ Productos</button>
-          <button class="pos-tab-btn" id="tab-carrito" onclick="switchPosTab('carrito')">🛒 Carrito <span id="tab-cart-count" style="background:var(--danger);color:white;border-radius:10px;padding:1px 6px;font-size:0.72rem;margin-left:2px">0</span></button>
-        </div>
+
+        <!-- ══════════════════════════════════
+             DESKTOP layout (>760px)
+             ══════════════════════════════════ -->
+        <div class="pos-tabs" style="display:none"><!-- legacy tabs hidden --></div>
         <div class="pos-wrap">
           <div class="pos-products" id="pos-products-panel">
             <div class="pos-search">
@@ -837,9 +989,44 @@
             </div>
           </div>
         </div>
+
+        <!-- ══════════════════════════════════
+             MOBILE layout (≤760px)
+             ══════════════════════════════════ -->
+
+        <!-- Barra superior: búsqueda + escanear + cliente -->
+        <div class="mob-pos-topbar">
+          <div class="mob-pos-topbar-row1">
+            <div class="pos-search" style="flex:1;margin:0;position:relative">
+              <span class="pos-search-icon">🔍</span>
+              <input type="text" id="mob-pos-search" placeholder="Buscar producto o código..." oninput="mobFilterPos()" />
+            </div>
+            <button class="mob-scan-btn" onclick="openCamScanner()">📷 Escanear</button>
+          </div>
+          <div class="mob-pos-topbar-row2">
+            <select id="mob-pos-cliente" class="form-control" onchange="mobOnClienteChange()">
+              <option value="">👤 Cliente anónimo</option>
+            </select>
+            <button class="mob-add-cliente-btn" onclick="abrirCliRapido()">+ Cliente</button>
+          </div>
+          <div id="mob-pos-cli-info" style="display:none;background:var(--primary-light);border-radius:8px;padding:.35rem .65rem;font-size:.75rem">
+            <span id="mob-pos-cli-nombre" style="font-weight:700;color:var(--primary)"></span>
+            <span id="mob-pos-cli-consumo" style="color:var(--gray-600)"></span>
+          </div>
+        </div>
+
+        <!-- Chips de categorías -->
+        <div class="mob-pos-cats" id="mob-pos-categorias"></div>
+
+        <!-- Grid de productos -->
+        <div class="mob-pos-grid-wrap">
+          <div class="product-grid" id="mob-pos-grid"></div>
+        </div>
+
       </div>
 
-      <!-- INVENTARIO -->
+
+            <!-- INVENTARIO -->
       <div id="page-inventario" class="page">
         <div class="flex-between mb-1" style="margin-bottom:1rem">
           <div class="page-title" style="margin:0">Inventario</div>
@@ -1827,7 +2014,7 @@ function navigate(page) {
     if (n.getAttribute('onclick') && n.getAttribute('onclick').includes("'" + page + "'")) n.classList.add('active');
   });
   if (page === 'dashboard') renderDashboard();
-  if (page === 'pos') renderPos();
+  if (page === 'pos') { renderPos(); if (isMobile()) renderMobPos(); }
   if (page === 'inventario') renderInventario();
   if (page === 'categorias') renderCategorias();
   if (page === 'proveedores') renderProveedores();
@@ -2061,6 +2248,7 @@ function renderCart() {
       <button class="qty-btn" onclick="removeItem(${i})" style="background:var(--danger-light);color:var(--danger)">✕</button>
     </div>`).join('');
   updateCartTabCount();
+  if (isMobile()) mobUpdateBar();
 }
 
 function changeQty(i, delta) {
@@ -2084,6 +2272,7 @@ function updatePosClientes() {
   const sel = document.getElementById('pos-cliente');
   sel.innerHTML = '<option value="">Cliente anónimo</option>';
   DB.clientes.forEach(c => sel.innerHTML += `<option value="${c.id}">${c.nombre}</option>`);
+  updateMobPosClientes();
 }
 
 function procesarVenta() {
@@ -4546,6 +4735,273 @@ function updateCartTabCount() {
   }
 }
 
+// ===================== MOBILE POS =====================
+let mobCart = []; // mobile cart mirrors desktop cart
+
+function isMobile() { return window.innerWidth <= 760; }
+
+// Sync mob-pos cliente dropdown with main one
+function updateMobPosClientes() {
+  const desktopSel = document.getElementById('pos-cliente');
+  const mobSel = document.getElementById('mob-pos-cliente');
+  if (!mobSel) return;
+  mobSel.innerHTML = desktopSel.innerHTML;
+}
+
+function mobOnClienteChange() {
+  const mobSel = document.getElementById('mob-pos-cliente');
+  const desktopSel = document.getElementById('pos-cliente');
+  if (desktopSel) desktopSel.value = mobSel.value;
+  // update cli info
+  const cliId = parseInt(mobSel.value) || null;
+  const cli = cliId ? DB.clientes.find(c => c.id === cliId) : null;
+  const infoEl = document.getElementById('mob-pos-cli-info');
+  const nombreEl = document.getElementById('mob-pos-cli-nombre');
+  const consumoEl = document.getElementById('mob-pos-cli-consumo');
+  if (cli) {
+    infoEl.style.display = 'block';
+    nombreEl.textContent = cli.alias || cli.nombre;
+    consumoEl.textContent = ' — Total: S/' + (cli.total || 0).toFixed(2);
+  } else {
+    infoEl.style.display = 'none';
+  }
+  // also update drawer
+  const dCliInfo = document.getElementById('mob-drawer-cli-info');
+  const dNombre = document.getElementById('mob-drawer-cli-nombre');
+  const dConsumo = document.getElementById('mob-drawer-cli-consumo');
+  if (cli && dCliInfo) {
+    dCliInfo.style.display = 'block';
+    dNombre.textContent = cli.alias || cli.nombre;
+    dConsumo.textContent = ' — Total: S/' + (cli.total || 0).toFixed(2);
+  } else if (dCliInfo) { dCliInfo.style.display = 'none'; }
+}
+
+function mobFilterPos() {
+  const s = document.getElementById('mob-pos-search').value.toLowerCase();
+  const activeCat = document.querySelector('#mob-pos-categorias .tag.active');
+  const catId = activeCat ? activeCat.dataset.cat : '';
+  let prods = DB.productos;
+  if (s) prods = prods.filter(p => p.nombre.toLowerCase().includes(s) || p.codigo.includes(s));
+  if (catId) prods = prods.filter(p => p.cat == catId);
+  renderMobPosGrid(prods);
+}
+
+function renderMobPosCats() {
+  const el = document.getElementById('mob-pos-categorias');
+  if (!el) return;
+  const cats = [{ id: '', emoji: '🏪', nombre: 'Todos' }, ...DB.categorias];
+  el.innerHTML = cats.map(c =>
+    `<span class="tag${c.id === '' ? ' active' : ''}" data-cat="${c.id}"
+      onclick="mobSelectCat('${c.id}',this)">${c.emoji} ${c.nombre}</span>`
+  ).join('');
+}
+
+function mobSelectCat(catId, el) {
+  document.querySelectorAll('#mob-pos-categorias .tag').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  mobFilterPos();
+}
+
+function renderMobPosGrid(prods) {
+  prods = prods || DB.productos;
+  const grid = document.getElementById('mob-pos-grid');
+  if (!grid) return;
+  const promoActivas = DB.promociones.filter(p => p.activa && p.hasta >= today());
+  grid.innerHTML = prods.map(p => {
+    const promo = promoActivas.find(pr => pr.prod1 == p.id || pr.prod2 == p.id);
+    const precio = promo ? promo.precioPromo : p.precio;
+    const stockBajo = p.stock <= p.stockMin;
+    return `<div class="product-card${p.stock === 0 ? ' opacity-50' : ''}" onclick="mobAddToCart(${p.id})" style="${p.stock===0?'opacity:.45;pointer-events:none':''}">
+      ${promo ? '<span class="promo-tag" style="position:absolute;top:4px;right:4px;font-size:.6rem">PROMO</span>' : ''}
+      <div class="p-icon">${DB.categorias.find(c=>c.id==p.cat)?.emoji||'📦'}</div>
+      <div class="p-name">${p.nombre}</div>
+      <div class="p-price" style="${stockBajo?'color:var(--danger)':''}">S/ ${precio.toFixed(2)}</div>
+      <div class="p-stock" style="${stockBajo?'color:var(--danger);font-weight:700':''}">Stock: ${p.stock} ${p.unidad}</div>
+    </div>`;
+  }).join('') || '<p style="color:var(--gray-400);text-align:center;padding:2rem;grid-column:1/-1">Sin productos</p>';
+}
+
+// ---- MOB CART ----
+function mobAddToCart(prodId) {
+  const prod = DB.productos.find(p => p.id === prodId);
+  if (!prod || prod.stock === 0) return;
+  const promoActivas = DB.promociones.filter(p => p.activa && p.hasta >= today());
+  const promo = promoActivas.find(pr => pr.prod1 == prodId || pr.prod2 == prodId);
+  const precio = promo ? promo.precioPromo : prod.precio;
+  const existing = mobCart.find(i => i.prodId === prodId);
+  if (existing) {
+    if (existing.cant >= prod.stock) { alert('Stock insuficiente'); return; }
+    existing.cant++;
+  } else {
+    mobCart.push({ prodId, nombre: prod.nombre, precio, cant: prod.tipo === 'granel' ? 0.5 : 1, tipo: prod.tipo, unidad: prod.unidad });
+  }
+  mobRenderCart();
+  mobCalcTotal();
+  mobUpdateBar();
+  // Auto-open drawer on first item
+  if (mobCart.length === 1) {
+    const drawer = document.getElementById('mob-cart-drawer');
+    const overlay = document.getElementById('mob-cart-drawer-overlay');
+    if (drawer && !drawer.classList.contains('open')) {
+      drawer.classList.add('open');
+      overlay.classList.add('open');
+    }
+  }
+}
+
+function mobRenderCart() {
+  const wrap = document.getElementById('mob-cart-drawer-items');
+  if (!wrap) return;
+  if (mobCart.length === 0) {
+    wrap.innerHTML = '<p style="text-align:center;color:var(--gray-400);font-size:0.9rem;padding:2.5rem 0">Carrito vacío — agrega productos</p>';
+    return;
+  }
+  wrap.innerHTML = mobCart.map((item, i) => `
+    <div class="cart-item">
+      <div class="cart-item-name">${item.nombre}</div>
+      <div class="cart-item-qty">
+        <button class="qty-btn" onclick="mobChangeQty(${i},-1)">−</button>
+        <span class="qty-val">${item.tipo==='granel' ? item.cant.toFixed(2) : item.cant}</span>
+        <button class="qty-btn" onclick="mobChangeQty(${i},1)">+</button>
+      </div>
+      <div class="cart-item-price">${sol(item.precio * item.cant)}</div>
+      <button class="qty-btn" onclick="mobRemoveItem(${i})" style="background:var(--danger-light);color:var(--danger)">✕</button>
+    </div>`).join('');
+}
+
+function mobChangeQty(i, delta) {
+  const prod = DB.productos.find(p => p.id === mobCart[i].prodId);
+  const step = mobCart[i].tipo === 'granel' ? 0.25 : 1;
+  mobCart[i].cant = Math.max(step, Math.min(prod ? prod.stock : 999, mobCart[i].cant + delta * step));
+  mobRenderCart(); mobCalcTotal(); mobUpdateBar();
+}
+
+function mobRemoveItem(i) {
+  mobCart.splice(i, 1);
+  mobRenderCart(); mobCalcTotal(); mobUpdateBar();
+}
+
+function mobClearCart() {
+  if (mobCart.length && !confirm('¿Vaciar el carrito?')) return;
+  mobCart = [];
+  mobRenderCart(); mobCalcTotal(); mobUpdateBar();
+  const search = document.getElementById('mob-pos-search');
+  if (search) search.value = '';
+  renderMobPosGrid();
+  toggleMobCart(); // close drawer
+}
+
+function mobCalcTotal() {
+  const sub = mobCart.reduce((s, i) => s + i.precio * i.cant, 0);
+  const desc = parseFloat(document.getElementById('mob-pos-descuento')?.value) || 0;
+  const total = Math.max(0, sub - desc);
+  const el = document.getElementById('mob-cart-total');
+  if (el) el.textContent = sol(total);
+  mobUpdateBar();
+}
+
+function mobUpdateBar() {
+  const count = mobCart.reduce((s, i) => s + i.cant, 0);
+  const sub = mobCart.reduce((s, i) => s + i.precio * i.cant, 0);
+  const desc = parseFloat(document.getElementById('mob-pos-descuento')?.value) || 0;
+  const total = Math.max(0, sub - desc);
+  const badge = document.getElementById('mob-cart-badge');
+  const label = document.getElementById('mob-cart-bar-label');
+  const totalEl = document.getElementById('mob-cart-bar-total');
+  const cta = document.getElementById('mob-cart-bar-cta');
+  if (badge) { badge.textContent = count; badge.style.display = count > 0 ? 'block' : 'none'; }
+  if (label) label.textContent = count > 0 ? `${count} producto${count>1?'s':''} en carrito` : 'Carrito vacío';
+  if (totalEl) totalEl.textContent = sol(total);
+  if (cta) {
+    if (count > 0) { cta.classList.remove('mob-cart-bar-empty'); cta.textContent = 'Ver carrito'; }
+    else { cta.classList.add('mob-cart-bar-empty'); cta.textContent = 'Ver carrito'; }
+  }
+}
+
+function toggleMobCart() {
+  const drawer = document.getElementById('mob-cart-drawer');
+  const overlay = document.getElementById('mob-cart-drawer-overlay');
+  if (!drawer) return;
+  const isOpen = drawer.classList.contains('open');
+  if (isOpen) {
+    drawer.classList.remove('open');
+    overlay.classList.remove('open');
+  } else {
+    mobRenderCart();
+    mobCalcTotal();
+    drawer.classList.add('open');
+    overlay.classList.add('open');
+  }
+}
+
+function mobCobrarFiado() {
+  // sync data to desktop fields then call original
+  syncMobToDesktop();
+  toggleMobCart();
+  cobrarFiado();
+}
+
+function mobProcesarVenta() {
+  if (mobCart.length === 0) { alert('El carrito está vacío'); return; }
+  const sub = mobCart.reduce((s, i) => s + i.precio * i.cant, 0);
+  const desc = parseFloat(document.getElementById('mob-pos-descuento')?.value) || 0;
+  const total = Math.max(0, sub - desc);
+  const metodo = document.getElementById('mob-pos-metodo-pago')?.value || 'Efectivo';
+  const clienteId = parseInt(document.getElementById('mob-pos-cliente')?.value) || null;
+  const venta = {
+    id: getId(), fecha: today(), hora: nowTime(), cajero: currentUser,
+    items: mobCart.map(i => ({ ...i })), subtotal: sub, descuento: desc, total, metodo, clienteId
+  };
+  // Descontar stock
+  mobCart.forEach(item => {
+    const prod = DB.productos.find(p => p.id === item.prodId);
+    if (prod) {
+      prod.stock = Math.max(0, prod.stock - item.cant);
+      if (prod.esCombo && prod.componentes) {
+        prod.componentes.forEach(comp => {
+          const cp = DB.productos.find(x => x.id === comp.prodId);
+          if (cp) cp.stock = Math.max(0, cp.stock - comp.cant * item.cant);
+        });
+      }
+    }
+  });
+  if (clienteId) {
+    const cli = DB.clientes.find(c => c.id === clienteId);
+    if (cli) { cli.total = (cli.total || 0) + total; cli.puntos = (cli.puntos || 0) + Math.floor(total); }
+  }
+  DB.ventas.push(venta);
+  toggleMobCart();
+  mobCart = [];
+  mobRenderCart();
+  mobCalcTotal();
+  mobUpdateBar();
+  renderMobPosGrid();
+  updateAlertCount();
+  // Show ticket in desktop modal reusing existing logic
+  cart = [];
+  renderCart();
+  calcTotal();
+  mostrarTicket(venta);
+}
+
+function syncMobToDesktop() {
+  // copy mob cart to desktop cart for shared operations
+  cart = mobCart.map(i => ({...i}));
+  renderCart(); calcTotal();
+  document.getElementById('pos-metodo-pago').value = document.getElementById('mob-pos-metodo-pago')?.value || 'Efectivo';
+  const cliId = document.getElementById('mob-pos-cliente')?.value || '';
+  document.getElementById('pos-cliente').value = cliId;
+}
+
+function renderMobPos() {
+  if (!isMobile()) return;
+  renderMobPosCats();
+  renderMobPosGrid();
+  updateMobPosClientes();
+  mobRenderCart();
+  mobUpdateBar();
+}
+
 // ===================== INIT =====================
 window.onload = function() {
   const hoy = today();
@@ -4558,7 +5014,73 @@ window.onload = function() {
   DB.clientes[1].total=87.00;  DB.clientes[1].alias='Carlos';    DB.clientes[1].cumple='1990-07-22';
   DB.clientes[2].total=230.00; DB.clientes[2].alias='Doña Rosa'; DB.clientes[2].cumple='1978-12-01';
   renderDashboard();
+  // Init mobile POS bar
+  mobUpdateBar();
 };
 </script>
+<!-- ══════════════════════════════════
+     BARRA INFERIOR FIJA DEL CARRITO
+     (solo mobile, fuera del page-pos)
+     ══════════════════════════════════ -->
+<div class="mob-cart-bar" id="mob-cart-bar" onclick="toggleMobCart()">
+  <div class="mob-cart-bar-icon">
+    🛒
+    <span class="mob-cart-bar-badge" id="mob-cart-badge" style="display:none">0</span>
+  </div>
+  <div class="mob-cart-bar-info">
+    <div class="mob-cart-bar-label" id="mob-cart-bar-label">Carrito vacío</div>
+    <div class="mob-cart-bar-total" id="mob-cart-bar-total">S/ 0.00</div>
+  </div>
+  <span class="mob-cart-bar-cta mob-cart-bar-empty" id="mob-cart-bar-cta">Ver carrito</span>
+</div>
+
+<!-- ══════════════════════════════════
+     DRAWER DEL CARRITO (bottom sheet)
+     ══════════════════════════════════ -->
+<div class="mob-cart-drawer-overlay" id="mob-cart-drawer-overlay" onclick="toggleMobCart()"></div>
+<div class="mob-cart-drawer" id="mob-cart-drawer">
+  <div class="mob-cart-drawer-handle"></div>
+  <div class="mob-cart-drawer-header">
+    <div class="mob-cart-drawer-title">
+<h3>🛒 Carrito de venta</h3>
+<button class="mob-cart-drawer-close" onclick="toggleMobCart()">✕</button>
+    </div>
+    <!-- Cliente info en drawer -->
+    <div id="mob-drawer-cli-info" style="display:none;background:var(--primary-light);border-radius:8px;padding:.35rem .65rem;margin-bottom:.4rem;font-size:.75rem">
+<span id="mob-drawer-cli-nombre" style="font-weight:700;color:var(--primary)"></span>
+<span id="mob-drawer-cli-consumo" style="color:var(--gray-600)"></span>
+    </div>
+    <div id="mob-drawer-premio-alert" class="premio-alert">🎁 <span id="mob-drawer-premio-txt"></span></div>
+  </div>
+  <div class="mob-cart-drawer-body" id="mob-cart-drawer-items">
+    <!-- items rendered by JS -->
+  </div>
+  <div class="mob-cart-drawer-footer">
+    <div style="margin-bottom:0.5rem">
+<input type="number" class="form-control" id="mob-pos-descuento" placeholder="Descuento promo (S/)" style="font-size:0.88rem;padding:0.5rem" oninput="mobCalcTotal()" />
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.6rem">
+<span style="font-size:0.9rem;color:var(--gray-600)">TOTAL</span>
+<span style="font-size:1.35rem;font-weight:800;color:var(--gray-900)" id="mob-cart-total">S/ 0.00</span>
+    </div>
+    <select id="mob-pos-metodo-pago" class="form-control" style="margin-bottom:0.55rem;font-size:0.88rem">
+<option value="Efectivo">💵 Efectivo</option>
+<option value="Yape">💜 Yape</option>
+<option value="Plin">💚 Plin</option>
+<option value="QR">📱 QR</option>
+<option value="Link de pago">🔗 Link de pago</option>
+<option value="Tarjeta POS">💳 Tarjeta POS</option>
+<option value="Tarjeta POS Móvil">📲 Tarjeta POS Móvil</option>
+<option value="Transferencia">🏦 Transferencia</option>
+    </select>
+    <div style="display:grid;grid-template-columns:auto 1fr 1fr;gap:0.45rem">
+<button class="btn btn-outline" style="padding:0.65rem 0.6rem;font-size:0.85rem;color:var(--danger);border-color:var(--danger-light)" onclick="mobClearCart()" title="Vaciar carrito">🗑️</button>
+<button class="btn btn-outline" style="padding:0.65rem;font-size:0.9rem" onclick="mobCobrarFiado()">📋 Fiado</button>
+<button class="btn btn-accent" style="padding:0.65rem;font-size:0.95rem;font-weight:700" onclick="mobProcesarVenta()">✅ Cobrar</button>
+    </div>
+  </div>
+</div>
+
+
 </body>
 </html>
