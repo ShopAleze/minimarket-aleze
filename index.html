@@ -3923,7 +3923,11 @@ function manejarCodigoDetectado(codigo) {
       document.getElementById('scanner-prod-nombre').textContent = '✅ ' + prod.nombre + ' — ' + sol(prod.precio);
       setStatusScanner('✅ Producto encontrado: ' + prod.nombre, 'ok');
       setTimeout(() => {
-        addToCart(prod.id);
+        if (window.innerWidth <= 900) {
+          mobAddToCart(prod.id);
+        } else {
+          addToCart(prod.id);
+        }
         cerrarScanner();
         if (window.innerWidth <= 900) switchPosTab('carrito');
       }, 700);
