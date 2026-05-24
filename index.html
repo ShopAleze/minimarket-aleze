@@ -1464,6 +1464,37 @@
   </div>
 </div>
 
+<!-- Modal Historial Cliente Fiado -->
+<div class="modal-overlay" id="modal-historial-cliente">
+  <div class="modal" style="max-width:680px">
+    <div class="modal-header">
+      <h3 id="hcli-titulo">📋 Historial completo</h3>
+      <button class="modal-close" onclick="cerrarModal('modal-historial-cliente')">✕</button>
+    </div>
+    <!-- Resumen -->
+    <div id="hcli-resumen" style="background:var(--primary-light);border-radius:8px;padding:.65rem 1rem;margin-bottom:1rem;display:flex;gap:1.5rem;flex-wrap:wrap;font-size:.82rem"></div>
+    <!-- Filtros -->
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;margin-bottom:.75rem">
+      <select class="form-control" id="hcli-filtro-tipo" style="width:160px;font-size:.82rem" onchange="renderHistorialCliente()">
+        <option value="todo">Todo</option>
+        <option value="pendientes">Solo pendientes</option>
+        <option value="pagados">Solo pagados</option>
+        <option value="pagos">Pagos realizados</option>
+      </select>
+      <input type="date" class="form-control" id="hcli-desde" style="width:140px;font-size:.82rem" onchange="renderHistorialCliente()" />
+      <input type="date" class="form-control" id="hcli-hasta" style="width:140px;font-size:.82rem" onchange="renderHistorialCliente()" />
+      <button class="btn btn-outline btn-sm" onclick="limpiarFiltrosHistorial()">✕ Limpiar</button>
+    </div>
+    <!-- Contenido -->
+    <div id="hcli-contenido" style="max-height:380px;overflow-y:auto"></div>
+    <!-- Pie -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:1rem;padding-top:.75rem;border-top:1px solid var(--gray-200)">
+      <span id="hcli-resumen-filtro" style="font-size:.78rem;color:var(--gray-500)"></span>
+      <button class="btn btn-accent btn-sm" onclick="compartirHistorialWhatsapp()">💬 Compartir por WhatsApp</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal Pago Fiado -->
 <div class="modal-overlay" id="modal-pago-fiado">
   <div class="modal">
@@ -2641,6 +2672,9 @@ function renderFiados() {
         </div>
       </div>
       <div id="${detalleId}" style="display:none;margin-top:.75rem">${detalle}</div>
+      <div style="margin-top:.5rem;padding-top:.5rem;border-top:1px solid var(--warning);text-align:right">
+        <button class="btn btn-outline btn-sm" onclick="abrirHistorialCliente(${cid},event)">📋 Ver historial completo</button>
+      </div>
     </div>`;
   }).join('');
 }
@@ -2710,6 +2744,148 @@ function compartirFiadoWhatsapp() {
   const pendiente = f.total - f.pagado;
   const itemsPend = f.items.map(i => `• ${i.nombre} x${i.cant} = ${sol(i.precio*i.cant)}`).join('\n');
   const msg = `Hola ${nombre}, le recordamos su deuda en *Minimarket Aleze*:\n\n${itemsPend}\n\n*Total pendiente: ${sol(pendiente)}*\n\nGracias 🙏`;
+  const url = tel ? `https://wa.me/51${tel}?text=${encodeURIComponent(msg)}` : `https://wa.me/?text=${encodeURIComponent(msg)}`;
+  window.open(url, '_blank');
+}
+
+let historialClienteId = null;
+
+function abrirHistorialCliente(cid, e) {
+  if (e) e.stopPropagation();
+  historialClienteId = cid;
+  const cli = DB.clientes.find(c => c.id === cid);
+  const nombre = cli ? (cli.alias || cli.nombre) : 'Anónimo';
+  const fiados = DB.fiados.filter(f => f.clienteId === cid);
+  const totalCli = fiados.reduce((s, f) => s + f.total, 0);
+  const pagadoCli = fiados.reduce((s, f) => s + f.pagado, 0);
+  const pendienteCli = totalCli - pagadoCli;
+  document.getElementById('hcli-titulo').textContent = '📋 Historial — ' + nombre;
+  document.getElementById('hcli-resumen').innerHTML = `
+    <span>🛒 <strong>${fiados.length}</strong> venta(s)</span>
+    <span>💰 Total acumulado: <strong>${sol(totalCli)}</strong></span>
+    <span style="color:var(--accent)">✅ Pagado: <strong>${sol(pagadoCli)}</strong></span>
+    <span style="color:var(--danger)">⏳ Pendiente: <strong>${sol(pendienteCli)}</strong></span>`;
+  document.getElementById('hcli-filtro-tipo').value = 'todo';
+  document.getElementById('hcli-desde').value = '';
+  document.getElementById('hcli-hasta').value = '';
+  renderHistorialCliente();
+  abrirModal('modal-historial-cliente');
+}
+
+function renderHistorialCliente() {
+  const cid = historialClienteId;
+  const tipo = document.getElementById('hcli-filtro-tipo').value;
+  const desde = document.getElementById('hcli-desde').value;
+  const hasta = document.getElementById('hcli-hasta').value;
+  let fiados = DB.fiados.filter(f => f.clienteId === cid);
+
+  // Filtro por rango de fechas
+  if (desde) fiados = fiados.filter(f => f.fecha >= desde);
+  if (hasta) fiados = fiados.filter(f => f.fecha <= hasta);
+
+  // Filtro por tipo
+  if (tipo === 'pendientes') fiados = fiados.filter(f => (f.total - f.pagado) > 0);
+  else if (tipo === 'pagados') fiados = fiados.filter(f => (f.total - f.pagado) <= 0);
+
+  const contenido = document.getElementById('hcli-contenido');
+
+  if (tipo === 'pagos') {
+    // Mostrar solo los registros de pagos realizados
+    let pagos = [];
+    DB.fiados.filter(f => f.clienteId === cid).forEach(f => {
+      (f.pagos || []).forEach(p => {
+        if ((!desde || p.fecha >= desde) && (!hasta || p.fecha <= hasta)) {
+          pagos.push({ ...p, fiadoId: f.id, items: f.items });
+        }
+      });
+    });
+    pagos.sort((a, b) => (a.fecha + a.hora) > (b.fecha + b.hora) ? -1 : 1);
+    const totalPagos = pagos.reduce((s, p) => s + p.monto, 0);
+    document.getElementById('hcli-resumen-filtro').textContent = `${pagos.length} pago(s) encontrado(s) · Total: ${sol(totalPagos)}`;
+    contenido.innerHTML = pagos.length === 0
+      ? '<p style="color:var(--gray-400);text-align:center;padding:1rem">Sin pagos en este período</p>'
+      : pagos.map(p => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:.5rem .75rem;background:var(--accent-light);border-left:3px solid var(--accent);border-radius:0 6px 6px 0;margin-bottom:.4rem">
+          <div>
+            <div style="font-size:.82rem;font-weight:600;color:var(--accent-dark)">💳 Abono registrado</div>
+            <div style="font-size:.72rem;color:var(--gray-500)">${p.fecha} ${p.hora} — por <em>${p.cajero}</em></div>
+            <div style="font-size:.72rem;color:var(--gray-500)">${p.items.map(i=>i.nombre).join(', ')}</div>
+          </div>
+          <strong style="color:var(--accent);font-size:.95rem">+${sol(p.monto)}</strong>
+        </div>`).join('');
+    return;
+  }
+
+  const totalPend = fiados.reduce((s, f) => s + Math.max(0, f.total - f.pagado), 0);
+  document.getElementById('hcli-resumen-filtro').textContent = `${fiados.length} venta(s) encontrada(s) · Pendiente: ${sol(totalPend)}`;
+  contenido.innerHTML = fiados.length === 0
+    ? '<p style="color:var(--gray-400);text-align:center;padding:1rem">Sin registros para los filtros seleccionados</p>'
+    : fiados.map(f => {
+        const pend = f.total - f.pagado;
+        const pagosF = (f.pagos || []);
+        return `<div style="border-left:3px solid ${pend>0?'var(--warning)':'var(--accent)'};padding:.6rem .75rem;margin-bottom:.6rem;background:white;border-radius:0 6px 6px 0;box-shadow:var(--shadow)">
+          <div style="display:flex;justify-content:space-between;margin-bottom:.3rem">
+            <span style="font-size:.75rem;color:var(--gray-500)">📅 ${formatDate(f.fecha)}</span>
+            <span style="font-weight:700;font-size:.85rem;color:${pend>0?'var(--danger)':'var(--accent)'}">
+              ${pend > 0 ? sol(pend)+' pendiente' : '✅ Saldado'}
+            </span>
+          </div>
+          <div style="font-size:.8rem;margin-bottom:.3rem">${f.items.map(i=>`${i.nombre} x${i.cant} = ${sol(i.precio*i.cant)}`).join(' · ')}</div>
+          <div style="font-size:.72rem;color:var(--gray-500);margin-bottom:.3rem">Total: ${sol(f.total)} | Pagado: ${sol(f.pagado)}</div>
+          ${pagosF.length > 0 ? `<div style="font-size:.72rem;color:var(--gray-600);border-top:1px dashed var(--gray-200);padding-top:.3rem;margin-top:.3rem">
+            ${pagosF.map(p=>`<span style="margin-right:.75rem">💳 ${p.fecha} ${p.hora} <em>${p.cajero}</em>: +${sol(p.monto)}</span>`).join('')}
+          </div>` : ''}
+          ${pend > 0 ? `<button class="btn btn-accent btn-xs" style="margin-top:.4rem" onclick="cerrarModal('modal-historial-cliente');abrirPagoFiado(${f.id})">💰 Registrar pago</button>` : ''}
+        </div>`;
+      }).join('');
+}
+
+function limpiarFiltrosHistorial() {
+  document.getElementById('hcli-filtro-tipo').value = 'todo';
+  document.getElementById('hcli-desde').value = '';
+  document.getElementById('hcli-hasta').value = '';
+  renderHistorialCliente();
+}
+
+function compartirHistorialWhatsapp() {
+  const cid = historialClienteId;
+  const cli = DB.clientes.find(c => c.id === cid);
+  const nombre = cli ? (cli.alias || cli.nombre) : 'Cliente';
+  const tel = cli && cli.tel ? cli.tel.replace(/\s/g,'') : '';
+  const tipo = document.getElementById('hcli-filtro-tipo').value;
+  const desde = document.getElementById('hcli-desde').value;
+  const hasta = document.getElementById('hcli-hasta').value;
+  let fiados = DB.fiados.filter(f => f.clienteId === cid);
+  if (desde) fiados = fiados.filter(f => f.fecha >= desde);
+  if (hasta) fiados = fiados.filter(f => f.fecha <= hasta);
+
+  let msg = `Hola ${nombre}, aquí su resumen en *Minimarket Aleze*:\n`;
+  if (desde || hasta) msg += `📅 Período: ${desde ? formatDate(desde) : 'inicio'} al ${hasta ? formatDate(hasta) : 'hoy'}\n`;
+  msg += '\n';
+
+  if (tipo === 'pagos') {
+    let pagos = [];
+    DB.fiados.filter(f => f.clienteId === cid).forEach(f => {
+      (f.pagos || []).forEach(p => {
+        if ((!desde || p.fecha >= desde) && (!hasta || p.fecha <= hasta)) pagos.push(p);
+      });
+    });
+    const total = pagos.reduce((s, p) => s + p.monto, 0);
+    msg += `*Pagos realizados:*\n`;
+    pagos.forEach(p => { msg += `• ${p.fecha} ${p.hora} — ${sol(p.monto)} (${p.cajero})\n`; });
+    msg += `\n*Total abonado: ${sol(total)}*\n`;
+  } else {
+    if (tipo === 'pendientes') fiados = fiados.filter(f => (f.total - f.pagado) > 0);
+    else if (tipo === 'pagados') fiados = fiados.filter(f => (f.total - f.pagado) <= 0);
+    const totalPend = fiados.reduce((s, f) => s + Math.max(0, f.total - f.pagado), 0);
+    fiados.forEach(f => {
+      const pend = f.total - f.pagado;
+      msg += `📌 ${formatDate(f.fecha)}: ${f.items.map(i=>`${i.nombre} x${i.cant}`).join(', ')} → ${sol(f.total)}`;
+      msg += pend > 0 ? ` _(pendiente: ${sol(pend)})_\n` : ` ✅\n`;
+    });
+    if (tipo !== 'pagados') msg += `\n*Total pendiente: ${sol(totalPend)}*\n`;
+  }
+  msg += '\nGracias 🙏';
   const url = tel ? `https://wa.me/51${tel}?text=${encodeURIComponent(msg)}` : `https://wa.me/?text=${encodeURIComponent(msg)}`;
   window.open(url, '_blank');
 }
