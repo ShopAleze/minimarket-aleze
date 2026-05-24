@@ -2096,10 +2096,13 @@ function exportInventario() { alert('Función de exportación: En la versión co
 function abrirModalProducto() {
   editingProductId = null;
   document.getElementById('modal-prod-titulo').textContent = 'Nuevo Producto';
-  ['prod-nombre','prod-costo','prod-precio','prod-stock','prod-venc','prod-codigo','prod-precio-sugerido','prod-margen-cat-label'].forEach(id => {
+  // Solo inputs/selects — NO incluir divs como prod-margen-cat-label
+  ['prod-nombre','prod-costo','prod-precio','prod-stock','prod-venc','prod-codigo','prod-precio-sugerido'].forEach(id => {
     const el = document.getElementById(id); if(el) el.value = '';
   });
-  document.getElementById('prod-margen-cat-label').textContent = '';
+  // Limpiar el div de etiqueta de margen por separado
+  const lbl = document.getElementById('prod-margen-cat-label');
+  if (lbl) lbl.textContent = '';
   document.getElementById('prod-stock-min').value = '5';
   document.getElementById('prod-margen').value = '';
   document.getElementById('barcode-container').style.display = 'none';
@@ -2109,6 +2112,7 @@ function abrirModalProducto() {
 
 function editarProducto(id) {
   const p = DB.productos.find(x => x.id === id);
+  if (!p) { alert('Producto no encontrado'); return; }
   editingProductId = id;
   document.getElementById('modal-prod-titulo').textContent = 'Editar Producto';
   document.getElementById('prod-nombre').value = p.nombre;
@@ -2316,11 +2320,22 @@ function guardarCatRapida() {
 
 function verCodigoBarras(id) {
   const p = DB.productos.find(x => x.id === id);
+  if (!p) { alert('Producto no encontrado'); return; }
   editingProductId = id;
+  // Llenar campos del modal para que imprimirCodigoBarras funcione
+  document.getElementById('prod-nombre').value = p.nombre;
   document.getElementById('prod-codigo').value = p.codigo;
   document.getElementById('barcode-prod-nombre-label').textContent = p.nombre;
   document.getElementById('barcode-container').style.display = 'block';
-  JsBarcode('#barcode-preview', p.codigo, { width: 2, height: 55, fontSize: 12, displayValue: true });
+  // Limpiar campos no necesarios para no confundir al usuario
+  const lbl = document.getElementById('prod-margen-cat-label');
+  if (lbl) lbl.textContent = '';
+  try {
+    JsBarcode('#barcode-preview', p.codigo, { width: 2, height: 55, fontSize: 12, displayValue: true });
+  } catch(e) {
+    alert('Error mostrando código de barras: ' + e.message);
+    return;
+  }
   abrirModal('modal-producto');
 }
 
