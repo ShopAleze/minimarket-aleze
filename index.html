@@ -1445,22 +1445,22 @@
       <div class="form-group" style="display:none" id="grp-prov-placeholder"></div>
     </div>
     <div class="form-group">
-      <label>Código de barras</label>
+      <label>Código del producto (QR)</label>
       <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
         <input type="text" class="form-control" id="prod-codigo" placeholder="Escanea o escribe el código" oninput="previsualizarCodigo()" style="flex:1;min-width:150px" />
         <button class="btn btn-primary btn-sm" onclick="abrirScannerInventario()" title="Escanear código ya impreso en el producto">📷 Escanear</button>
-        <button class="btn btn-outline btn-sm" onclick="generarCodigo()" title="Generar código nuevo para productos sin código">🔖 Generar</button>
-        <button class="btn btn-outline btn-sm" onclick="imprimirCodigoBarras()" title="Imprimir etiquetas para pegar">🖨️</button>
+        <button class="btn btn-outline btn-sm" onclick="generarCodigo()" title="Generar código QR nuevo para productos sin código">🔖 Generar</button>
+        <button class="btn btn-outline btn-sm" onclick="imprimirQrEstante()" title="Imprimir QR para pegar en el estante">🖨️</button>
       </div>
       <div style="font-size:0.72rem;color:var(--gray-500);margin-top:0.3rem;line-height:1.5">
-        📷 <strong>Escanear</strong> — lee el código ya impreso en el producto (EAN-13, EAN-8, QR, Code128)<br>
-        🔖 <strong>Generar</strong> — crea código nuevo para productos que no tienen<br>
-        🖨️ <strong>Imprimir</strong> — genera etiquetas para pegar
+        📷 <strong>Escanear</strong> — lee el QR o código ya impreso en el producto (EAN-13, EAN-8, QR, Code128)<br>
+        🔖 <strong>Generar</strong> — crea código QR nuevo para productos que no tienen<br>
+        🖨️ <strong>Imprimir</strong> — imprime el QR de estante (1 hoja grande, se pega donde están las unidades)
       </div>
       <div id="barcode-container" style="margin-top:.75rem;display:none;border:1px dashed var(--gray-300);border-radius:8px;padding:.75rem;text-align:center;background:white">
-        <div style="font-size:.72rem;color:var(--gray-500);margin-bottom:.4rem" id="barcode-prod-nombre-label"></div>
-        <svg id="barcode-preview"></svg>
-        <div style="font-size:.72rem;color:var(--gray-500);margin-top:.3rem">Para imprimir: recorta y pega en el producto</div>
+        <div style="font-size:.8rem;font-weight:700;color:var(--gray-700);margin-bottom:.5rem" id="barcode-prod-nombre-label"></div>
+        <div id="qr-preview" style="display:inline-block"></div>
+        <div style="font-size:.72rem;color:var(--gray-500);margin-top:.4rem">Escanea este QR desde el POS para agregar al carrito</div>
       </div>
     </div>
     <div style="display:flex;justify-content:flex-end;gap:0.5rem;margin-top:1rem">
@@ -2471,13 +2471,7 @@ function editarProducto(id) {
   if (p.codigo) {
     document.getElementById('barcode-container').style.display = 'block';
     document.getElementById('barcode-prod-nombre-label').textContent = p.nombre;
-    try {
-      if (typeof JsBarcode !== 'undefined') {
-        JsBarcode('#barcode-preview', p.codigo, { width: 2, height: 55, fontSize: 12, displayValue: true });
-      }
-    } catch(e) {
-      console.warn('Error al renderizar código de barras:', e.message);
-    }
+    _renderQrPreview(p.codigo);
   } else {
     document.getElementById('barcode-container').style.display = 'none';
   }
@@ -2545,7 +2539,7 @@ function previsualizarCodigo() {
   if (codigo.length >= 6) {
     document.getElementById('barcode-container').style.display = 'block';
     document.getElementById('barcode-prod-nombre-label').textContent = document.getElementById('prod-nombre').value || 'Producto';
-    try { JsBarcode('#barcode-preview', codigo, { width: 2, height: 55, fontSize: 12, displayValue: true }); } catch(e) {}
+    _renderQrPreview(codigo);
   } else {
     document.getElementById('barcode-container').style.display = 'none';
   }
@@ -2556,90 +2550,125 @@ function generarCodigo() {
   document.getElementById('prod-codigo').value = codigo;
   document.getElementById('barcode-container').style.display = 'block';
   document.getElementById('barcode-prod-nombre-label').textContent = document.getElementById('prod-nombre').value || 'Producto';
-  try {
-    if (typeof JsBarcode !== 'undefined') {
-      JsBarcode('#barcode-preview', codigo, { width: 2, height: 55, fontSize: 12, displayValue: true });
-    }
-  } catch(e) { console.warn('JsBarcode error:', e.message); }
+  _renderQrPreview(codigo);
 }
 
-function imprimirCodigoBarras() {
-  const codigo = document.getElementById('prod-codigo').value.trim();
-  const nombre = document.getElementById('prod-nombre').value || 'Producto';
-  if (!codigo) { alert('Primero ingresa o escanea un código de barras'); return; }
-
-  // Generar 12 SVGs en el documento actual con JsBarcode
-  let svgsHTML = '';
-  const nombreCorto = nombre.length > 22 ? nombre.substring(0, 22) + '...' : nombre;
-  try {
-    for (let i = 0; i < 12; i++) {
-      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-      if (typeof JsBarcode === 'undefined') throw new Error('La librería de códigos de barras no está disponible. Recarga la página.');
-    JsBarcode(svg, codigo, { width: 1.5, height: 38, fontSize: 10, displayValue: true, margin: 4 });
-      const svgStr = new XMLSerializer().serializeToString(svg);
-      svgsHTML += [
-        '<div class="etiqueta">',
-          '<div class="nombre">', nombreCorto, '</div>',
-          svgStr,
-        '</div>'
-      ].join('');
-    }
-  } catch (e) {
-    alert('Error generando código de barras: ' + e.message);
+// ── Helper: renderiza el QR en #qr-preview (limpia el div antes de re-renderizar)
+function _renderQrPreview(codigo) {
+  const el = document.getElementById('qr-preview');
+  if (!el) return;
+  el.innerHTML = ''; // limpiar QR anterior
+  if (typeof QRCode === 'undefined') {
+    el.textContent = codigo;
     return;
   }
+  new QRCode(el, {
+    text: codigo,
+    width: 140,
+    height: 140,
+    colorDark: '#1F2937',
+    colorLight: '#FFFFFF',
+    correctLevel: QRCode.CorrectLevel.M
+  });
+}
 
-  // Construir HTML completo usando array para evitar problemas de comillas
-  const partes = [
-    '<!DOCTYPE html><html><head><meta charset="UTF-8">',
-    '<title>Etiquetas - ', nombre, '</title>',
-    '<style>',
-      '*{box-sizing:border-box}',
-      'body{margin:0;padding:12px;font-family:Arial,sans-serif;background:#f9f9f9}',
-      '.header{background:#7C3AED;color:white;padding:10px 14px;border-radius:8px;margin-bottom:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}',
-      '.header h2{margin:0;font-size:14px;flex:1}',
-      '.header span{font-size:12px;opacity:.85}',
-      '.btn{padding:6px 14px;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:bold}',
-      '.btn-print{background:white;color:#7C3AED}',
-      '.btn-close{background:rgba(255,255,255,.2);color:white}',
-      '.info{font-size:11px;color:#666;margin-bottom:10px;padding:6px 10px;background:#fff;border-radius:6px;border:1px solid #e5e7eb}',
-      '.etiquetas{display:flex;flex-wrap:wrap;gap:8px}',
-      '.etiqueta{border:1px dashed #aaa;padding:6px 8px;text-align:center;border-radius:6px;background:white;page-break-inside:avoid}',
-      '.nombre{font-size:9px;font-weight:bold;max-width:120px;word-break:break-word;margin-bottom:3px;color:#333;line-height:1.2}',
-      '.etiqueta svg{display:block;max-width:130px}',
-      '@media print{',
-        '.header .btn,.info{display:none}',
-        'body{background:white;padding:4px}',
-        '.etiqueta{border:1px dashed #999}',
-      '}',
-    '</style></head><body>',
-    '<div class="header">',
-      '<h2>🏷️ Etiquetas: ', nombre, '</h2>',
-      '<span>Código: ', codigo, '</span>',
-      '<button class="btn btn-print" onclick="window.print()">🖨️ Imprimir</button>',
-      '<button class="btn btn-close" onclick="window.close()">✕ Cerrar</button>',
-    '</div>',
-    '<div class="info">✂️ Recorta cada etiqueta y pégala en el producto. Total: 12 etiquetas generadas.</div>',
-    '<div class="etiquetas">', svgsHTML, '</div>',
-    '</body></html>'
-  ];
+// ── Imprimir QR de estante: 1 hoja grande por producto, para pegar donde están las unidades
+function imprimirQrEstante() {
+  const codigo = document.getElementById('prod-codigo').value.trim();
+  const nombre = document.getElementById('prod-nombre').value.trim() || 'Producto';
+  const precio = parseFloat(document.getElementById('prod-precio').value) || 0;
+  const cat    = document.getElementById('prod-cat');
+  const catNombre = cat && cat.options[cat.selectedIndex] ? cat.options[cat.selectedIndex].text : '';
+  if (!codigo) { alert('Primero ingresa o genera un código para el producto'); return; }
 
-  const htmlFinal = partes.join('');
+  // Generar el QR como data-URL usando QRCode.js en un canvas oculto
+  const tmpDiv = document.createElement('div');
+  tmpDiv.style.position = 'absolute';
+  tmpDiv.style.left = '-9999px';
+  document.body.appendChild(tmpDiv);
 
-  // Usar Blob para evitar cualquier problema con window.open + document.write
-  const blob = new Blob([htmlFinal], { type: 'text/html;charset=utf-8' });
-  const url  = URL.createObjectURL(blob);
-  const win  = window.open(url, '_blank');
-  if (!win) {
-    // Fallback si popups bloqueados: descargar como archivo
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'etiquetas-' + codigo + '.html';
-    a.click();
-    alert('Popups bloqueados. Se descargó el archivo de etiquetas — ábrelo en el navegador e imprime.');
+  try {
+    if (typeof QRCode === 'undefined') throw new Error('Librería QR no disponible');
+    const qr = new QRCode(tmpDiv, {
+      text: codigo,
+      width: 300,
+      height: 300,
+      colorDark: '#1F2937',
+      colorLight: '#FFFFFF',
+      correctLevel: QRCode.CorrectLevel.M
+    });
+
+    // Esperar a que el canvas se genere (QRCode.js es síncrono pero necesita el DOM)
+    setTimeout(() => {
+      const canvas = tmpDiv.querySelector('canvas');
+      const imgSrc = canvas ? canvas.toDataURL('image/png') : '';
+      document.body.removeChild(tmpDiv);
+
+      const precioStr = 'S/ ' + precio.toFixed(2);
+      const html = [
+        '<!DOCTYPE html><html><head><meta charset="UTF-8">',
+        '<title>QR Estante — ', nombre, '</title>',
+        '<style>',
+          '*{box-sizing:border-box;margin:0;padding:0}',
+          'body{font-family:Arial,sans-serif;background:#f3f4f6;padding:12px}',
+          /* Barra de acciones — solo pantalla */
+          '.acciones{background:#7C3AED;color:#fff;padding:8px 12px;border-radius:8px;margin-bottom:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}',
+          '.acciones span{flex:1;font-size:12px;font-weight:700}',
+          '.acciones button{padding:5px 12px;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer}',
+          '.btn-p{background:#fff;color:#7C3AED}',
+          '.btn-c{background:rgba(255,255,255,.2);color:#fff}',
+          /* Grid de tarjetas */
+          '.grid{display:flex;flex-wrap:wrap;gap:8px}',
+          /* Tarjeta: 6×6 cm aprox a 96dpi ≈ 226px, pero usamos cm en print */
+          '.tarjeta{width:6cm;background:#fff;border:1.5px solid #374151;border-radius:6px;padding:5px;text-align:center;page-break-inside:avoid}',
+          '.t-nombre{font-size:7.5pt;font-weight:800;color:#111;line-height:1.2;margin-bottom:3px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}',
+          '.t-qr img{width:100%;height:auto;display:block}',
+          '.t-precio{font-size:13pt;font-weight:900;color:#111;margin:3px 0 1px}',
+          '.t-cod{font-family:monospace;font-size:5.5pt;color:#9CA3AF}',
+          '@media print{',
+            'body{background:#fff;padding:6mm}',
+            '.acciones{display:none}',
+            '.grid{gap:5mm}',
+            '.tarjeta{border:1px solid #000;border-radius:3px;padding:3mm;width:55mm}',
+            '.t-precio{color:#000}',
+          '}',
+        '</style></head><body>',
+        '<div class="acciones">',
+          '<span>🏷️ QR Estante — ', nombre, ' &nbsp;·&nbsp; ', precioStr, '</span>',
+          '<button class="btn-p" onclick="window.print()">🖨️ Imprimir</button>',
+          '<button class="btn-c" onclick="window.close()">✕ Cerrar</button>',
+        '</div>',
+        '<div class="grid">',
+        /* Repetir 4 tarjetas — caben cómodamente en 1 hoja A4 en 2 columnas */
+        ...[1,2,3,4].map(() => [
+          '<div class="tarjeta">',
+            '<div class="t-nombre">', nombre, '</div>',
+            '<div class="t-qr">',
+              imgSrc ? '<img src="' + imgSrc + '" alt="QR">' : '<p style="color:red;font-size:8pt">Error QR</p>',
+            '</div>',
+            '<div class="t-precio">', precioStr, '</div>',
+            '<div class="t-cod">', codigo, '</div>',
+          '</div>'
+        ].join('')),
+        '</div>',
+        '</body></html>'
+      ].join('');
+
+      const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+      const url  = URL.createObjectURL(blob);
+      const win  = window.open(url, '_blank');
+      if (!win) {
+        const a = document.createElement('a');
+        a.href = url; a.download = 'qr-estante-' + nombre.replace(/\s+/g,'-') + '.html'; a.click();
+        alert('Popups bloqueados — se descargó el archivo. Ábrelo e imprime.');
+      }
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    }, 100);
+
+  } catch(e) {
+    if (document.body.contains(tmpDiv)) document.body.removeChild(tmpDiv);
+    alert('Error generando QR: ' + e.message);
   }
-  // Limpiar URL del blob después de un momento
-  setTimeout(() => URL.revokeObjectURL(url), 60000);
 }
 
 // Categoría rápida desde modal producto
@@ -2672,23 +2701,15 @@ function verCodigoBarras(id) {
   const p = DB.productos.find(x => x.id === id);
   if (!p) { alert('Producto no encontrado'); return; }
   editingProductId = id;
-  // Llenar campos del modal para que imprimirCodigoBarras funcione
+  // Llenar campos del modal para que imprimirQrEstante funcione
   document.getElementById('prod-nombre').value = p.nombre;
   document.getElementById('prod-codigo').value = p.codigo;
+  document.getElementById('prod-precio').value = p.precio;
   document.getElementById('barcode-prod-nombre-label').textContent = p.nombre;
   document.getElementById('barcode-container').style.display = 'block';
-  // Limpiar campos no necesarios para no confundir al usuario
   const lbl = document.getElementById('prod-margen-cat-label');
   if (lbl) lbl.textContent = '';
-  try {
-    if (typeof JsBarcode !== 'undefined') {
-      JsBarcode('#barcode-preview', p.codigo, { width: 2, height: 55, fontSize: 12, displayValue: true });
-    } else {
-      console.warn('JsBarcode no disponible, mostrando código como texto');
-    }
-  } catch(e) {
-    console.warn('Error al renderizar código de barras:', e.message);
-  }
+  _renderQrPreview(p.codigo);
   abrirModal('modal-producto');
 }
 
