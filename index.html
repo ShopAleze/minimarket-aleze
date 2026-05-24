@@ -1472,8 +1472,13 @@
       <button class="modal-close" onclick="cerrarModal('modal-pago-fiado')">✕</button>
     </div>
     <div id="fiado-detalle"></div>
+    <div id="fiado-historial-wrap" style="margin-bottom:1rem;display:none">
+      <div style="font-size:0.8rem;font-weight:600;color:var(--gray-600);margin-bottom:0.4rem">📋 Historial de pagos</div>
+      <div id="fiado-historial-list" style="font-size:0.78rem;max-height:120px;overflow-y:auto"></div>
+    </div>
     <div class="form-group"><label>Monto a pagar (S/)</label><input type="number" class="form-control" id="fiado-pago-monto" step="0.01" /></div>
     <div style="display:flex;justify-content:flex-end;gap:0.5rem;margin-top:1rem">
+      <button class="btn btn-outline" onclick="compartirFiadoWhatsapp()">💬 WhatsApp</button>
       <button class="btn btn-outline" onclick="cerrarModal('modal-pago-fiado')">Cancelar</button>
       <button class="btn btn-accent" onclick="confirmarPagoFiado()">Registrar pago</button>
     </div>
@@ -2574,38 +2579,110 @@ function eliminarCliente(id) { if (!confirm('¿Eliminar cliente?')) return; DB.c
 
 // ===================== FIADOS =====================
 function renderFiados() {
-  const pendientes = DB.fiados.filter(f => (f.total - f.pagado) > 0);
-  const totalDeuda = pendientes.reduce((s, f) => s + (f.total - f.pagado), 0);
+  const porCliente = {};
+  DB.fiados.forEach(f => {
+    if (!porCliente[f.clienteId]) porCliente[f.clienteId] = [];
+    porCliente[f.clienteId].push(f);
+  });
+  const clienteIds = Object.keys(porCliente).map(Number);
+  const totalDeuda = DB.fiados.reduce((s, f) => s + Math.max(0, f.total - f.pagado), 0);
+  const clientesConDeuda = clienteIds.filter(cid => porCliente[cid].some(f => (f.total - f.pagado) > 0)).length;
+  const mayor = clienteIds.reduce((m, cid) => {
+    const d = porCliente[cid].reduce((s, f) => s + Math.max(0, f.total - f.pagado), 0);
+    return Math.max(m, d);
+  }, 0);
   document.getElementById('fiados-total').textContent = sol(totalDeuda);
-  document.getElementById('fiados-clientes').textContent = pendientes.length;
-  const mayor = pendientes.reduce((m, f) => Math.max(m, f.total - f.pagado), 0);
+  document.getElementById('fiados-clientes').textContent = clientesConDeuda;
   document.getElementById('fiados-mayor').textContent = sol(mayor);
 
-  document.getElementById('fiados-list').innerHTML = DB.fiados.map(f => {
-    const pendiente = f.total - f.pagado;
-    return `<div class="fiado-card">
-      <div class="flex-between">
+  if (clienteIds.length === 0) {
+    document.getElementById('fiados-list').innerHTML = '<p style="color:var(--gray-500)">Sin fiados registrados</p>';
+    return;
+  }
+
+  document.getElementById('fiados-list').innerHTML = clienteIds.map(cid => {
+    const cli = DB.clientes.find(c => c.id === cid);
+    const nombre = cli ? (cli.alias || cli.nombre) : 'Anónimo';
+    const tel = cli ? cli.tel : '';
+    const fiados = porCliente[cid];
+    const totalCli = fiados.reduce((s, f) => s + f.total, 0);
+    const pagadoCli = fiados.reduce((s, f) => s + f.pagado, 0);
+    const pendienteCli = totalCli - pagadoCli;
+    const detalleId = 'fiado-detalle-' + cid;
+    const detalle = fiados.map(f => {
+      const pend = f.total - f.pagado;
+      return `<div style="border-left:3px solid var(--warning);padding:.5rem .75rem;margin-bottom:.5rem;background:white;border-radius:0 6px 6px 0">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.3rem">
+          <span style="font-size:.75rem;color:var(--gray-500)">${formatDate(f.fecha)}</span>
+          <span style="font-size:.82rem;font-weight:700;color:${pend>0?'var(--danger)':'var(--accent)'}">
+            ${pend > 0 ? sol(pend)+' pendiente' : '✅ Pagado'}
+          </span>
+        </div>
+        <div style="font-size:.8rem;margin-bottom:.3rem">
+          ${f.items.map(i => `${i.nombre} x${i.cant} = ${sol(i.precio*i.cant)}`).join(' · ')}
+        </div>
+        <div style="font-size:.72rem;color:var(--gray-500)">Total: ${sol(f.total)} | Pagado: ${sol(f.pagado)}</div>
+        ${pend > 0 ? `<button class="btn btn-accent btn-xs" style="margin-top:.4rem" onclick="abrirPagoFiado(${f.id})">💰 Registrar pago</button>` : ''}
+      </div>`;
+    }).join('');
+    return `<div class="fiado-card" style="margin-bottom:.75rem">
+      <div class="flex-between" style="cursor:pointer" onclick="toggleFiadoDetalle('${detalleId}')">
         <div>
-          <strong>${getClienteNombre(f.clienteId)}</strong>
-          <span style="font-size:0.75rem;color:var(--gray-500);margin-left:0.5rem">${formatDate(f.fecha)}</span>
+          <strong style="font-size:1rem">${nombre}</strong>
+          ${tel ? `<span style="font-size:.72rem;color:var(--gray-400);margin-left:.5rem">📞 ${tel}</span>` : ''}
+          <span style="font-size:.75rem;color:var(--gray-500);margin-left:.5rem">${fiados.length} venta(s)</span>
         </div>
-        <div style="text-align:right">
-          <div style="font-weight:700;color:var(--danger)">${sol(pendiente)} pendiente</div>
-          <div style="font-size:0.75rem;color:var(--gray-500)">Total: ${sol(f.total)} | Pagado: ${sol(f.pagado)}</div>
+        <div style="text-align:right;display:flex;align-items:center;gap:.75rem">
+          <div>
+            <div style="font-weight:700;color:var(--danger);font-size:1rem">${sol(pendienteCli)} pendiente</div>
+            <div style="font-size:.72rem;color:var(--gray-500)">Total: ${sol(totalCli)} | Pagado: ${sol(pagadoCli)}</div>
+          </div>
+          <span id="arr-${detalleId}" style="font-size:1.1rem;color:var(--gray-400)">▼</span>
         </div>
       </div>
-      <div style="margin-top:0.5rem;font-size:0.8rem">
-        ${f.items.map(i => `<span style="margin-right:0.5rem">${i.nombre} x${i.cant} = ${sol(i.precio*i.cant)}</span>`).join('')}
-      </div>
-      ${pendiente > 0 ? `<div style="margin-top:0.5rem"><button class="btn btn-accent btn-sm" onclick="abrirPagoFiado(${f.id})">💰 Registrar pago</button></div>` : '<div class="badge badge-green" style="margin-top:0.5rem">✅ Pagado</div>'}
+      <div id="${detalleId}" style="display:none;margin-top:.75rem">${detalle}</div>
     </div>`;
-  }).join('') || '<p style="color:var(--gray-500)">Sin fiados registrados</p>';
+  }).join('');
+}
+
+function toggleFiadoDetalle(id) {
+  const el = document.getElementById(id);
+  const arr = document.getElementById('arr-' + id);
+  if (!el) return;
+  const open = el.style.display !== 'none';
+  el.style.display = open ? 'none' : 'block';
+  if (arr) arr.textContent = open ? '▼' : '▲';
 }
 
 function abrirPagoFiado(id) {
   editingFiadoId = id;
   const f = DB.fiados.find(x => x.id === id);
-  document.getElementById('fiado-detalle').innerHTML = `<div style="background:var(--gray-50);border-radius:8px;padding:0.75rem;margin-bottom:1rem"><strong>${getClienteNombre(f.clienteId)}</strong><div style="font-size:0.85rem;margin-top:0.25rem">Deuda total: ${sol(f.total)} | Pagado: ${sol(f.pagado)} | <strong style="color:var(--danger)">Pendiente: ${sol(f.total-f.pagado)}</strong></div></div>`;
+  const cli = DB.clientes.find(c => c.id === f.clienteId);
+  const pendiente = f.total - f.pagado;
+  document.getElementById('fiado-detalle').innerHTML = `
+    <div style="background:var(--gray-50);border-radius:8px;padding:0.75rem;margin-bottom:1rem">
+      <strong>${getClienteNombre(f.clienteId)}</strong>
+      ${cli && cli.tel ? `<span style="font-size:.78rem;color:var(--gray-500);margin-left:.5rem">📞 ${cli.tel}</span>` : ''}
+      <div style="font-size:0.82rem;margin-top:.4rem">
+        ${f.items.map(i => `${i.nombre} x${i.cant} = ${sol(i.precio*i.cant)}`).join(' · ')}
+      </div>
+      <div style="font-size:0.85rem;margin-top:.3rem">
+        Total: ${sol(f.total)} | Pagado: ${sol(f.pagado)} | <strong style="color:var(--danger)">Pendiente: ${sol(pendiente)}</strong>
+      </div>
+    </div>`;
+  const hist = f.pagos || [];
+  const wrap = document.getElementById('fiado-historial-wrap');
+  const list = document.getElementById('fiado-historial-list');
+  if (hist.length > 0) {
+    wrap.style.display = 'block';
+    list.innerHTML = hist.map(p => `
+      <div style="display:flex;justify-content:space-between;padding:.3rem .5rem;background:var(--gray-50);border-radius:5px;margin-bottom:.25rem">
+        <span style="font-size:.78rem">${p.fecha} ${p.hora} — <em>${p.cajero}</em></span>
+        <strong style="color:var(--accent);font-size:.78rem">+${sol(p.monto)}</strong>
+      </div>`).join('');
+  } else {
+    wrap.style.display = 'none';
+  }
   document.getElementById('fiado-pago-monto').value = '';
   abrirModal('modal-pago-fiado');
 }
@@ -2615,11 +2692,26 @@ function confirmarPagoFiado() {
   const monto = parseFloat(document.getElementById('fiado-pago-monto').value) || 0;
   const pendiente = f.total - f.pagado;
   if (monto <= 0 || monto > pendiente) { alert('Monto inválido. Máximo: ' + sol(pendiente)); return; }
+  if (!f.pagos) f.pagos = [];
+  f.pagos.push({ fecha: today(), hora: nowTime(), cajero: currentUser, monto });
   f.pagado += monto;
   const cli = DB.clientes.find(c => c.id === f.clienteId);
   if (cli) cli.deuda = Math.max(0, cli.deuda - monto);
   if (DB.caja.abierta) { DB.caja.ingresos += monto; DB.movimientos.push({ tipo: 'ingreso', desc: 'Pago fiado: ' + getClienteNombre(f.clienteId), monto, hora: nowTime() }); }
   cerrarModal('modal-pago-fiado'); renderFiados(); updateAlertCount();
+}
+
+function compartirFiadoWhatsapp() {
+  const f = DB.fiados.find(x => x.id === editingFiadoId);
+  if (!f) return;
+  const cli = DB.clientes.find(c => c.id === f.clienteId);
+  const nombre = cli ? (cli.alias || cli.nombre) : 'Cliente';
+  const tel = cli && cli.tel ? cli.tel.replace(/\s/g,'') : '';
+  const pendiente = f.total - f.pagado;
+  const itemsPend = f.items.map(i => `• ${i.nombre} x${i.cant} = ${sol(i.precio*i.cant)}`).join('\n');
+  const msg = `Hola ${nombre}, le recordamos su deuda en *Minimarket Aleze*:\n\n${itemsPend}\n\n*Total pendiente: ${sol(pendiente)}*\n\nGracias 🙏`;
+  const url = tel ? `https://wa.me/51${tel}?text=${encodeURIComponent(msg)}` : `https://wa.me/?text=${encodeURIComponent(msg)}`;
+  window.open(url, '_blank');
 }
 
 // ===================== CAJA =====================
