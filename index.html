@@ -3826,18 +3826,36 @@ async function iniciarZXing() {
     return;
   }
 
+  // Verificar soporte de getUserMedia
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    setStatusScanner('❌ Tu navegador no soporta cámara — usa entrada manual', 'error');
+    return;
+  }
+
   try {
     zxingReader = new ZXing.BrowserMultiFormatReader();
 
-    // Listar cámaras disponibles
-    camarasDisponibles = await ZXing.BrowserMultiFormatReader.listVideoInputDevices();
-
-    if (camarasDisponibles.length === 0) {
-      setStatusScanner('❌ No se detectó cámara — usa entrada manual', 'error');
+    // Solicitar permiso explícito primero (requerido en Chrome Android para
+    // que enumerateDevices exponga labels y deviceIds)
+    let permStream = null;
+    try {
+      permStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+    } catch(permErr) {
+      setStatusScanner('❌ Permiso de cámara denegado — habilítalo en ajustes del navegador', 'error');
       return;
     }
+    // Detener stream de prueba
+    permStream.getTracks().forEach(t => t.stop());
 
-    // Mostrar selector si hay más de una cámara
+    // Enumerar dispositivos (ahora con permiso concedido, labels disponibles)
+    let devices = [];
+    try {
+      const allDevices = await navigator.mediaDevices.enumerateDevices();
+      devices = allDevices.filter(d => d.kind === 'videoinput');
+    } catch(e) { devices = []; }
+
+    camarasDisponibles = devices;
+
     if (camarasDisponibles.length > 1) {
       const sel = document.getElementById('scanner-cam-select');
       sel.innerHTML = camarasDisponibles.map((c, i) =>
@@ -3845,10 +3863,7 @@ async function iniciarZXing() {
       ).join('');
       // Preferir cámara trasera
       const traseraIdx = camarasDisponibles.findIndex(c =>
-        c.label.toLowerCase().includes('back') ||
-        c.label.toLowerCase().includes('rear') ||
-        c.label.toLowerCase().includes('trasera') ||
-        c.label.toLowerCase().includes('environment')
+        /back|rear|trasera|environment/i.test(c.label)
       );
       camaraActualIdx = traseraIdx >= 0 ? traseraIdx : camarasDisponibles.length - 1;
       sel.value = camaraActualIdx;
@@ -3862,29 +3877,38 @@ async function iniciarZXing() {
 
   } catch (err) {
     console.error('ZXing error:', err);
-    setStatusScanner('❌ Error al acceder a la cámara — permite el permiso e intenta de nuevo', 'error');
+    setStatusScanner('❌ Error al iniciar cámara: ' + (err.message || err), 'error');
   }
 }
 
 async function arrancarLectura() {
   if (!zxingReader || !scannerActivo) return;
-  const deviceId = camarasDisponibles[camaraActualIdx]?.deviceId;
   const videoEl = document.getElementById('scanner-video');
 
   try {
     setStatusScanner('📷 Apunta al código de barras del producto...', 'info');
 
-    await zxingReader.decodeFromVideoDevice(deviceId, videoEl, (result, err) => {
-      if (!scannerActivo) return;
-      if (result) {
-        const codigo = result.getText();
-        manejarCodigoDetectado(codigo);
-      }
-      // err es normal cuando no hay código en frame — no hacer nada
-    });
+    const deviceId = camarasDisponibles[camaraActualIdx]?.deviceId;
+
+    if (deviceId) {
+      // Usar deviceId específico si está disponible
+      await zxingReader.decodeFromVideoDevice(deviceId, videoEl, (result, err) => {
+        if (!scannerActivo) return;
+        if (result) manejarCodigoDetectado(result.getText());
+        // NotFoundException es normal (sin código en frame) — ignorar
+      });
+    } else {
+      // Fallback: constraints con facingMode environment (cámara trasera)
+      const constraints = { video: { facingMode: { ideal: 'environment' } }, audio: false };
+      await zxingReader.decodeFromConstraints(constraints, videoEl, (result, err) => {
+        if (!scannerActivo) return;
+        if (result) manejarCodigoDetectado(result.getText());
+      });
+    }
 
   } catch (err) {
     if (err && err.name !== 'NotFoundException') {
+      console.error('arrancarLectura error:', err);
       setStatusScanner('❌ ' + (err.message || 'Error de cámara'), 'error');
     }
   }
