@@ -778,6 +778,9 @@
     <input type="password" id="login-pass" class="form-control" placeholder="Contraseña" />
     <div id="login-error" style="color:var(--danger);font-size:0.8rem;margin-bottom:0.5rem;display:none">Contraseña incorrecta</div>
     <button class="btn-login" onclick="doLogin()">Ingresar</button>
+    <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid #e5e7eb">
+      <a href="#/tienda" onclick="initTienda();return false;" style="color:var(--primary);font-size:.85rem;font-weight:600;text-decoration:none">🛍️ Ver catálogo de la tienda →</a>
+    </div>
   </div>
 </div>
 
@@ -861,6 +864,12 @@
         </div>
 
         <div class="nav-section-label" style="margin-top:0.5rem">Sistema</div>
+        <div class="nav-item" onclick="navigate('historial-ventas')" title="Historial de todas las ventas">
+          <span class="icon">📜</span><span class="nav-label">Historial Ventas</span>
+        </div>
+        <div class="nav-item" onclick="navigate('pedidos-online')" title="Pedidos recibidos por la tienda online">
+          <span class="icon">🛍️</span><span class="nav-label">Pedidos Online</span>
+        </div>
         <div class="nav-item" onclick="navigate('configuracion')" title="Configuración del sistema">
           <span class="icon">⚙️</span><span class="nav-label">Configuración</span>
         </div>
@@ -1280,6 +1289,7 @@
             <div class="form-group"><label>Nombre</label><input type="text" class="form-control" id="cfg-nombre" value="Minimarket Aleze" /></div>
             <div class="form-group"><label>Dirección</label><input type="text" class="form-control" id="cfg-direccion" value="Jr. Tigrillo Mz. Ll4 Lt. 5 Asoc. Percin Deza SJL" /></div>
             <div class="form-group"><label>Teléfono</label><input type="text" class="form-control" id="cfg-telefono" placeholder="Ej: 999 888 777" /></div>
+            <div class="form-group"><label>WhatsApp Tienda Online 📱</label><input type="text" class="form-control" id="cfg-whatsapp-tienda" placeholder="Ej: 980037284" value="980037284" /></div>
             <div class="form-group"><label>RUC / DNI (opcional)</label><input type="text" class="form-control" id="cfg-ruc" /></div>
             <button class="btn btn-primary" onclick="guardarConfig()">Guardar</button>
           </div>
@@ -1402,6 +1412,68 @@
         <div class="card"><div class="card-title">Historial de capital</div>
           <div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Concepto</th><th>Monto</th><th>Acumulado</th></tr></thead><tbody id="cap-hist-tbody"></tbody></table></div>
         </div>
+      </div>
+
+      <!-- HISTORIAL DE VENTAS (solo admin) -->
+      <div id="page-historial-ventas" class="page">
+        <div class="flex-between" style="margin-bottom:1rem">
+          <div class="page-title" style="margin:0">📜 Historial de Ventas</div>
+          <button class="btn btn-outline btn-sm" onclick="exportHistorialVentas()">📥 Exportar CSV</button>
+        </div>
+        <div class="card" style="margin-bottom:1rem">
+          <div style="display:flex;gap:.75rem;flex-wrap:wrap;align-items:center">
+            <input type="date" class="form-control" id="hv-desde" style="width:150px" onchange="renderHistorialVentas()" />
+            <input type="date" class="form-control" id="hv-hasta" style="width:150px" onchange="renderHistorialVentas()" />
+            <select class="form-control" id="hv-estado" style="width:160px" onchange="renderHistorialVentas()">
+              <option value="">Todos los estados</option>
+              <option value="completado">Completado</option>
+              <option value="parcial">Parcial</option>
+              <option value="anulado">Anulado</option>
+            </select>
+            <select class="form-control" id="hv-origen" style="width:150px" onchange="renderHistorialVentas()">
+              <option value="">Todos los orígenes</option>
+              <option value="pos">POS (tienda)</option>
+              <option value="online">Online (tienda web)</option>
+            </select>
+            <input type="text" class="form-control" id="hv-buscar" placeholder="Buscar cajero, producto..." style="width:200px" oninput="renderHistorialVentas()" />
+            <button class="btn btn-outline btn-sm" onclick="document.getElementById('hv-desde').value='';document.getElementById('hv-hasta').value='';document.getElementById('hv-estado').value='';document.getElementById('hv-origen').value='';document.getElementById('hv-buscar').value='';renderHistorialVentas()">🔄 Limpiar filtros</button>
+          </div>
+        </div>
+        <div class="grid-4" id="hv-stats" style="margin-bottom:1rem"></div>
+        <div class="card" style="padding:0">
+          <div class="table-wrap">
+            <table id="hv-table">
+              <thead>
+                <tr><th>Fecha</th><th>Hora</th><th>Origen</th><th>Cajero/Cliente</th><th>Productos</th><th>Total S/</th><th>Método</th><th>Estado</th><th>Acciones</th></tr>
+              </thead>
+              <tbody id="hv-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- PEDIDOS ONLINE (admin) -->
+      <div id="page-pedidos-online" class="page">
+        <div class="flex-between" style="margin-bottom:1rem">
+          <div class="page-title" style="margin:0">🛍️ Pedidos Online</div>
+          <div style="display:flex;gap:.5rem">
+            <span id="po-badge-pendiente" class="badge badge-orange" style="font-size:.85rem;padding:.3rem .7rem">0 pendientes</span>
+          </div>
+        </div>
+        <div class="card" style="margin-bottom:1rem">
+          <div style="display:flex;gap:.75rem;flex-wrap:wrap;align-items:center">
+            <select class="form-control" id="po-filtro" style="width:160px" onchange="renderPedidosOnline()">
+              <option value="">Todos</option>
+              <option value="pendiente">Pendiente</option>
+              <option value="procesado">Procesado</option>
+              <option value="entregado">Entregado</option>
+              <option value="cancelado">Cancelado</option>
+            </select>
+            <input type="date" class="form-control" id="po-desde" style="width:150px" onchange="renderPedidosOnline()" />
+            <input type="date" class="form-control" id="po-hasta" style="width:150px" onchange="renderPedidosOnline()" />
+          </div>
+        </div>
+        <div id="po-list"></div>
       </div>
 
     </main>
@@ -1864,6 +1936,37 @@
   </div>
 </div>
 
+<!-- Modal Actualizar Estado de Venta (historial) -->
+<div class="modal-overlay" id="modal-actualizar-venta">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h3>✏️ Actualizar Estado de Venta</h3>
+      <button class="modal-close" onclick="cerrarModal('modal-actualizar-venta')">✕</button>
+    </div>
+    <div id="huv-info"></div>
+    <div class="form-group">
+      <label>Estado de la venta</label>
+      <select class="form-control" id="huv-estado">
+        <option value="completado">✅ Completado — Todo vendido correctamente</option>
+        <option value="parcial">⚠️ Parcial — Solo parte fue entregada/vendida</option>
+        <option value="anulado">❌ Anulado — Venta cancelada</option>
+      </select>
+    </div>
+    <div style="margin-bottom:.75rem">
+      <label style="font-size:.8rem;font-weight:600;color:var(--gray-600);display:block;margin-bottom:.4rem">Cantidad real entregada por producto (para ajuste de inventario):</label>
+      <div id="huv-items-wrap"></div>
+    </div>
+    <div class="form-group">
+      <label>Observaciones (opcional)</label>
+      <input type="text" class="form-control" id="huv-obs" placeholder="Ej: Cliente devolvió 2 unidades..." />
+    </div>
+    <div style="display:flex;justify-content:flex-end;gap:.5rem;margin-top:1rem">
+      <button class="btn btn-outline" onclick="cerrarModal('modal-actualizar-venta')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarActualizarVenta()">✅ Guardar cambios</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal Reset de Datos — Solo Admin -->
 <div class="modal-overlay" id="modal-reset">
   <div class="modal" style="max-width:480px">
@@ -1999,8 +2102,10 @@ let DB = {
   mermas: [],
   promociones: [],
   movimientos: [],
-  config: { nombre: 'Minimarket Aleze', direccion: 'Jr. Tigrillo Mz. Ll4 Lt. 5 Asoc. Percin Deza SJL', telefono: '', ticketMsg: '¡Gracias por su compra!', diasVenc: 7 },
-  caja: { abierta: false, inicial: 0, ingresos: 0, egresos: 0, turnoInicio: null, cajero: '' }
+  config: { nombre: 'Minimarket Aleze', direccion: 'Jr. Tigrillo Mz. Ll4 Lt. 5 Asoc. Percin Deza SJL', telefono: '', ticketMsg: '¡Gracias por su compra!', diasVenc: 7, whatsappTienda: '980037284' },
+  caja: { abierta: false, inicial: 0, ingresos: 0, egresos: 0, turnoInicio: null, cajero: '' },
+  historialVentas: [],
+  pedidosOnline: []
 };
 
 let cart = [];
@@ -2069,6 +2174,8 @@ function navigate(page) {
   if (page === 'capital') renderCapital();
   if (page === 'reportes') initReportes();
   if (page === 'configuracion') renderConfiguracion();
+  if (page === 'historial-ventas') renderHistorialVentas();
+  if (page === 'pedidos-online') renderPedidosOnline();
   // Close mobile sidebar on navigation
   closeMobSidebar();
   // Show mob-cart-bar only on POS page (mobile)
@@ -2346,6 +2453,10 @@ function procesarVenta() {
     items: cart.map(i => ({ ...i })), subtotal: sub, descuento: desc, total, metodo, clienteId
   };
   DB.ventas.push(venta);
+
+  // Registrar en historial de ventas
+  if (!DB.historialVentas) DB.historialVentas = [];
+  DB.historialVentas.push({ ...venta, origen: 'pos', estado: 'completado', estadoStock: 'descontado' });
 
   // Actualizar stock
   cart.forEach(item => {
@@ -3773,6 +3884,7 @@ function renderConfiguracion() {
   document.getElementById('cfg-nombre').value    = DB.config.nombre    || 'Minimarket Aleze';
   document.getElementById('cfg-direccion').value = DB.config.direccion || '';
   document.getElementById('cfg-telefono').value  = DB.config.telefono  || '';
+  document.getElementById('cfg-whatsapp-tienda').value = DB.config.whatsappTienda || '980037284';
   document.getElementById('cfg-ticket-msg').value= DB.config.ticketMsg || '¡Gracias por su compra!';
   document.getElementById('cfg-dias-venc').value = DB.config.diasVenc  || 7;
   document.getElementById('sueldo-jc').value = DB_EXT.sueldos['Jose Carlos'] || 0;
@@ -3798,6 +3910,7 @@ function guardarConfig() {
   DB.config.nombre    = document.getElementById('cfg-nombre').value;
   DB.config.direccion = document.getElementById('cfg-direccion').value;
   DB.config.telefono  = document.getElementById('cfg-telefono').value;
+  DB.config.whatsappTienda = document.getElementById('cfg-whatsapp-tienda').value.replace(/\D/g,'');
   DB.config.ticketMsg = document.getElementById('cfg-ticket-msg').value;
   DB.config.diasVenc  = parseInt(document.getElementById('cfg-dias-venc').value) || 7;
   fbGuardar();
@@ -5086,6 +5199,8 @@ function mobProcesarVenta() {
     if (cli) { cli.total = (cli.total || 0) + total; cli.puntos = (cli.puntos || 0) + Math.floor(total); }
   }
   DB.ventas.push(venta);
+  if (!DB.historialVentas) DB.historialVentas = [];
+  DB.historialVentas.push({ ...venta, origen: 'pos', estado: 'completado', estadoStock: 'descontado' });
   fbGuardar();
   toggleMobCart();
   mobCart = [];
@@ -5309,8 +5424,11 @@ window.onload = function() {
       }
       fbPatchDB();
       fbEscuchar(); // activar listener DESPUÉS de cargar datos iniciales
-      renderDashboard();
-      mobUpdateBar();
+      checkRoute();
+      if (!window.location.pathname.includes('/tienda') && !window.location.hash.includes('/tienda')) {
+        renderDashboard();
+        mobUpdateBar();
+      }
     }).catch(e => {
       console.warn('Firestore no disponible, modo local:', e.message);
       _initLocal(hoy);
@@ -5319,6 +5437,774 @@ window.onload = function() {
     _initLocal(hoy);
   }
 };
+
+// ===================== HISTORIAL DE VENTAS =====================
+function renderHistorialVentas() {
+  if (!DB.historialVentas) DB.historialVentas = [];
+  const desde  = document.getElementById('hv-desde')?.value  || '';
+  const hasta  = document.getElementById('hv-hasta')?.value  || '';
+  const estado = document.getElementById('hv-estado')?.value || '';
+  const origen = document.getElementById('hv-origen')?.value || '';
+  const buscar = (document.getElementById('hv-buscar')?.value || '').toLowerCase();
+
+  // Unir historial propio + ventas normales que no estén ya en historial
+  const hvIds = new Set((DB.historialVentas || []).map(v => v.id));
+  const ventasExtra = (DB.ventas || []).filter(v => !hvIds.has(v.id)).map(v => ({
+    ...v, origen: 'pos', estado: 'completado', estadoStock: 'descontado'
+  }));
+  let lista = [...(DB.historialVentas || []), ...ventasExtra];
+
+  if (desde) lista = lista.filter(v => v.fecha >= desde);
+  if (hasta) lista = lista.filter(v => v.fecha <= hasta);
+  if (estado) lista = lista.filter(v => v.estado === estado);
+  if (origen) lista = lista.filter(v => v.origen === origen);
+  if (buscar) lista = lista.filter(v =>
+    (v.cajero||'').toLowerCase().includes(buscar) ||
+    (v.clienteNombre||'').toLowerCase().includes(buscar) ||
+    (v.items||[]).some(i => (i.nombre||'').toLowerCase().includes(buscar))
+  );
+  lista.sort((a,b) => (b.fecha+b.hora) > (a.fecha+a.hora) ? 1 : -1);
+
+  const total = lista.reduce((s,v) => s+(v.total||0), 0);
+  const completadas = lista.filter(v=>v.estado==='completado').length;
+  const parciales = lista.filter(v=>v.estado==='parcial').length;
+  const anuladas = lista.filter(v=>v.estado==='anulado').length;
+
+  const statsEl = document.getElementById('hv-stats');
+  if (statsEl) statsEl.innerHTML = `
+    <div class="stat-card green"><div class="stat-label">Total período</div><div class="stat-value">${sol(total)}</div></div>
+    <div class="stat-card"><div class="stat-label">Completadas</div><div class="stat-value">${completadas}</div></div>
+    <div class="stat-card orange"><div class="stat-label">Parciales</div><div class="stat-value">${parciales}</div></div>
+    <div class="stat-card red"><div class="stat-label">Anuladas</div><div class="stat-value">${anuladas}</div></div>`;
+
+  const badgeColor = { completado:'badge-green', parcial:'badge-orange', anulado:'badge-red' };
+  const origenIcon = { pos:'🏪', online:'🌐' };
+
+  const tbody = document.getElementById('hv-tbody');
+  if (!tbody) return;
+  if (lista.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:1.5rem;color:var(--gray-400)">Sin ventas en el período seleccionado</td></tr>';
+    return;
+  }
+  tbody.innerHTML = lista.map(v => {
+    const nombre = v.clienteNombre || (v.clienteId ? getClienteNombre(v.clienteId) : v.cajero);
+    const prods = (v.items||[]).map(i=>`${i.nombre} x${i.cant}`).join(', ');
+    return `<tr>
+      <td>${formatDate(v.fecha)}</td>
+      <td>${v.hora||'-'}</td>
+      <td>${origenIcon[v.origen]||'🏪'} ${v.origen==='online'?'Online':'POS'}</td>
+      <td>${nombre||'-'}</td>
+      <td style="font-size:.78rem;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${prods}">${prods}</td>
+      <td style="font-weight:700">${sol(v.total)}</td>
+      <td><span class="badge badge-blue">${v.metodo||'-'}</span></td>
+      <td><span class="badge ${badgeColor[v.estado]||'badge-gray'}">${v.estado||'completado'}</span></td>
+      <td style="white-space:nowrap">
+        <button class="btn btn-outline btn-xs" onclick="abrirActualizarVenta('${v.id}')">✏️ Estado</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function exportHistorialVentas() {
+  if (!DB.historialVentas) { alert('Sin datos'); return; }
+  const hvIds = new Set((DB.historialVentas||[]).map(v=>v.id));
+  const ventasExtra = (DB.ventas||[]).filter(v=>!hvIds.has(v.id)).map(v=>({...v,origen:'pos',estado:'completado'}));
+  const lista = [...(DB.historialVentas||[]),...ventasExtra];
+  let csv = 'Fecha,Hora,Origen,Cajero/Cliente,Productos,Total,Método,Estado\n';
+  lista.forEach(v => {
+    const nombre = v.clienteNombre||(v.clienteId?getClienteNombre(v.clienteId):v.cajero);
+    const prods = (v.items||[]).map(i=>`${i.nombre}x${i.cant}`).join('|');
+    csv += `"${v.fecha}","${v.hora||''}","${v.origen||'pos'}","${nombre||''}","${prods}","${v.total}","${v.metodo||''}","${v.estado||'completado'}"\n`;
+  });
+  const blob = new Blob([csv],{type:'text/csv;charset=utf-8;'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = 'historial-ventas.csv'; a.click();
+}
+
+let _hvEditId = null;
+function abrirActualizarVenta(id) {
+  _hvEditId = id;
+  const todos = [...(DB.historialVentas||[]), ...(DB.ventas||[])];
+  const v = todos.find(x => String(x.id) === String(id));
+  if (!v) return;
+  document.getElementById('huv-info').innerHTML = `
+    <div style="background:var(--gray-50);border-radius:8px;padding:.75rem;font-size:.82rem;margin-bottom:.75rem">
+      <strong>Venta ${formatDate(v.fecha)} ${v.hora||''}</strong> — ${(v.items||[]).map(i=>`${i.nombre} x${i.cant}`).join(', ')}<br>
+      <strong>Total: ${sol(v.total)}</strong> | Método: ${v.metodo||'-'}
+    </div>`;
+  document.getElementById('huv-estado').value = v.estado||'completado';
+  document.getElementById('huv-obs').value = v.obs||'';
+  document.getElementById('huv-items-wrap').innerHTML = (v.items||[]).map(item=>`
+    <div style="display:flex;align-items:center;gap:.5rem;padding:.4rem 0;border-bottom:1px solid var(--gray-100)">
+      <span style="flex:1;font-size:.82rem">${item.nombre}</span>
+      <span style="font-size:.75rem;color:var(--gray-500)">Cant. original: <strong>${item.cant}</strong></span>
+      <label style="font-size:.78rem">Cant. real:</label>
+      <input type="number" class="form-control" id="huv-cant-${item.prodId}" value="${item.cant}" min="0" step="${item.tipo==='granel'?0.1:1}" style="width:80px;font-size:.82rem" />
+    </div>`).join('');
+  abrirModal('modal-actualizar-venta');
+}
+
+function guardarActualizarVenta() {
+  if (!_hvEditId) return;
+  if (!DB.historialVentas) DB.historialVentas = [];
+  const hvIdx = DB.historialVentas.findIndex(x => String(x.id) === String(_hvEditId));
+  let v = hvIdx >= 0 ? DB.historialVentas[hvIdx] : null;
+  if (!v) {
+    // Buscar en DB.ventas y mover a historial
+    const vi = DB.ventas.findIndex(x => String(x.id) === String(_hvEditId));
+    if (vi < 0) { cerrarModal('modal-actualizar-venta'); return; }
+    v = { ...DB.ventas[vi], origen:'pos', estado:'completado', estadoStock:'descontado' };
+    DB.historialVentas.push(v);
+  }
+
+  const nuevoEstado = document.getElementById('huv-estado').value;
+  const obs = document.getElementById('huv-obs').value;
+  const itemsActualizados = (v.items||[]).map(item => {
+    const el = document.getElementById('huv-cant-' + item.prodId);
+    const cantReal = el ? parseFloat(el.value) : item.cant;
+    return { ...item, cantReal: cantReal };
+  });
+
+  // Ajustar inventario: si estado es parcial o anulado, restaurar diferencia
+  if (nuevoEstado === 'parcial' || nuevoEstado === 'anulado') {
+    itemsActualizados.forEach(item => {
+      const prod = DB.productos.find(p => p.id === item.prodId);
+      if (prod) {
+        const cantOriginal = item.cant;
+        const cantReal = nuevoEstado === 'anulado' ? 0 : (item.cantReal || 0);
+        const diff = cantOriginal - cantReal;
+        if (diff > 0) prod.stock += diff; // restituir lo no vendido
+      }
+    });
+  }
+
+  if (hvIdx >= 0) {
+    DB.historialVentas[hvIdx] = { ...v, estado: nuevoEstado, obs, items: itemsActualizados, fechaActualizacion: today() };
+  }
+  fbGuardar();
+  cerrarModal('modal-actualizar-venta');
+  renderHistorialVentas();
+  renderInventario && renderInventario();
+  alert('✅ Venta actualizada correctamente');
+}
+
+// ===================== PEDIDOS ONLINE =====================
+function renderPedidosOnline() {
+  if (!DB.pedidosOnline) DB.pedidosOnline = [];
+  const filtro = document.getElementById('po-filtro')?.value || '';
+  const desde  = document.getElementById('po-desde')?.value  || '';
+  const hasta  = document.getElementById('po-hasta')?.value  || '';
+
+  let lista = [...DB.pedidosOnline];
+  if (filtro) lista = lista.filter(p => p.estado === filtro);
+  if (desde) lista = lista.filter(p => p.fecha >= desde);
+  if (hasta) lista = lista.filter(p => p.fecha <= hasta);
+  lista.sort((a,b) => b.fecha > a.fecha ? 1 : -1);
+
+  const pendientes = DB.pedidosOnline.filter(p => p.estado === 'pendiente').length;
+  const badge = document.getElementById('po-badge-pendiente');
+  if (badge) badge.textContent = pendientes + ' pendientes';
+
+  const badgeColor = { pendiente:'badge-orange', procesado:'badge-blue', entregado:'badge-green', cancelado:'badge-red' };
+  const listEl = document.getElementById('po-list');
+  if (!listEl) return;
+  if (lista.length === 0) {
+    listEl.innerHTML = '<div class="card" style="text-align:center;padding:2rem;color:var(--gray-400)">🛍️ Sin pedidos registrados</div>';
+    return;
+  }
+  listEl.innerHTML = lista.map(p => `
+    <div class="card" style="margin-bottom:.75rem;border-left:4px solid var(--${p.estado==='pendiente'?'warning':p.estado==='entregado'?'accent':p.estado==='cancelado'?'danger':'info'})">
+      <div class="flex-between" style="margin-bottom:.5rem">
+        <div>
+          <strong>${p.clienteNombre||'Cliente'}</strong>
+          ${p.clienteTel?`<span style="font-size:.75rem;color:var(--gray-500);margin-left:.5rem">📱 ${p.clienteTel}</span>`:''}
+          <span class="badge ${badgeColor[p.estado]||'badge-gray'}" style="margin-left:.5rem">${p.estado}</span>
+        </div>
+        <div style="font-size:.78rem;color:var(--gray-500)">${formatDate(p.fecha)} ${p.hora||''}</div>
+      </div>
+      <div style="font-size:.82rem;margin-bottom:.5rem">
+        ${(p.items||[]).map(i=>`${i.nombre} x${i.cant} — ${sol(i.precio*i.cant)}`).join('<br>')}
+      </div>
+      <div class="flex-between">
+        <div>
+          <span style="font-size:.82rem">📦 ${p.entrega==='delivery'?'Delivery':'Recojo en tienda'}</span>
+          <span style="font-size:.82rem;margin-left:1rem">💳 ${p.metodo||'-'}</span>
+          <strong style="margin-left:1rem">Total: ${sol(p.total)}</strong>
+        </div>
+        <div style="display:flex;gap:.4rem">
+          <select class="form-control" style="width:130px;font-size:.78rem" id="po-estado-${p.id}">
+            <option value="pendiente" ${p.estado==='pendiente'?'selected':''}>Pendiente</option>
+            <option value="procesado" ${p.estado==='procesado'?'selected':''}>Procesado</option>
+            <option value="entregado" ${p.estado==='entregado'?'selected':''}>Entregado</option>
+            <option value="cancelado" ${p.estado==='cancelado'?'selected':''}>Cancelado</option>
+          </select>
+          <button class="btn btn-primary btn-xs" onclick="actualizarEstadoPedido('${p.id}')">Guardar</button>
+          <button class="btn btn-outline btn-xs" onclick="verPedidoOnline('${p.id}')">👁️ Ver</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function actualizarEstadoPedido(id) {
+  if (!DB.pedidosOnline) return;
+  const p = DB.pedidosOnline.find(x => String(x.id) === String(id));
+  if (!p) return;
+  const nuevoEstado = document.getElementById('po-estado-'+id)?.value;
+  if (!nuevoEstado) return;
+  // Si se entrega, descontar stock y registrar en historial
+  if (nuevoEstado === 'entregado' && p.estado !== 'entregado') {
+    (p.items||[]).forEach(item => {
+      const prod = DB.productos.find(x => x.id === item.prodId);
+      if (prod) prod.stock = Math.max(0, prod.stock - item.cant);
+    });
+    if (!DB.historialVentas) DB.historialVentas = [];
+    DB.historialVentas.push({
+      id: p.id, fecha: p.fecha, hora: p.hora, cajero: 'Online', clienteId: null, clienteNombre: p.clienteNombre,
+      items: p.items, subtotal: p.total, descuento: 0, total: p.total, metodo: p.metodo,
+      origen: 'online', estado: 'completado', estadoStock: 'descontado'
+    });
+  }
+  p.estado = nuevoEstado;
+  fbGuardar();
+  renderPedidosOnline();
+  renderInventario && renderInventario();
+  alert('✅ Estado actualizado');
+}
+
+function verPedidoOnline(id) {
+  if (!DB.pedidosOnline) return;
+  const p = DB.pedidosOnline.find(x => String(x.id) === String(id));
+  if (!p) return;
+  const items = (p.items||[]).map(i=>`• ${i.nombre} x${i.cant} — ${sol(i.precio*i.cant)}`).join('\n');
+  alert(`📦 Pedido de ${p.clienteNombre||'Cliente'}\n${p.clienteTel?'📱 '+p.clienteTel+'\n':''}\nProductos:\n${items}\n\nTotal: ${sol(p.total)}\nMétodo: ${p.metodo}\nEntrega: ${p.entrega==='delivery'?'🚚 Delivery':'🏪 Recojo en tienda'}\nFecha: ${formatDate(p.fecha)} ${p.hora||''}`);
+}
+
+// ===================== TIENDA PÚBLICA (/tienda) =====================
+// La tienda se carga en una capa separada cuando la ruta es /tienda
+let _tiendaCart = [];
+let _tiendaUser = null; // {nombre, historial:[]}
+
+function initTienda() {
+  // Ocultar login y app del sistema
+  document.getElementById('login-screen').style.display = 'none';
+  const appEl = document.getElementById('app');
+  if (appEl) appEl.style.display = 'none';
+
+  // Mostrar tienda
+  let tiendaEl = document.getElementById('tienda-publica');
+  if (!tiendaEl) {
+    tiendaEl = document.createElement('div');
+    tiendaEl.id = 'tienda-publica';
+    document.body.appendChild(tiendaEl);
+  }
+  tiendaEl.style.display = 'block';
+  _renderTienda();
+}
+
+function _getStockBadge(p) {
+  if (p.stock <= 0) return '<span class="badge badge-red">Agotado</span>';
+  if (p.stock <= p.stockMin) return '<span class="badge badge-orange">Últimas unidades</span>';
+  return '<span class="badge badge-green">Disponible</span>';
+}
+
+function _getPromoTienda(p) {
+  const hoy = today();
+  return (DB.promociones||[]).find(pr => pr.activa !== false && pr.hasta >= hoy && (
+    (pr.prod1 && parseInt(pr.prod1) === p.id) || (pr.prod2 && parseInt(pr.prod2) === p.id)
+  ));
+}
+
+function _renderTienda() {
+  const tiendaEl = document.getElementById('tienda-publica');
+  const nombre = DB.config.nombre || 'Minimarket Aleze';
+  const dir = DB.config.direccion || '';
+  const waNum = DB.config.whatsappTienda || '980037284';
+
+  tiendaEl.innerHTML = `
+<style>
+#tienda-publica {
+  font-family:'Segoe UI',system-ui,sans-serif;
+  background:#f3f4f6;
+  min-height:100vh;
+  overflow-y:auto;
+  overflow-x:hidden;
+}
+.tnd-header {
+  background:linear-gradient(135deg,#5B21B6,#7C3AED);
+  color:white;
+  padding:1rem 1.5rem;
+  position:sticky;top:0;z-index:100;
+  display:flex;align-items:center;justify-content:space-between;
+  box-shadow:0 2px 8px rgba(0,0,0,0.15);
+}
+.tnd-brand { font-size:1.2rem;font-weight:800;display:flex;align-items:center;gap:.5rem; }
+.tnd-cart-btn {
+  background:rgba(255,255,255,.2);border:1.5px solid rgba(255,255,255,.4);
+  color:white;padding:.5rem 1rem;border-radius:10px;cursor:pointer;
+  font-weight:700;font-size:.9rem;position:relative;
+}
+.tnd-cart-count {
+  position:absolute;top:-8px;right:-8px;
+  background:#EF4444;color:white;
+  border-radius:50%;width:20px;height:20px;
+  font-size:.7rem;font-weight:700;
+  display:flex;align-items:center;justify-content:center;
+}
+.tnd-main { max-width:1100px;margin:0 auto;padding:1.25rem; }
+.tnd-search-bar {
+  display:flex;gap:.5rem;margin-bottom:1rem;
+  background:white;border-radius:12px;padding:.6rem 1rem;
+  box-shadow:0 1px 4px rgba(0,0,0,.08);
+}
+.tnd-search-bar input {
+  flex:1;border:none;outline:none;font-size:.95rem;background:transparent;
+}
+.tnd-cats { display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:1.25rem; }
+.tnd-cat-tag {
+  padding:.3rem .8rem;border-radius:20px;cursor:pointer;
+  border:1.5px solid #e5e7eb;background:white;
+  font-size:.82rem;font-weight:600;color:#6b7280;transition:all .15s;
+}
+.tnd-cat-tag.active { background:#7C3AED;color:white;border-color:#7C3AED; }
+.tnd-grid {
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:1rem;
+}
+.tnd-prod-card {
+  background:white;border-radius:14px;padding:1rem;
+  box-shadow:0 1px 4px rgba(0,0,0,.08);cursor:pointer;
+  transition:all .15s;border:2px solid transparent;
+  display:flex;flex-direction:column;align-items:center;text-align:center;
+  position:relative;
+}
+.tnd-prod-card:hover:not(.agotado) { border-color:#7C3AED;transform:translateY(-2px); }
+.tnd-prod-card.agotado { opacity:.6;cursor:not-allowed; }
+.tnd-prod-icon { font-size:2.5rem;margin-bottom:.4rem; }
+.tnd-prod-name { font-size:.85rem;font-weight:700;color:#1f2937;margin-bottom:.25rem;line-height:1.2; }
+.tnd-prod-price { font-size:1.1rem;font-weight:800;color:#7C3AED; }
+.tnd-prod-price-orig { font-size:.75rem;color:#9ca3af;text-decoration:line-through; }
+.tnd-prod-promo { background:#EF4444;color:white;font-size:.65rem;padding:1px 5px;border-radius:4px;margin-bottom:.2rem; }
+.tnd-prod-badge { position:absolute;top:8px;right:8px; }
+.tnd-panel-overlay {
+  position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:none;
+}
+.tnd-panel-overlay.open { display:block; }
+.tnd-panel {
+  position:fixed;top:0;right:0;bottom:0;width:min(420px,100vw);
+  background:white;z-index:201;transform:translateX(100%);
+  transition:transform .3s cubic-bezier(.4,0,.2,1);
+  display:flex;flex-direction:column;box-shadow:-4px 0 20px rgba(0,0,0,.15);
+}
+.tnd-panel.open { transform:translateX(0); }
+.tnd-panel-header {
+  padding:1rem 1.25rem;border-bottom:1px solid #e5e7eb;
+  display:flex;align-items:center;justify-content:space-between;
+  flex-shrink:0;
+}
+.tnd-panel-header h3 { font-size:1.1rem;font-weight:700; }
+.tnd-panel-close {
+  background:#f3f4f6;border:none;width:32px;height:32px;border-radius:50%;
+  cursor:pointer;font-size:1.1rem;
+}
+.tnd-panel-body { flex:1;overflow-y:auto;padding:1rem 1.25rem; }
+.tnd-panel-footer { padding:1rem 1.25rem;border-top:1px solid #e5e7eb;flex-shrink:0; }
+.tnd-cart-item {
+  display:flex;align-items:center;gap:.6rem;
+  padding:.6rem;background:#f9fafb;border-radius:10px;margin-bottom:.5rem;
+}
+.tnd-cart-item-icon { font-size:1.5rem; }
+.tnd-cart-item-info { flex:1; }
+.tnd-cart-item-name { font-size:.82rem;font-weight:700;color:#1f2937; }
+.tnd-cart-item-price { font-size:.78rem;color:#7C3AED;font-weight:600; }
+.tnd-qty-btn { width:28px;height:28px;border-radius:6px;background:#e5e7eb;border:none;cursor:pointer;font-size:1rem; }
+.tnd-qty-btn:hover { background:#7C3AED;color:white; }
+.tnd-qty-val { font-size:.9rem;font-weight:700;min-width:24px;text-align:center; }
+.tnd-btn { width:100%;padding:.8rem;border-radius:10px;border:none;cursor:pointer;font-size:1rem;font-weight:700; }
+.tnd-btn-primary { background:#7C3AED;color:white; }
+.tnd-btn-primary:hover { background:#5B21B6; }
+.tnd-btn-accent { background:#10B981;color:white; }
+.tnd-btn-outline { background:white;color:#374151;border:1.5px solid #d1d5db;margin-top:.5rem; }
+.tnd-step { display:none; }
+.tnd-step.active { display:block; }
+.tnd-user-area { background:#EDE9FE;border-radius:10px;padding:.75rem 1rem;margin-bottom:1rem;font-size:.85rem; }
+.tnd-delivery-box { background:#FEF3C7;border-radius:10px;padding:.75rem 1rem;margin:.75rem 0;font-size:.82rem;color:#92400E;border-left:4px solid #F59E0B; }
+.tnd-form-group { margin-bottom:.75rem; }
+.tnd-form-group label { display:block;font-size:.78rem;font-weight:700;color:#4b5563;margin-bottom:.3rem; }
+.tnd-form-group input, .tnd-form-group select {
+  width:100%;padding:.6rem .75rem;border:1.5px solid #e5e7eb;
+  border-radius:8px;font-size:.85rem;outline:none;
+}
+.tnd-form-group input:focus, .tnd-form-group select:focus { border-color:#7C3AED; }
+.tnd-metodo-grid { display:grid;grid-template-columns:1fr 1fr;gap:.4rem;margin-bottom:.75rem; }
+.tnd-metodo-opt {
+  padding:.5rem;border:1.5px solid #e5e7eb;border-radius:8px;
+  cursor:pointer;text-align:center;font-size:.8rem;font-weight:600;
+  transition:all .15s;
+}
+.tnd-metodo-opt.selected { border-color:#7C3AED;background:#EDE9FE;color:#5B21B6; }
+@media(max-width:600px){
+  .tnd-grid{grid-template-columns:repeat(2,1fr);}
+  .tnd-panel{width:100vw;}
+}
+</style>
+
+<div class="tnd-header">
+  <div class="tnd-brand">🛒 ${nombre}</div>
+  <div style="display:flex;gap:.75rem;align-items:center">
+    <span style="font-size:.78rem;opacity:.8">${dir}</span>
+    <button class="tnd-cart-btn" onclick="tndAbrirCarrito()">
+      🛒 Carrito
+      <span class="tnd-cart-count" id="tnd-cart-count">0</span>
+    </button>
+  </div>
+</div>
+
+<div class="tnd-main">
+  <div class="tnd-search-bar">
+    <span>🔍</span>
+    <input type="text" id="tnd-search" placeholder="Buscar producto..." oninput="tndFiltrar()" />
+  </div>
+  <div class="tnd-cats" id="tnd-cats"></div>
+  <div class="tnd-grid" id="tnd-grid"></div>
+</div>
+
+<!-- Panel lateral (carrito / checkout) -->
+<div class="tnd-panel-overlay" id="tnd-overlay" onclick="tndCerrarPanel()"></div>
+<div class="tnd-panel" id="tnd-panel">
+  <div class="tnd-panel-header">
+    <h3 id="tnd-panel-titulo">🛒 Tu carrito</h3>
+    <button class="tnd-panel-close" onclick="tndCerrarPanel()">✕</button>
+  </div>
+  <div class="tnd-panel-body" id="tnd-panel-body"></div>
+  <div class="tnd-panel-footer" id="tnd-panel-footer"></div>
+</div>
+`;
+
+  // Inicializar catálogo
+  tndRenderCats();
+  tndFiltrar();
+}
+
+let _tndCatActiva = '';
+let _tndMetodo = 'Yape';
+let _tndEntrega = 'recojo';
+let _tndStep = 'cart'; // cart | datos | pago | confirmacion
+
+function tndRenderCats() {
+  const el = document.getElementById('tnd-cats');
+  if (!el) return;
+  el.innerHTML = `<span class="tnd-cat-tag active" onclick="tndSetCat('')">Todos</span>` +
+    (DB.categorias||[]).map(c => `<span class="tnd-cat-tag" onclick="tndSetCat(${c.id})">${c.emoji} ${c.nombre}</span>`).join('');
+}
+
+function tndSetCat(id) {
+  _tndCatActiva = id;
+  document.querySelectorAll('.tnd-cat-tag').forEach(t => t.classList.remove('active'));
+  event.target.classList.add('active');
+  tndFiltrar();
+}
+
+function tndFiltrar() {
+  const buscar = (document.getElementById('tnd-search')?.value||'').toLowerCase();
+  const hoy = today();
+  let prods = (DB.productos||[]).filter(p => {
+    if (_tndCatActiva && p.cat != _tndCatActiva) return false;
+    if (buscar && !(p.nombre||'').toLowerCase().includes(buscar)) return false;
+    return true;
+  });
+
+  const grid = document.getElementById('tnd-grid');
+  if (!grid) return;
+  grid.innerHTML = prods.map(p => {
+    const agotado = p.stock <= 0;
+    const cat = (DB.categorias||[]).find(c => c.id === p.cat);
+    const icon = cat ? cat.emoji : '📦';
+    const badge = _getStockBadge(p);
+    const promo = _getPromoTienda(p);
+    const precio = promo && promo.precioPromo ? promo.precioPromo : p.precio;
+    const precioOrig = (promo && promo.precioPromo && promo.precioPromo < p.precio) ? p.precio : null;
+    const precioCat = p.costo ? Math.ceil(p.costo * (1 + ((DB.categorias||[]).find(c=>c.id===p.cat)?.margen||0)/100) * 10) / 10 : null;
+    const sugerido = precioCat && precioCat !== p.precio ? precioCat : null;
+
+    return `<div class="tnd-prod-card ${agotado?'agotado':''}" onclick="${agotado?'':('tndAgregarCarrito('+p.id+')')}">
+      <div class="tnd-prod-badge">${badge}</div>
+      ${promo ? `<div class="tnd-prod-promo">🔥 ${promo.nombre||'Promo'}</div>` : ''}
+      <div class="tnd-prod-icon">${icon}</div>
+      <div class="tnd-prod-name">${p.nombre}</div>
+      ${precioOrig ? `<div class="tnd-prod-price-orig">S/ ${precioOrig.toFixed(2)}</div>` : ''}
+      <div class="tnd-prod-price">S/ ${precio.toFixed(2)}</div>
+      ${sugerido && !promo ? `<div style="font-size:.7rem;color:#10B981;font-weight:600">💡 Sugerido S/ ${sugerido.toFixed(2)}</div>` : ''}
+      ${agotado ? '<div style="font-size:.75rem;color:#ef4444;margin-top:.25rem">Sin stock</div>' : ''}
+    </div>`;
+  }).join('') || '<p style="grid-column:1/-1;text-align:center;color:#9ca3af;padding:2rem">Sin productos que coincidan</p>';
+}
+
+function tndAgregarCarrito(prodId) {
+  const p = DB.productos.find(x => x.id === prodId);
+  if (!p || p.stock <= 0) return;
+  const promo = _getPromoTienda(p);
+  const precio = promo && promo.precioPromo ? promo.precioPromo : p.precio;
+  const cat = (DB.categorias||[]).find(c => c.id === p.cat);
+  const existing = _tiendaCart.find(i => i.prodId === prodId);
+  if (existing) {
+    if (existing.cant >= p.stock) { alert('No hay más stock disponible'); return; }
+    existing.cant++;
+  } else {
+    _tiendaCart.push({ prodId, nombre: p.nombre, precio, cant: 1, icon: cat?.emoji||'📦', tipo: p.tipo });
+  }
+  tndUpdateCartBadge();
+  // Mini feedback
+  const cards = document.querySelectorAll('.tnd-prod-card');
+  cards.forEach(card => {
+    if (card.onclick && card.getAttribute('onclick')?.includes(''+prodId)) {
+      card.style.borderColor = '#10B981';
+      setTimeout(() => { card.style.borderColor = ''; }, 500);
+    }
+  });
+}
+
+function tndUpdateCartBadge() {
+  const total = _tiendaCart.reduce((s,i) => s+i.cant, 0);
+  const el = document.getElementById('tnd-cart-count');
+  if (el) el.textContent = total;
+}
+
+function tndAbrirCarrito() {
+  _tndStep = 'cart';
+  tndRenderPanel();
+  document.getElementById('tnd-overlay').classList.add('open');
+  document.getElementById('tnd-panel').classList.add('open');
+}
+
+function tndCerrarPanel() {
+  document.getElementById('tnd-overlay').classList.remove('open');
+  document.getElementById('tnd-panel').classList.remove('open');
+}
+
+function tndRenderPanel() {
+  const titulo = document.getElementById('tnd-panel-titulo');
+  const body = document.getElementById('tnd-panel-body');
+  const footer = document.getElementById('tnd-panel-footer');
+
+  if (_tndStep === 'cart') {
+    titulo.textContent = '🛒 Tu carrito';
+    const subtotal = _tiendaCart.reduce((s,i) => s+i.precio*i.cant, 0);
+    if (_tiendaCart.length === 0) {
+      body.innerHTML = '<div style="text-align:center;padding:2rem;color:#9ca3af">🛒 Tu carrito está vacío<br><span style="font-size:.82rem">Agrega productos del catálogo</span></div>';
+      footer.innerHTML = '<button class="tnd-btn tnd-btn-outline" onclick="tndCerrarPanel()">Seguir comprando</button>';
+      return;
+    }
+    body.innerHTML = `
+      ${_tiendaCart.map(item => `
+      <div class="tnd-cart-item">
+        <div class="tnd-cart-item-icon">${item.icon}</div>
+        <div class="tnd-cart-item-info">
+          <div class="tnd-cart-item-name">${item.nombre}</div>
+          <div class="tnd-cart-item-price">S/ ${item.precio.toFixed(2)} c/u</div>
+        </div>
+        <button class="tnd-qty-btn" onclick="tndCartCant(${item.prodId},-1)">−</button>
+        <span class="tnd-qty-val">${item.cant}</span>
+        <button class="tnd-qty-btn" onclick="tndCartCant(${item.prodId},1)">+</button>
+      </div>`).join('')}
+      <div style="border-top:2px solid #e5e7eb;margin-top:.5rem;padding-top:.75rem;display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:.9rem;color:#6b7280">Subtotal</span>
+        <strong style="font-size:1.2rem;color:#7C3AED">S/ ${subtotal.toFixed(2)}</strong>
+      </div>`;
+    footer.innerHTML = `
+      <button class="tnd-btn tnd-btn-primary" onclick="tndIrDatos()">Continuar → Datos</button>
+      <button class="tnd-btn tnd-btn-outline" onclick="tndCerrarPanel()">Seguir comprando</button>`;
+  }
+
+  if (_tndStep === 'datos') {
+    titulo.textContent = '👤 Tus datos';
+    body.innerHTML = `
+      <p style="font-size:.82rem;color:#6b7280;margin-bottom:1rem">Para hacer tu pedido, solo necesitamos tu nombre. También puedes guardar tu historial de compras.</p>
+      <div class="tnd-form-group">
+        <label>Nombre *</label>
+        <input type="text" id="tnd-inp-nombre" placeholder="¿Cómo te llamamos?" value="${_tiendaUser?.nombre||''}" />
+      </div>
+      <div class="tnd-form-group">
+        <label>WhatsApp (opcional)</label>
+        <input type="text" id="tnd-inp-tel" placeholder="Ej: 987654321" value="${_tiendaUser?.tel||''}" />
+      </div>
+      <div class="tnd-form-group">
+        <label>Método de entrega *</label>
+        <div style="display:flex;gap:.5rem">
+          <div class="tnd-metodo-opt ${_tndEntrega==='recojo'?'selected':''}" onclick="tndSetEntrega('recojo')" style="flex:1">🏪<br>Recojo en tienda</div>
+          <div class="tnd-metodo-opt ${_tndEntrega==='delivery'?'selected':''}" onclick="tndSetEntrega('delivery')" style="flex:1">🚚<br>Delivery</div>
+        </div>
+      </div>
+      ${_tndEntrega==='delivery'?`<div class="tnd-delivery-box">📍 <strong>Nota:</strong> El delivery puede tener un costo adicional según la distancia. Recorridos menores a 300 metros son <strong>gratuitos</strong>. El vendedor te confirmará el costo exacto por WhatsApp.</div>`:''}
+      ${_tndEntrega==='delivery'?`<div class="tnd-form-group"><label>Tu dirección</label><input type="text" id="tnd-inp-dir" placeholder="Calle, número, referencia..." /></div>`:''}
+    `;
+    footer.innerHTML = `
+      <button class="tnd-btn tnd-btn-primary" onclick="tndIrPago()">Continuar → Pago</button>
+      <button class="tnd-btn tnd-btn-outline" onclick="tndVolverCart()">← Volver al carrito</button>`;
+  }
+
+  if (_tndStep === 'pago') {
+    titulo.textContent = '💳 Método de pago';
+    const subtotal = _tiendaCart.reduce((s,i) => s+i.precio*i.cant, 0);
+    const metodos = [
+      {v:'Efectivo',e:'💵 Efectivo'},
+      {v:'Yape',e:'💜 Yape'},
+      {v:'Plin',e:'💚 Plin'},
+      {v:'QR',e:'📱 QR'},
+      {v:'Link de pago',e:'🔗 Link de pago'},
+      {v:'Tarjeta POS',e:'💳 Tarjeta POS'},
+      {v:'Tarjeta POS Móvil',e:'📲 POS Móvil'},
+      {v:'Transferencia',e:'🏦 Transferencia'},
+    ];
+    body.innerHTML = `
+      <div class="tnd-metodo-grid">
+        ${metodos.map(m=>`<div class="tnd-metodo-opt ${_tndMetodo===m.v?'selected':''}" onclick="tndSetMetodo('${m.v}')">${m.e}</div>`).join('')}
+      </div>
+      <div style="border-top:2px solid #e5e7eb;padding-top:.75rem;margin-top:.5rem">
+        ${_tiendaCart.map(i=>`<div style="display:flex;justify-content:space-between;font-size:.82rem;padding:.25rem 0"><span>${i.nombre} x${i.cant}</span><span>S/ ${(i.precio*i.cant).toFixed(2)}</span></div>`).join('')}
+        <div style="display:flex;justify-content:space-between;margin-top:.5rem;font-size:1rem;font-weight:700;color:#7C3AED">
+          <span>TOTAL</span><span>S/ ${subtotal.toFixed(2)}</span>
+        </div>
+      </div>`;
+    footer.innerHTML = `
+      <button class="tnd-btn tnd-btn-accent" onclick="tndEnviarPedido()">📲 Hacer pedido por WhatsApp</button>
+      <button class="tnd-btn tnd-btn-outline" onclick="tndVolverDatos()">← Volver</button>`;
+  }
+}
+
+function tndSetEntrega(tipo) {
+  _tndEntrega = tipo;
+  document.querySelectorAll('.tnd-metodo-opt').forEach(el => {
+    const esEste = (tipo==='recojo' && el.textContent.includes('Recojo')) ||
+                   (tipo==='delivery' && el.textContent.includes('Delivery'));
+    el.classList.toggle('selected', esEste);
+  });
+  // Re-renderizar para mostrar/ocultar nota delivery
+  tndRenderPanel();
+}
+
+function tndSetMetodo(m) {
+  _tndMetodo = m;
+  document.querySelectorAll('.tnd-metodo-grid .tnd-metodo-opt').forEach(el => {
+    el.classList.toggle('selected', el.textContent.includes(m));
+  });
+}
+
+function tndCartCant(prodId, delta) {
+  const idx = _tiendaCart.findIndex(i => i.prodId === prodId);
+  if (idx < 0) return;
+  _tiendaCart[idx].cant += delta;
+  if (_tiendaCart[idx].cant <= 0) _tiendaCart.splice(idx, 1);
+  tndUpdateCartBadge();
+  tndRenderPanel();
+}
+
+function tndIrDatos() {
+  if (_tiendaCart.length === 0) { alert('Tu carrito está vacío'); return; }
+  _tndStep = 'datos';
+  tndRenderPanel();
+}
+
+function tndVolverCart() {
+  _tndStep = 'cart';
+  tndRenderPanel();
+}
+
+function tndIrPago() {
+  const nombre = document.getElementById('tnd-inp-nombre')?.value.trim();
+  if (!nombre) { alert('Por favor ingresa tu nombre'); return; }
+  _tiendaUser = {
+    nombre,
+    tel: document.getElementById('tnd-inp-tel')?.value.trim()||'',
+    dir: document.getElementById('tnd-inp-dir')?.value.trim()||''
+  };
+  _tndStep = 'pago';
+  tndRenderPanel();
+}
+
+function tndVolverDatos() {
+  _tndStep = 'datos';
+  tndRenderPanel();
+}
+
+function tndEnviarPedido() {
+  if (!_tiendaUser?.nombre) { alert('Falta tu nombre'); return; }
+  const subtotal = _tiendaCart.reduce((s,i) => s+i.precio*i.cant, 0);
+  const waNum = DB.config.whatsappTienda || '980037284';
+  const fecha = today();
+  const hora = nowTime();
+
+  // Guardar pedido en DB
+  if (!DB.pedidosOnline) DB.pedidosOnline = [];
+  const pedido = {
+    id: getId(), fecha, hora,
+    clienteNombre: _tiendaUser.nombre,
+    clienteTel: _tiendaUser.tel,
+    clienteDir: _tiendaUser.dir,
+    items: _tiendaCart.map(i=>({...i})),
+    total: subtotal,
+    metodo: _tndMetodo,
+    entrega: _tndEntrega,
+    estado: 'pendiente'
+  };
+  DB.pedidosOnline.push(pedido);
+
+  // Guardar historial de cliente si tiene tel
+  if (_tiendaUser.tel) {
+    const key = 'tnd_hist_' + _tiendaUser.tel;
+    try {
+      const hist = JSON.parse(localStorage.getItem(key)||'[]');
+      hist.push({ fecha, hora, items: pedido.items, total: subtotal, metodo: _tndMetodo });
+      localStorage.setItem(key, JSON.stringify(hist.slice(-20)));
+    } catch(e) {}
+  }
+
+  fbGuardar();
+
+  // Armar mensaje WhatsApp
+  let msg = `🛒 *Nuevo pedido — ${DB.config.nombre||'Minimarket Aleze'}*\n\n`;
+  msg += `👤 *Cliente:* ${_tiendaUser.nombre}\n`;
+  if (_tiendaUser.tel) msg += `📱 *WhatsApp:* ${_tiendaUser.tel}\n`;
+  msg += `\n*Productos:*\n`;
+  _tiendaCart.forEach(i => {
+    msg += `• ${i.nombre} x${i.cant} — S/ ${(i.precio*i.cant).toFixed(2)}\n`;
+  });
+  msg += `\n*Total: S/ ${subtotal.toFixed(2)}*\n`;
+  msg += `💳 *Pago:* ${_tndMetodo}\n`;
+  msg += `📦 *Entrega:* ${_tndEntrega==='delivery'?'🚚 Delivery':'🏪 Recojo en tienda'}\n`;
+  if (_tndEntrega==='delivery' && _tiendaUser.dir) msg += `📍 *Dirección:* ${_tiendaUser.dir}\n`;
+  msg += `\n_Pedido generado desde la tienda web_`;
+
+  const url = `https://wa.me/51${waNum}?text=${encodeURIComponent(msg)}`;
+  window.open(url, '_blank');
+
+  // Mostrar confirmación
+  _tiendaCart = [];
+  tndUpdateCartBadge();
+  tndFiltrar();
+  document.getElementById('tnd-panel-titulo').textContent = '✅ ¡Pedido enviado!';
+  document.getElementById('tnd-panel-body').innerHTML = `
+    <div style="text-align:center;padding:2rem">
+      <div style="font-size:4rem;margin-bottom:1rem">✅</div>
+      <h3 style="font-size:1.2rem;font-weight:800;color:#1f2937;margin-bottom:.5rem">¡Tu pedido fue enviado!</h3>
+      <p style="font-size:.9rem;color:#6b7280;margin-bottom:1rem">Se abrió WhatsApp con tu pedido listo para enviar a la tienda.<br>El vendedor te confirmará la disponibilidad y el costo de delivery si aplica.</p>
+      <div style="background:#EDE9FE;border-radius:10px;padding:.75rem;font-size:.82rem;color:#5B21B6">
+        📱 WhatsApp tienda: <strong>${waNum}</strong>
+      </div>
+    </div>`;
+  document.getElementById('tnd-panel-footer').innerHTML = `<button class="tnd-btn tnd-btn-outline" onclick="tndCerrarPanel()">Seguir comprando</button>`;
+}
+
+// ===================== ROUTING /tienda vs /admin =====================
+function checkRoute() {
+  const path = window.location.pathname;
+  const hash = window.location.hash;
+  if (path.includes('/tienda') || hash === '#/tienda') {
+    // Esperar que DB esté listo (puede estar cargando desde Firestore)
+    setTimeout(() => {
+      initTienda();
+    }, 800);
+  }
+  // /admin es el comportamiento por defecto (login normal)
+}
 
 function _semillaDemo(hoy) {
   DB.ventas = [
@@ -5437,8 +6323,11 @@ function ejecutarReset() {
 
 function _initLocal(hoy) {
   _semillaDemo(hoy || today());
-  renderDashboard();
-  mobUpdateBar();
+  checkRoute();
+  if (!window.location.pathname.includes('/tienda') && !window.location.hash.includes('/tienda')) {
+    renderDashboard();
+    mobUpdateBar();
+  }
 }
 </script>
 <!-- ══════════════════════════════════
