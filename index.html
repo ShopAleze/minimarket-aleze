@@ -22,6 +22,26 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <!-- Firebase SDK (Compat — funciona sin bundler) -->
+<script>
+// ── DETECCIÓN DE RUTA TEMPRANA ─────────────────────────────────────────────
+// Se ejecuta ANTES de que se pinte cualquier pantalla.
+// Si la URL contiene /tienda o #/tienda → no mostrar login.
+// Si la URL contiene /admin o es la raíz → mostrar login normalmente.
+(function earlyRoute() {
+  var path = window.location.pathname;
+  var hash = window.location.hash;
+  var esTienda = path.indexOf('/tienda') !== -1 || hash.indexOf('/tienda') !== -1 || hash === '#tienda';
+  window.__rutaTienda = esTienda;
+  // Si NO es la tienda, inyectar clase visible en login lo antes posible
+  // (el CSS la tiene en display:none por defecto)
+  if (!esTienda) {
+    document.addEventListener('DOMContentLoaded', function() {
+      var el = document.getElementById('login-screen');
+      if (el) el.classList.add('visible');
+    });
+  }
+})();
+</script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <style>
@@ -72,9 +92,10 @@
   #login-screen {
     position: fixed; inset: 0;
     background: linear-gradient(135deg, #5B21B6 0%, #7C3AED 50%, #059669 100%);
-    display: flex; align-items: center; justify-content: center;
+    display: none; align-items: center; justify-content: center;
     z-index: 9999;
   }
+  #login-screen.visible { display: flex; }
   .login-card {
     background: white;
     border-radius: 20px;
@@ -775,7 +796,7 @@
       <option value="Shessira|cajero">Shessira (Cajera)</option>
       <option value="José Luis|cajero">José Luis (Cajero)</option>
     </select>
-    <input type="password" id="login-pass" class="form-control" placeholder="Contraseña" />
+    <input type="password" id="login-pass" class="form-control" placeholder="Contraseña" onkeydown="if(event.key==='Enter')doLogin()" />
     <div id="login-error" style="color:var(--danger);font-size:0.8rem;margin-bottom:0.5rem;display:none">Contraseña incorrecta</div>
     <button class="btn-login" onclick="doLogin()">Ingresar</button>
     <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid #e5e7eb">
@@ -2116,18 +2137,97 @@ let posFilterCat = '';
 // scannerStream eliminado — html5-qrcode gestiona su propio stream
 
 // ===================== LOGIN =====================
+// ── Bloqueo por intentos fallidos ──────────────────────────────────────────
+const _LOGIN_MAX_INTENTOS = 3;
+const _LOGIN_BLOQUEO_MS   = 5 * 60 * 1000; // 5 minutos
+let _loginIntervalo = null;
+
+function _loginBloqueado() {
+  const ts = parseInt(localStorage.getItem('aleze_bloqueo') || '0');
+  return ts > Date.now();
+}
+
+function _registrarIntento() {
+  const n = parseInt(localStorage.getItem('aleze_intentos') || '0') + 1;
+  localStorage.setItem('aleze_intentos', n);
+  if (n >= _LOGIN_MAX_INTENTOS) {
+    const hasta = Date.now() + _LOGIN_BLOQUEO_MS;
+    localStorage.setItem('aleze_bloqueo', hasta);
+    localStorage.removeItem('aleze_intentos');
+    return true; // bloqueado ahora
+  }
+  return false;
+}
+
+function _limpiarBloqueo() {
+  localStorage.removeItem('aleze_bloqueo');
+  localStorage.removeItem('aleze_intentos');
+}
+
+function _mostrarBloqueo(hasta) {
+  const errEl = document.getElementById('login-error');
+  const btnEl = document.querySelector('.btn-login');
+  if (btnEl) { btnEl.disabled = true; btnEl.style.opacity = '0.5'; }
+  if (_loginIntervalo) clearInterval(_loginIntervalo);
+  _loginIntervalo = setInterval(() => {
+    const restante = Math.max(0, hasta - Date.now());
+    const min = Math.floor(restante / 60000);
+    const seg = Math.floor((restante % 60000) / 1000);
+    if (errEl) {
+      errEl.style.display = 'block';
+      errEl.style.color = 'var(--danger)';
+      errEl.textContent = `⛔ Demasiados intentos. Espera ${min}:${seg.toString().padStart(2,'0')} para volver a intentar.`;
+    }
+    if (restante <= 0) {
+      clearInterval(_loginIntervalo);
+      _limpiarBloqueo();
+      if (errEl) { errEl.style.display = 'none'; errEl.textContent = 'Contraseña incorrecta'; }
+      if (btnEl) { btnEl.disabled = false; btnEl.style.opacity = ''; }
+    }
+  }, 500);
+}
+
 function doLogin() {
+  // Verificar bloqueo activo
+  const bloqueoTs = parseInt(localStorage.getItem('aleze_bloqueo') || '0');
+  if (bloqueoTs > Date.now()) {
+    _mostrarBloqueo(bloqueoTs);
+    return;
+  }
+
   const sel = document.getElementById('login-user').value;
   const pass = document.getElementById('login-pass').value;
   if (!sel) { alert('Selecciona un usuario'); return; }
   const [name, role] = sel.split('|');
+
   if (PASSWORDS[name] !== pass) {
-    document.getElementById('login-error').style.display = 'block';
+    const ahoraBloqueado = _registrarIntento();
+    const errEl = document.getElementById('login-error');
+    if (ahoraBloqueado) {
+      _mostrarBloqueo(parseInt(localStorage.getItem('aleze_bloqueo')));
+    } else {
+      const restantes = _LOGIN_MAX_INTENTOS - parseInt(localStorage.getItem('aleze_intentos') || '0');
+      if (errEl) {
+        errEl.style.display = 'block';
+        errEl.style.color = 'var(--danger)';
+        errEl.textContent = `Contraseña incorrecta. ${restantes} intento(s) restante(s).`;
+      }
+    }
+    document.getElementById('login-pass').value = '';
     return;
   }
+
+  // Éxito — limpiar contadores y entrar
+  _limpiarBloqueo();
+  if (_loginIntervalo) { clearInterval(_loginIntervalo); _loginIntervalo = null; }
+  const errEl = document.getElementById('login-error');
+  if (errEl) errEl.style.display = 'none';
+  const btnEl = document.querySelector('.btn-login');
+  if (btnEl) { btnEl.disabled = false; btnEl.style.opacity = ''; }
+
   currentUser = name;
   currentRole = role;
-  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('login-screen').classList.remove('visible');
   document.getElementById('app').classList.add('visible');
   document.getElementById('header-username').textContent = name;
   document.getElementById('header-avatar').textContent = name.substring(0,2).toUpperCase();
@@ -2144,11 +2244,15 @@ function doLogin() {
 function doLogout() {
   currentUser = null; currentRole = null;
   cart = [];
-  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('login-screen').classList.add('visible');
   document.getElementById('app').classList.remove('visible');
   document.getElementById('login-user').value = '';
   document.getElementById('login-pass').value = '';
-  document.getElementById('login-error').style.display = 'none';
+  const errEl = document.getElementById('login-error');
+  if (errEl) errEl.style.display = 'none';
+  // Restaurar bloqueo si sigue activo
+  const bloqueoTs = parseInt(localStorage.getItem('aleze_bloqueo') || '0');
+  if (bloqueoTs > Date.now()) _mostrarBloqueo(bloqueoTs);
 }
 
 // ===================== NAVIGATION =====================
@@ -5686,7 +5790,7 @@ let _tiendaUser = null; // {nombre, historial:[]}
 
 function initTienda() {
   // Ocultar login y app del sistema
-  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('login-screen').classList.remove('visible');
   const appEl = document.getElementById('app');
   if (appEl) appEl.style.display = 'none';
 
@@ -6195,15 +6299,22 @@ function tndEnviarPedido() {
 
 // ===================== ROUTING /tienda vs /admin =====================
 function checkRoute() {
-  const path = window.location.pathname;
-  const hash = window.location.hash;
-  if (path.includes('/tienda') || hash === '#/tienda') {
-    // Esperar que DB esté listo (puede estar cargando desde Firestore)
-    setTimeout(() => {
-      initTienda();
-    }, 800);
+  const esTienda = window.__rutaTienda ||
+    window.location.pathname.indexOf('/tienda') !== -1 ||
+    window.location.hash.indexOf('/tienda') !== -1 ||
+    window.location.hash === '#tienda';
+
+  if (esTienda) {
+    initTienda();
+    return;
   }
-  // /admin es el comportamiento por defecto (login normal)
+
+  // Es la ruta admin — mostrar login (ya está visible por earlyRoute)
+  // Restaurar bloqueo activo si el usuario recargó la página durante el bloqueo
+  const bloqueoTs = parseInt(localStorage.getItem('aleze_bloqueo') || '0');
+  if (bloqueoTs > Date.now()) {
+    _mostrarBloqueo(bloqueoTs);
+  }
 }
 
 function _semillaDemo(hoy) {
