@@ -6036,7 +6036,7 @@ function tndFiltrar() {
       <div class="tnd-prod-name">${p.nombre}</div>
       ${precioOrig ? `<div class="tnd-prod-price-orig">S/ ${precioOrig.toFixed(2)}</div>` : ''}
       <div class="tnd-prod-price">S/ ${precio.toFixed(2)}</div>
-      ${sugerido && !promo ? `<div style="font-size:.7rem;color:#10B981;font-weight:600">💡 Sugerido S/ ${sugerido.toFixed(2)}</div>` : ''}
+
       ${agotado ? '<div style="font-size:.75rem;color:#ef4444;margin-top:.25rem">Sin stock</div>' : ''}
     </div>`;
   }).join('') || '<p style="grid-column:1/-1;text-align:center;color:#9ca3af;padding:2rem">Sin productos que coincidan</p>';
