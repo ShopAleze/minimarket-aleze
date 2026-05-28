@@ -2101,29 +2101,83 @@
 <div class="modal-overlay" id="modal-actualizar-venta">
   <div class="modal modal-lg">
     <div class="modal-header">
-      <h3>✏️ Actualizar Estado de Venta</h3>
+      <h3 id="huv-modal-titulo">↩️ Devolución / Ajuste de Venta</h3>
       <button class="modal-close" onclick="cerrarModal('modal-actualizar-venta')">✕</button>
     </div>
+
+    <!-- Info resumen de la venta original -->
     <div id="huv-info"></div>
+
+    <!-- Tabs: Devolución parcial | Anular venta completa -->
+    <div style="display:flex;gap:0;border:1.5px solid var(--gray-200);border-radius:8px;overflow:hidden;margin-bottom:1rem">
+      <button id="huv-tab-parcial" onclick="huvSetTab('parcial')"
+        style="flex:1;padding:.55rem;font-size:.82rem;font-weight:600;border:none;cursor:pointer;background:var(--primary);color:white;transition:all .15s">
+        ↩️ Devolución parcial
+      </button>
+      <button id="huv-tab-anular" onclick="huvSetTab('anular')"
+        style="flex:1;padding:.55rem;font-size:.82rem;font-weight:600;border:none;cursor:pointer;background:white;color:var(--gray-600);transition:all .15s">
+        ❌ Anular venta completa
+      </button>
+    </div>
+
+    <!-- TAB: Devolución parcial -->
+    <div id="huv-panel-parcial">
+      <div style="font-size:.78rem;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.5rem">
+        Productos — ajusta la cantidad devuelta
+      </div>
+      <div id="huv-items-wrap" style="margin-bottom:.75rem"></div>
+
+      <!-- Resumen del reembolso calculado -->
+      <div id="huv-devolucion-resumen" style="background:var(--accent-light);border-left:4px solid var(--accent);border-radius:0 8px 8px 0;padding:.65rem 1rem;margin-bottom:.75rem;display:none">
+        <div style="font-size:.78rem;color:var(--accent-dark);font-weight:700;margin-bottom:.25rem">💰 Reembolso a entregar al cliente</div>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span id="huv-dev-detalle" style="font-size:.78rem;color:var(--gray-600)"></span>
+          <span id="huv-dev-monto" style="font-size:1.2rem;font-weight:800;color:var(--accent-dark)">S/ 0.00</span>
+        </div>
+        <div style="font-size:.75rem;color:var(--gray-500);margin-top:.2rem">
+          Nuevo total de la venta: <strong id="huv-nuevo-total">S/ 0.00</strong>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB: Anular venta completa -->
+    <div id="huv-panel-anular" style="display:none">
+      <div style="background:var(--danger-light);border-left:4px solid var(--danger);border-radius:0 8px 8px 0;padding:.75rem 1rem;margin-bottom:.75rem">
+        <div style="font-weight:700;color:var(--danger);margin-bottom:.3rem">⚠️ Esta acción anula toda la venta</div>
+        <div style="font-size:.82rem;color:var(--gray-700)">
+          Se devolverá el <strong>100% del monto cobrado</strong> al cliente, se restituirá todo el stock y se registrará un egreso en caja.
+        </div>
+        <div id="huv-anular-monto" style="font-size:1.1rem;font-weight:800;color:var(--danger);margin-top:.5rem"></div>
+      </div>
+    </div>
+
+    <!-- Método de reembolso + observaciones (comunes a ambos tabs) -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:.75rem">
+      <div class="form-group" style="margin:0">
+        <label>Método de reembolso</label>
+        <select class="form-control" id="huv-metodo-reembolso">
+          <option value="Efectivo">💵 Efectivo</option>
+          <option value="Yape">💜 Yape</option>
+          <option value="Plin">💚 Plin</option>
+          <option value="Transferencia">🏦 Transferencia</option>
+          <option value="Crédito tienda">🏷️ Crédito para próxima compra</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin:0">
+        <label>Autorizado por</label>
+        <input type="text" class="form-control" id="huv-autorizado" value="" readonly
+          style="background:var(--gray-50);color:var(--gray-600)" />
+      </div>
+    </div>
     <div class="form-group">
-      <label>Estado de la venta</label>
-      <select class="form-control" id="huv-estado">
-        <option value="completado">✅ Completado — Todo vendido correctamente</option>
-        <option value="parcial">⚠️ Parcial — Solo parte fue entregada/vendida</option>
-        <option value="anulado">❌ Anulado — Venta cancelada</option>
-      </select>
+      <label>Motivo / Observación <span style="color:var(--danger)">*</span></label>
+      <input type="text" class="form-control" id="huv-obs"
+        placeholder="Ej: Cliente se arrepintió, producto en buen estado devuelto..." />
     </div>
-    <div style="margin-bottom:.75rem">
-      <label style="font-size:.8rem;font-weight:600;color:var(--gray-600);display:block;margin-bottom:.4rem">Cantidad real entregada por producto (para ajuste de inventario):</label>
-      <div id="huv-items-wrap"></div>
-    </div>
-    <div class="form-group">
-      <label>Observaciones (opcional)</label>
-      <input type="text" class="form-control" id="huv-obs" placeholder="Ej: Cliente devolvió 2 unidades..." />
-    </div>
+
     <div style="display:flex;justify-content:flex-end;gap:.5rem;margin-top:1rem">
       <button class="btn btn-outline" onclick="cerrarModal('modal-actualizar-venta')">Cancelar</button>
-      <button class="btn btn-primary" onclick="guardarActualizarVenta()">✅ Guardar cambios</button>
+      <button class="btn btn-danger" id="huv-btn-guardar" onclick="guardarActualizarVenta()">↩️ Confirmar devolución</button>
     </div>
   </div>
 </div>
@@ -5845,18 +5899,28 @@ function renderHistorialVentas() {
   }
   tbody.innerHTML = lista.map(v => {
     const nombre = v.clienteNombre || (v.clienteId ? getClienteNombre(v.clienteId) : v.cajero);
-    const prods = (v.items||[]).map(i=>`${i.nombre} x${i.cant}`).join(', ');
-    return `<tr>
+    const prods  = (v.items||[]).map(i=>`${i.nombre} x${i.cantReal??i.cant}`).join(', ');
+    const totalDevuelto = (v.devoluciones||[]).reduce((s,d)=>s+d.monto,0);
+    const tieneDevolucion = totalDevuelto > 0;
+    const btnLabel = v.estado === 'anulado' ? '👁️ Ver' : '↩️ Devolver';
+    const btnDisabled = v.estado === 'anulado' ? 'disabled style="opacity:.5;cursor:not-allowed"' : '';
+    return `<tr ${v.estado==='anulado'?'style="opacity:.6"':''}>
       <td>${formatDate(v.fecha)}</td>
       <td>${v.hora||'-'}</td>
       <td>${origenIcon[v.origen]||'🏪'} ${v.origen==='online'?'Online':'POS'}</td>
       <td>${nombre||'-'}</td>
       <td style="font-size:.78rem;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${prods}">${prods}</td>
-      <td style="font-weight:700">${sol(v.total)}</td>
+      <td style="font-weight:700">
+        ${sol(v.total)}
+        ${tieneDevolucion ? `<div style="font-size:.7rem;color:var(--danger)">-${sol(totalDevuelto)} dev.</div>` : ''}
+      </td>
       <td><span class="badge badge-blue">${v.metodo||'-'}</span></td>
-      <td><span class="badge ${badgeColor[v.estado]||'badge-gray'}">${v.estado||'completado'}</span></td>
+      <td>
+        <span class="badge ${badgeColor[v.estado]||'badge-gray'}">${v.estado||'completado'}</span>
+        ${tieneDevolucion && v.estado!=='anulado' ? '<span class="badge badge-orange" style="margin-left:2px">parcial</span>' : ''}
+      </td>
       <td style="white-space:nowrap">
-        <button class="btn btn-outline btn-xs" onclick="abrirActualizarVenta('${v.id}')">✏️ Estado</button>
+        <button class="btn btn-outline btn-xs" onclick="abrirActualizarVenta('${v.id}')" ${btnDisabled}>${btnLabel}</button>
       </td>
     </tr>`;
   }).join('');
@@ -5878,71 +5942,299 @@ function exportHistorialVentas() {
   a.download = 'historial-ventas.csv'; a.click();
 }
 
-let _hvEditId = null;
+let _hvEditId  = null;
+let _huvTab    = 'parcial'; // 'parcial' | 'anular'
+let _huvVenta  = null;      // copia de la venta en edición
+
+function huvSetTab(tab) {
+  _huvTab = tab;
+  const esParcial = tab === 'parcial';
+  document.getElementById('huv-panel-parcial').style.display = esParcial ? '' : 'none';
+  document.getElementById('huv-panel-anular').style.display  = esParcial ? 'none' : '';
+  document.getElementById('huv-tab-parcial').style.background = esParcial ? 'var(--primary)' : 'white';
+  document.getElementById('huv-tab-parcial').style.color      = esParcial ? 'white' : 'var(--gray-600)';
+  document.getElementById('huv-tab-anular').style.background  = esParcial ? 'white' : 'var(--danger)';
+  document.getElementById('huv-tab-anular').style.color       = esParcial ? 'var(--gray-600)' : 'white';
+  const btn = document.getElementById('huv-btn-guardar');
+  if (btn) {
+    btn.textContent = esParcial ? '↩️ Confirmar devolución parcial' : '❌ Anular venta completa';
+    btn.className   = esParcial ? 'btn btn-danger' : 'btn btn-danger';
+  }
+}
+
 function abrirActualizarVenta(id) {
+  // Solo el admin puede hacer devoluciones
+  if (currentRole !== 'admin') {
+    alert('⛔ Solo el administrador puede registrar devoluciones.');
+    return;
+  }
   _hvEditId = id;
+  _huvTab   = 'parcial';
+
   const todos = [...(DB.historialVentas||[]), ...(DB.ventas||[])];
   const v = todos.find(x => String(x.id) === String(id));
   if (!v) return;
+
+  // Si ya fue anulada no permitir volver a modificar
+  if (v.estado === 'anulado') {
+    alert('Esta venta ya fue anulada y no puede modificarse.'); return;
+  }
+
+  _huvVenta = JSON.parse(JSON.stringify(v)); // copia de trabajo
+
+  // Info resumen
+  const itemsStr = (v.items||[]).map(i=>`${i.nombre} x${i.cantReal??i.cant}`).join(', ');
   document.getElementById('huv-info').innerHTML = `
-    <div style="background:var(--gray-50);border-radius:8px;padding:.75rem;font-size:.82rem;margin-bottom:.75rem">
-      <strong>Venta ${formatDate(v.fecha)} ${v.hora||''}</strong> — ${(v.items||[]).map(i=>`${i.nombre} x${i.cant}`).join(', ')}<br>
-      <strong>Total: ${sol(v.total)}</strong> | Método: ${v.metodo||'-'}
+    <div style="background:var(--gray-50);border-radius:8px;padding:.75rem 1rem;font-size:.82rem;margin-bottom:1rem;border:1px solid var(--gray-200)">
+      <div style="font-weight:700;margin-bottom:.2rem">📋 Venta ${formatDate(v.fecha)} ${v.hora||''} — ${v.cajero||v.clienteNombre||'-'}</div>
+      <div style="color:var(--gray-600)">${itemsStr}</div>
+      <div style="margin-top:.35rem">
+        <strong style="color:var(--primary)">Total original cobrado: ${sol(v.total)}</strong>
+        <span style="margin-left:1rem;color:var(--gray-500)">Método: ${v.metodo||'-'}</span>
+        ${v.devoluciones?.length ? `<span style="margin-left:1rem;color:var(--danger);font-weight:700">Ya devuelto: ${sol(v.devoluciones.reduce((s,d)=>s+d.monto,0))}</span>` : ''}
+      </div>
     </div>`;
-  document.getElementById('huv-estado').value = v.estado||'completado';
-  document.getElementById('huv-obs').value = v.obs||'';
-  document.getElementById('huv-items-wrap').innerHTML = (v.items||[]).map(item=>`
-    <div style="display:flex;align-items:center;gap:.5rem;padding:.4rem 0;border-bottom:1px solid var(--gray-100)">
-      <span style="flex:1;font-size:.82rem">${item.nombre}</span>
-      <span style="font-size:.75rem;color:var(--gray-500)">Cant. original: <strong>${item.cant}</strong></span>
-      <label style="font-size:.78rem">Cant. real:</label>
-      <input type="number" class="form-control" id="huv-cant-${item.prodId}" value="${item.cant}" min="0" step="${item.tipo==='granel'?0.1:1}" style="width:80px;font-size:.82rem" />
-    </div>`).join('');
+
+  // Autorizado por
+  document.getElementById('huv-autorizado').value = currentUser || 'Admin';
+
+  // Limpiar obs y método
+  document.getElementById('huv-obs').value = '';
+  document.getElementById('huv-metodo-reembolso').value = v.metodo || 'Efectivo';
+
+  // Panel anular: monto total
+  document.getElementById('huv-anular-monto').textContent = `Reembolso total: ${sol(v.total)}`;
+
+  // Renderizar items para devolución parcial
+  _renderHuvItems(v);
+
+  // Activar tab parcial por defecto
+  huvSetTab('parcial');
   abrirModal('modal-actualizar-venta');
 }
 
-function guardarActualizarVenta() {
-  if (!_hvEditId) return;
-  if (!DB.historialVentas) DB.historialVentas = [];
-  const hvIdx = DB.historialVentas.findIndex(x => String(x.id) === String(_hvEditId));
-  let v = hvIdx >= 0 ? DB.historialVentas[hvIdx] : null;
-  if (!v) {
-    // Buscar en DB.ventas y mover a historial
-    const vi = DB.ventas.findIndex(x => String(x.id) === String(_hvEditId));
-    if (vi < 0) { cerrarModal('modal-actualizar-venta'); return; }
-    v = { ...DB.ventas[vi], origen:'pos', estado:'completado', estadoStock:'descontado' };
-    DB.historialVentas.push(v);
-  }
+function _renderHuvItems(v) {
+  const wrap = document.getElementById('huv-items-wrap');
+  if (!wrap) return;
+  // Usar cantReal si ya hubo ajuste previo, si no usar cant original
+  wrap.innerHTML = (v.items||[]).map((item, i) => {
+    const cantOrig = item.cantReal ?? item.cant;
+    const yaDevuelto = (v.devoluciones||[]).reduce((s,d) => {
+      const di = d.items?.find(x => x.prodId === item.prodId);
+      return s + (di?.cantDevuelta||0);
+    }, 0);
+    const cantDisp = Math.max(0, cantOrig - yaDevuelto);
+    return `
+    <div style="display:flex;align-items:center;gap:.6rem;padding:.5rem .25rem;border-bottom:1px solid var(--gray-100)" id="huv-row-${i}">
+      <span style="flex:1;font-size:.83rem;font-weight:600">${item.nombre}</span>
+      <span style="font-size:.75rem;color:var(--gray-400)">vendido: <strong>${cantOrig}</strong></span>
+      ${yaDevuelto > 0 ? `<span style="font-size:.72rem;color:var(--danger)">devuelto: ${yaDevuelto}</span>` : ''}
+      <span style="font-size:.75rem;color:var(--gray-500)">devolver:</span>
+      <input type="number" class="form-control" id="huv-dev-${i}"
+        value="0" min="0" max="${cantDisp}" step="${item.tipo==='granel'?0.1:1}"
+        style="width:75px;font-size:.85rem;text-align:center"
+        oninput="huvRecalc()" ${cantDisp<=0?'disabled':''}/>
+      <span style="font-size:.75rem;color:var(--primary);min-width:60px;text-align:right">
+        ${sol(item.precio)} c/u
+      </span>
+    </div>`; }).join('');
 
-  const nuevoEstado = document.getElementById('huv-estado').value;
-  const obs = document.getElementById('huv-obs').value;
-  const itemsActualizados = (v.items||[]).map(item => {
-    const el = document.getElementById('huv-cant-' + item.prodId);
-    const cantReal = el ? parseFloat(el.value) : item.cant;
-    return { ...item, cantReal: cantReal };
+  // Ocultar resumen al inicio
+  document.getElementById('huv-devolucion-resumen').style.display = 'none';
+}
+
+function huvRecalc() {
+  if (!_huvVenta) return;
+  const items = _huvVenta.items || [];
+  let montoDevuelto = 0;
+  const detalle = [];
+
+  items.forEach((item, i) => {
+    const input = document.getElementById('huv-dev-' + i);
+    if (!input) return;
+    const cantDev = parseFloat(input.value) || 0;
+    if (cantDev > 0) {
+      const sub = cantDev * item.precio;
+      montoDevuelto += sub;
+      detalle.push(`${item.nombre} x${cantDev}`);
+    }
   });
 
-  // Ajustar inventario: si estado es parcial o anulado, restaurar diferencia
-  if (nuevoEstado === 'parcial' || nuevoEstado === 'anulado') {
-    itemsActualizados.forEach(item => {
+  const resumen = document.getElementById('huv-devolucion-resumen');
+  if (montoDevuelto > 0) {
+    resumen.style.display = '';
+    document.getElementById('huv-dev-detalle').textContent = detalle.join(', ');
+    document.getElementById('huv-dev-monto').textContent   = sol(montoDevuelto);
+    const nuevoTotal = Math.max(0, _huvVenta.total - montoDevuelto);
+    document.getElementById('huv-nuevo-total').textContent = sol(nuevoTotal);
+  } else {
+    resumen.style.display = 'none';
+  }
+}
+
+function guardarActualizarVenta() {
+  if (!_hvEditId || !_huvVenta) return;
+  if (currentRole !== 'admin') { alert('⛔ Solo el administrador puede registrar devoluciones.'); return; }
+
+  const obs     = document.getElementById('huv-obs').value.trim();
+  const metodo  = document.getElementById('huv-metodo-reembolso').value;
+  const autoriza = document.getElementById('huv-autorizado').value || currentUser;
+
+  if (!obs) { alert('Por favor ingresa el motivo de la devolución.'); return; }
+
+  // ── Localizar la venta en DB ──────────────────────────────────────────────
+  if (!DB.historialVentas) DB.historialVentas = [];
+  let hvIdx = DB.historialVentas.findIndex(x => String(x.id) === String(_hvEditId));
+  if (hvIdx < 0) {
+    // Estaba solo en DB.ventas → mover al historial
+    const vi = DB.ventas.findIndex(x => String(x.id) === String(_hvEditId));
+    if (vi < 0) { cerrarModal('modal-actualizar-venta'); return; }
+    DB.historialVentas.push({ ...DB.ventas[vi], origen:'pos', estado:'completado', estadoStock:'descontado' });
+    hvIdx = DB.historialVentas.length - 1;
+  }
+  const vDB = DB.historialVentas[hvIdx];
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // CASO A: Anular venta completa
+  // ══════════════════════════════════════════════════════════════════════════
+  if (_huvTab === 'anular') {
+    if (!confirm(`¿Confirmar ANULACIÓN TOTAL de esta venta?\n\nSe reembolsará ${sol(vDB.total)} al cliente y se restituirá todo el stock.\n\nEsta acción no se puede deshacer.`)) return;
+
+    const montoReembolso = vDB.total;
+
+    // Restituir stock de TODOS los items
+    (vDB.items||[]).forEach(item => {
       const prod = DB.productos.find(p => p.id === item.prodId);
       if (prod) {
-        const cantOriginal = item.cant;
-        const cantReal = nuevoEstado === 'anulado' ? 0 : (item.cantReal || 0);
-        const diff = cantOriginal - cantReal;
-        if (diff > 0) prod.stock += diff; // restituir lo no vendido
+        const cantOrig = item.cantReal ?? item.cant;
+        const yaDevuelto = (vDB.devoluciones||[]).reduce((s,d) => {
+          const di = d.items?.find(x=>x.prodId===item.prodId);
+          return s + (di?.cantDevuelta||0);
+        }, 0);
+        prod.stock += Math.max(0, cantOrig - yaDevuelto);
       }
+    });
+
+    // Registrar egreso en caja si está abierta
+    if (DB.caja.abierta) {
+      DB.caja.egresos = (DB.caja.egresos||0) + montoReembolso;
+      DB.movimientos.push({
+        tipo: 'egreso',
+        desc: `Reembolso anulación venta — ${vDB.cajero||vDB.clienteNombre||'cliente'} (${metodo})`,
+        monto: montoReembolso,
+        hora: nowTime(),
+        fecha: today(),
+        usuario: autoriza
+      });
+    }
+
+    // Registrar devolución en la venta
+    if (!vDB.devoluciones) vDB.devoluciones = [];
+    vDB.devoluciones.push({
+      fecha: today(), hora: nowTime(), tipo: 'anulacion',
+      monto: montoReembolso, metodo, obs, autoriza,
+      items: (vDB.items||[]).map(item => ({
+        prodId: item.prodId, nombre: item.nombre,
+        cantDevuelta: item.cantReal ?? item.cant
+      }))
+    });
+
+    vDB.estado        = 'anulado';
+    vDB.total         = 0;
+    vDB.fechaAnulacion = today() + ' ' + nowTime();
+
+    fbGuardar();
+    fbGuardarProductos();
+    cerrarModal('modal-actualizar-venta');
+    renderHistorialVentas();
+    try { renderInvTable(); } catch(e){}
+    try { renderCaja(); } catch(e){}
+    try { renderDashboard(); } catch(e){}
+    alert(`✅ Venta anulada correctamente.\n💰 Reembolso registrado: ${sol(montoReembolso)} (${metodo})\n📦 Stock restituido en inventario.`);
+    return;
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // CASO B: Devolución parcial
+  // ══════════════════════════════════════════════════════════════════════════
+  const items = _huvVenta.items || [];
+  const itemsDevueltos = [];
+  let montoReembolso = 0;
+
+  items.forEach((item, i) => {
+    const input = document.getElementById('huv-dev-' + i);
+    const cantDev = parseFloat(input?.value) || 0;
+    if (cantDev <= 0) return;
+
+    const cantOrig = item.cantReal ?? item.cant;
+    if (cantDev > cantOrig) {
+      alert(`No puedes devolver más unidades de las vendidas (${item.nombre}: vendido ${cantOrig})`);
+      return;
+    }
+
+    itemsDevueltos.push({
+      prodId: item.prodId, nombre: item.nombre,
+      cantDevuelta: cantDev, precioUnit: item.precio,
+      subtotal: cantDev * item.precio
+    });
+    montoReembolso += cantDev * item.precio;
+  });
+
+  if (itemsDevueltos.length === 0) {
+    alert('Ingresa al menos un producto a devolver (cantidad > 0).'); return;
+  }
+
+  if (!confirm(`¿Confirmar devolución parcial?\n\nProductos:\n${itemsDevueltos.map(d=>`• ${d.nombre} x${d.cantDevuelta} = ${sol(d.subtotal)}`).join('\n')}\n\nReembolso: ${sol(montoReembolso)} (${metodo})\nNuevo total de la venta: ${sol(Math.max(0, vDB.total - montoReembolso))}`)) return;
+
+  // Restituir stock de productos devueltos
+  itemsDevueltos.forEach(dev => {
+    const prod = DB.productos.find(p => p.id === dev.prodId);
+    if (prod) prod.stock += dev.cantDevuelta;
+  });
+
+  // Actualizar cantidades en los items de la venta
+  (vDB.items||[]).forEach((item, i) => {
+    const dev = itemsDevueltos.find(d => d.prodId === item.prodId);
+    if (dev) {
+      const cantAntes = item.cantReal ?? item.cant;
+      item.cantReal = Math.max(0, cantAntes - dev.cantDevuelta);
+    }
+  });
+
+  // Nuevo total
+  const nuevoTotal = Math.max(0, vDB.total - montoReembolso);
+  vDB.total  = nuevoTotal;
+  vDB.estado = nuevoTotal === 0 ? 'anulado' : 'parcial';
+
+  // Registrar egreso en caja si está abierta
+  if (DB.caja.abierta) {
+    DB.caja.egresos = (DB.caja.egresos||0) + montoReembolso;
+    DB.movimientos.push({
+      tipo: 'egreso',
+      desc: `Reembolso devolución parcial — ${vDB.cajero||vDB.clienteNombre||'cliente'} (${metodo})`,
+      monto: montoReembolso,
+      hora: nowTime(),
+      fecha: today(),
+      usuario: autoriza
     });
   }
 
-  if (hvIdx >= 0) {
-    DB.historialVentas[hvIdx] = { ...v, estado: nuevoEstado, obs, items: itemsActualizados, fechaActualizacion: today() };
-  }
+  // Registrar la devolución como traza de auditoría
+  if (!vDB.devoluciones) vDB.devoluciones = [];
+  vDB.devoluciones.push({
+    fecha: today(), hora: nowTime(), tipo: 'parcial',
+    monto: montoReembolso, metodo, obs, autoriza,
+    items: itemsDevueltos
+  });
+
   fbGuardar();
+  fbGuardarProductos();
   cerrarModal('modal-actualizar-venta');
   renderHistorialVentas();
-  renderInventario && renderInventario();
-  alert('✅ Venta actualizada correctamente');
+  try { renderInvTable(); } catch(e){}
+  try { renderCaja(); } catch(e){}
+  try { renderDashboard(); } catch(e){}
+  alert(`✅ Devolución registrada correctamente.\n💰 Reembolso: ${sol(montoReembolso)} (${metodo})\n📦 Stock restituido.\nNuevo total de la venta: ${sol(nuevoTotal)}`);
 }
 
 // ===================== PEDIDOS ONLINE =====================
@@ -5956,84 +6248,367 @@ function renderPedidosOnline() {
   if (filtro) lista = lista.filter(p => p.estado === filtro);
   if (desde) lista = lista.filter(p => p.fecha >= desde);
   if (hasta) lista = lista.filter(p => p.fecha <= hasta);
-  lista.sort((a,b) => b.fecha > a.fecha ? 1 : -1);
+  lista.sort((a,b) => (b.fecha+b.hora) > (a.fecha+a.hora) ? 1 : -1);
 
   const pendientes = DB.pedidosOnline.filter(p => p.estado === 'pendiente').length;
   const badge = document.getElementById('po-badge-pendiente');
   if (badge) badge.textContent = pendientes + ' pendientes';
 
-  const badgeColor = { pendiente:'badge-orange', procesado:'badge-blue', entregado:'badge-green', cancelado:'badge-red' };
+  const badgeColor  = { pendiente:'badge-orange', procesado:'badge-blue', entregado:'badge-green', cancelado:'badge-red' };
+  const borderColor = { pendiente:'warning', procesado:'info', entregado:'accent', cancelado:'danger' };
+
   const listEl = document.getElementById('po-list');
   if (!listEl) return;
   if (lista.length === 0) {
     listEl.innerHTML = '<div class="card" style="text-align:center;padding:2rem;color:var(--gray-400)">🛍️ Sin pedidos registrados</div>';
     return;
   }
-  listEl.innerHTML = lista.map(p => `
-    <div class="card" style="margin-bottom:.75rem;border-left:4px solid var(--${p.estado==='pendiente'?'warning':p.estado==='entregado'?'accent':p.estado==='cancelado'?'danger':'info'})">
+
+  const yaEntregado = id => {
+    const p = DB.pedidosOnline.find(x => String(x.id) === String(id));
+    return p && p.estado === 'entregado';
+  };
+
+  listEl.innerHTML = lista.map(p => {
+    const entregado = p.estado === 'entregado';
+    const cancelado = p.estado === 'cancelado';
+    const bloqueado = entregado || cancelado; // no se puede editar si ya está cerrado
+    return `
+    <div class="card" style="margin-bottom:.75rem;border-left:4px solid var(--${borderColor[p.estado]||'gray-300'})">
+      <!-- Cabecera -->
       <div class="flex-between" style="margin-bottom:.5rem">
-        <div>
-          <strong>${p.clienteNombre||'Cliente'}</strong>
-          ${p.clienteTel?`<span style="font-size:.75rem;color:var(--gray-500);margin-left:.5rem">📱 ${p.clienteTel}</span>`:''}
-          <span class="badge ${badgeColor[p.estado]||'badge-gray'}" style="margin-left:.5rem">${p.estado}</span>
+        <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap">
+          <strong style="font-size:.95rem">${p.clienteNombre||'Cliente'}</strong>
+          ${p.clienteTel ? `<span style="font-size:.75rem;color:var(--gray-500)">📱 ${p.clienteTel}</span>` : ''}
+          <span class="badge ${badgeColor[p.estado]||'badge-gray'}">${p.estado}</span>
+          ${p.editado ? `<span class="badge badge-purple" title="Pedido modificado por el admin">✏️ editado</span>` : ''}
         </div>
         <div style="font-size:.78rem;color:var(--gray-500)">${formatDate(p.fecha)} ${p.hora||''}</div>
       </div>
-      <div style="font-size:.82rem;margin-bottom:.5rem">
-        ${(p.items||[]).map(i=>`${i.nombre} x${i.cant} — ${sol(i.precio*i.cant)}`).join('<br>')}
+
+      <!-- Items -->
+      <div style="font-size:.82rem;color:var(--gray-700);margin-bottom:.5rem;line-height:1.6">
+        ${(p.items||[]).filter(i=>i.cant>0).map(i=>`
+          <span style="display:inline-block;margin-right:.75rem">
+            ${i.nombre} <strong>x${i.cant}</strong>
+            ${i.eliminado ? '<span style="color:var(--danger);font-size:.7rem">❌ eliminado</span>' : `— ${sol(i.precio*i.cant)}`}
+          </span>`).join('')}
       </div>
-      <div class="flex-between">
-        <div>
-          <span style="font-size:.82rem">📦 ${p.entrega==='delivery'?'Delivery':'Recojo en tienda'}</span>
-          <span style="font-size:.82rem;margin-left:1rem">💳 ${p.metodo||'-'}</span>
-          <strong style="margin-left:1rem">Total: ${sol(p.total)}</strong>
+
+      <!-- Footer -->
+      <div class="flex-between" style="flex-wrap:wrap;gap:.4rem">
+        <div style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap">
+          <span style="font-size:.82rem">📦 ${p.entrega==='delivery'?'🚚 Delivery':'🏪 Recojo en tienda'}</span>
+          <span style="font-size:.82rem">💳 ${p.metodo||'-'}</span>
+          <strong style="color:var(--primary)">Total: ${sol(p.total)}</strong>
+          ${p.descuento > 0 ? `<span style="font-size:.75rem;color:var(--accent)">(-${sol(p.descuento)} desc.)</span>` : ''}
         </div>
-        <div style="display:flex;gap:.4rem">
-          <select class="form-control" style="width:130px;font-size:.78rem" id="po-estado-${p.id}">
-            <option value="pendiente" ${p.estado==='pendiente'?'selected':''}>Pendiente</option>
-            <option value="procesado" ${p.estado==='procesado'?'selected':''}>Procesado</option>
-            <option value="entregado" ${p.estado==='entregado'?'selected':''}>Entregado</option>
-            <option value="cancelado" ${p.estado==='cancelado'?'selected':''}>Cancelado</option>
+        <div style="display:flex;gap:.4rem;align-items:center">
+          ${!bloqueado ? `<button class="btn btn-outline btn-xs" style="color:var(--primary);border-color:var(--primary-light)" onclick="editarPedidoOnline('${p.id}')">✏️ Editar</button>` : ''}
+          <select class="form-control" style="width:130px;font-size:.78rem" id="po-estado-${p.id}" ${bloqueado?'disabled':''}>
+            <option value="pendiente"  ${p.estado==='pendiente' ?'selected':''}>Pendiente</option>
+            <option value="procesado"  ${p.estado==='procesado' ?'selected':''}>Procesado</option>
+            <option value="entregado"  ${p.estado==='entregado' ?'selected':''}>✅ Entregado</option>
+            <option value="cancelado"  ${p.estado==='cancelado' ?'selected':''}>❌ Cancelado</option>
           </select>
-          <button class="btn btn-primary btn-xs" onclick="actualizarEstadoPedido('${p.id}')">Guardar</button>
-          <button class="btn btn-outline btn-xs" onclick="verPedidoOnline('${p.id}')">👁️ Ver</button>
+          ${!bloqueado ? `<button class="btn btn-primary btn-xs" onclick="confirmarEntregaPedido('${p.id}')">Guardar</button>` : ''}
         </div>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
-function actualizarEstadoPedido(id) {
+// ── Editar pedido online (modal completo) ─────────────────────────────────────
+let _poEditId = null;
+
+function editarPedidoOnline(id) {
+  if (!DB.pedidosOnline) return;
+  const p = DB.pedidosOnline.find(x => String(x.id) === String(id));
+  if (!p) return;
+  if (p.estado === 'entregado' || p.estado === 'cancelado') {
+    alert('Este pedido ya está cerrado y no puede editarse.'); return;
+  }
+  _poEditId = id;
+
+  // Asegurar que el modal existe
+  _asegurarModalEditarPedido();
+
+  // Rellenar datos del cliente
+  document.getElementById('po-edit-cliente').textContent  = p.clienteNombre || 'Cliente';
+  document.getElementById('po-edit-tel').textContent      = p.clienteTel ? '📱 ' + p.clienteTel : '';
+  document.getElementById('po-edit-fecha').textContent    = formatDate(p.fecha) + ' ' + (p.hora||'');
+
+  // Método de pago
+  const metSel = document.getElementById('po-edit-metodo');
+  metSel.value = p.metodo || 'Efectivo';
+
+  // Entrega
+  document.getElementById('po-edit-entrega').value = p.entrega || 'recojo';
+
+  // Descuento
+  document.getElementById('po-edit-descuento').value = p.descuento || 0;
+
+  // Nota
+  document.getElementById('po-edit-nota').value = p.notaAdmin || '';
+
+  // Items editables
+  _renderItemsEditorPedido(p.items || []);
+
+  abrirModal('modal-editar-pedido');
+}
+
+function _renderItemsEditorPedido(items) {
+  const tbody = document.getElementById('po-edit-items');
+  if (!tbody) return;
+  tbody.innerHTML = items.map((item, i) => `
+    <tr id="po-row-${i}" style="${item.cant <= 0 || item.eliminado ? 'opacity:.45;text-decoration:line-through' : ''}">
+      <td style="font-size:.83rem;font-weight:600">${item.nombre}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:.3rem">
+          <button class="qty-btn" onclick="poItemCant(${i},-1)" title="Reducir">−</button>
+          <span id="po-cant-${i}" style="min-width:28px;text-align:center;font-weight:700">${item.cant}</span>
+          <button class="qty-btn" onclick="poItemCant(${i},1)" title="Aumentar">+</button>
+        </div>
+      </td>
+      <td style="font-size:.82rem">S/ ${item.precio.toFixed(2)}</td>
+      <td id="po-subtotal-${i}" style="font-weight:700;color:var(--primary)">S/ ${(item.precio*item.cant).toFixed(2)}</td>
+      <td>
+        <button class="btn btn-xs" style="background:var(--danger-light);color:var(--danger)" onclick="poEliminarItem(${i})" title="Eliminar producto">🗑️</button>
+      </td>
+    </tr>`).join('');
+  _poRecalcTotal();
+}
+
+// Items editados en memoria durante el modal
+let _poItemsTemp = [];
+
+function _asegurarModalEditarPedido() {
+  if (document.getElementById('modal-editar-pedido')) return;
+  const div = document.createElement('div');
+  div.className = 'modal-overlay';
+  div.id = 'modal-editar-pedido';
+  div.innerHTML = `
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h3>✏️ Editar Pedido Online</h3>
+      <button class="modal-close" onclick="cerrarModal('modal-editar-pedido')">✕</button>
+    </div>
+
+    <!-- Info cliente -->
+    <div style="background:var(--primary-light);border-radius:8px;padding:.65rem 1rem;margin-bottom:1rem;display:flex;gap:1rem;flex-wrap:wrap;align-items:center">
+      <strong id="po-edit-cliente">-</strong>
+      <span id="po-edit-tel" style="font-size:.78rem;color:var(--primary-dark)"></span>
+      <span id="po-edit-fecha" style="font-size:.75rem;color:var(--gray-500);margin-left:auto"></span>
+    </div>
+
+    <!-- Tabla de productos -->
+    <div style="font-size:.78rem;font-weight:700;color:var(--gray-500);text-transform:uppercase;margin-bottom:.4rem">Productos del pedido</div>
+    <div class="table-wrap" style="margin-bottom:1rem">
+      <table style="width:100%">
+        <thead>
+          <tr>
+            <th>Producto</th><th>Cantidad</th><th>Precio unit.</th><th>Subtotal</th><th></th>
+          </tr>
+        </thead>
+        <tbody id="po-edit-items"></tbody>
+      </table>
+    </div>
+
+    <!-- Descuento -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.75rem;margin-bottom:1rem">
+      <div class="form-group" style="margin:0">
+        <label>Método de pago</label>
+        <select class="form-control" id="po-edit-metodo">
+          <option value="Efectivo">💵 Efectivo</option>
+          <option value="Yape">💜 Yape</option>
+          <option value="Plin">💚 Plin</option>
+          <option value="QR">📱 QR</option>
+          <option value="Link de pago">🔗 Link de pago</option>
+          <option value="Tarjeta POS">💳 Tarjeta POS</option>
+          <option value="Tarjeta POS Móvil">📲 Tarjeta POS Móvil</option>
+          <option value="Transferencia">🏦 Transferencia</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin:0">
+        <label>Entrega</label>
+        <select class="form-control" id="po-edit-entrega">
+          <option value="recojo">🏪 Recojo en tienda</option>
+          <option value="delivery">🚚 Delivery</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin:0">
+        <label>Descuento (S/)</label>
+        <input type="number" class="form-control" id="po-edit-descuento" min="0" step="0.10" value="0" oninput="_poRecalcTotal()" />
+      </div>
+    </div>
+
+    <div class="form-group" style="margin-bottom:1rem">
+      <label>Nota interna (solo admin)</label>
+      <input type="text" class="form-control" id="po-edit-nota" placeholder="Ej: Cliente confirmó eliminar la leche" />
+    </div>
+
+    <!-- Total recalculado -->
+    <div style="background:var(--gray-50);border-radius:8px;padding:.75rem 1rem;display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+      <span style="color:var(--gray-600);font-size:.9rem">Total actualizado</span>
+      <span id="po-edit-total" style="font-size:1.3rem;font-weight:800;color:var(--primary)">S/ 0.00</span>
+    </div>
+
+    <div style="display:flex;gap:.5rem;justify-content:flex-end">
+      <button class="btn btn-outline" onclick="cerrarModal('modal-editar-pedido')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarEdicionPedido()">💾 Guardar cambios</button>
+    </div>
+  </div>`;
+  document.body.appendChild(div);
+}
+
+function poItemCant(i) {
+  // Recibe (index, delta) — llamado desde onclick
+  const delta = arguments[1];
+  const p = DB.pedidosOnline.find(x => String(x.id) === String(_poEditId));
+  if (!p) return;
+  const item = p.items[i];
+  if (!item) return;
+  const nueva = Math.max(0, item.cant + delta);
+  item.cant = nueva;
+  // Actualizar UI de la fila
+  const cantEl = document.getElementById('po-cant-'+i);
+  const rowEl  = document.getElementById('po-row-'+i);
+  const subEl  = document.getElementById('po-subtotal-'+i);
+  if (cantEl) cantEl.textContent = nueva;
+  if (subEl)  subEl.textContent = 'S/ ' + (item.precio * nueva).toFixed(2);
+  if (rowEl)  rowEl.style.opacity = nueva <= 0 ? '0.4' : '1';
+  if (rowEl)  rowEl.style.textDecoration = nueva <= 0 ? 'line-through' : '';
+  _poRecalcTotal();
+}
+
+function poEliminarItem(i) {
+  const p = DB.pedidosOnline.find(x => String(x.id) === String(_poEditId));
+  if (!p) return;
+  if (!confirm('¿Eliminar "' + p.items[i].nombre + '" del pedido?')) return;
+  p.items[i].cant = 0;
+  p.items[i].eliminado = true;
+  const rowEl = document.getElementById('po-row-'+i);
+  const cantEl = document.getElementById('po-cant-'+i);
+  const subEl  = document.getElementById('po-subtotal-'+i);
+  if (rowEl)  { rowEl.style.opacity = '0.35'; rowEl.style.textDecoration = 'line-through'; }
+  if (cantEl) cantEl.textContent = '0';
+  if (subEl)  subEl.textContent = 'S/ 0.00';
+  _poRecalcTotal();
+}
+
+function _poRecalcTotal() {
+  const p = DB.pedidosOnline.find(x => String(x.id) === String(_poEditId));
+  if (!p) return;
+  const desc = parseFloat(document.getElementById('po-edit-descuento')?.value) || 0;
+  const subtotal = (p.items||[]).reduce((s,i) => s + (i.precio * Math.max(0, i.cant)), 0);
+  const total = Math.max(0, subtotal - desc);
+  const el = document.getElementById('po-edit-total');
+  if (el) el.textContent = sol(total);
+}
+
+function guardarEdicionPedido() {
+  if (!DB.pedidosOnline) return;
+  const idx = DB.pedidosOnline.findIndex(x => String(x.id) === String(_poEditId));
+  if (idx < 0) return;
+  const p = DB.pedidosOnline[idx];
+
+  const desc     = parseFloat(document.getElementById('po-edit-descuento')?.value) || 0;
+  const metodo   = document.getElementById('po-edit-metodo')?.value   || p.metodo;
+  const entrega  = document.getElementById('po-edit-entrega')?.value  || p.entrega;
+  const nota     = document.getElementById('po-edit-nota')?.value     || '';
+
+  // Recalcular total con items actuales y descuento
+  const itemsActivos = (p.items||[]).filter(i => i.cant > 0 && !i.eliminado);
+  const subtotal     = itemsActivos.reduce((s,i) => s + i.precio * i.cant, 0);
+  const total        = Math.max(0, subtotal - desc);
+
+  // Si todos los productos fueron eliminados, advertir
+  if (itemsActivos.length === 0) {
+    if (!confirm('⚠️ El pedido quedará sin productos. ¿Deseas cancelarlo automáticamente?')) return;
+    p.estado = 'cancelado';
+  }
+
+  p.items      = p.items; // ya modificado en memoria (poItemCant / poEliminarItem)
+  p.metodo     = metodo;
+  p.entrega    = entrega;
+  p.descuento  = desc;
+  p.total      = total;
+  p.notaAdmin  = nota;
+  p.editado    = true;
+  p.fechaEdicion = today() + ' ' + nowTime();
+
+  fbGuardar();
+  cerrarModal('modal-editar-pedido');
+  renderPedidosOnline();
+  alert('✅ Pedido actualizado correctamente.');
+}
+
+// ── Confirmar entrega con validación de stock ─────────────────────────────────
+function confirmarEntregaPedido(id) {
   if (!DB.pedidosOnline) return;
   const p = DB.pedidosOnline.find(x => String(x.id) === String(id));
   if (!p) return;
   const nuevoEstado = document.getElementById('po-estado-'+id)?.value;
   if (!nuevoEstado) return;
-  // Si se entrega, descontar stock y registrar en historial
+
+  // Si se marca como entregado: verificar stock y confirmar
   if (nuevoEstado === 'entregado' && p.estado !== 'entregado') {
-    (p.items||[]).forEach(item => {
+    // Revisar stock suficiente
+    const sinStock = (p.items||[]).filter(i => i.cant > 0 && !i.eliminado).filter(item => {
+      const prod = DB.productos.find(x => x.id === item.prodId);
+      return prod && prod.stock < item.cant;
+    });
+
+    let confirmMsg = `¿Confirmar entrega del pedido de ${p.clienteNombre||'cliente'}?\n\nProductos a descontar del inventario:\n`;
+    (p.items||[]).filter(i=>i.cant>0&&!i.eliminado).forEach(i => {
+      confirmMsg += `• ${i.nombre} x${i.cant} — ${sol(i.precio*i.cant)}\n`;
+    });
+    confirmMsg += `\nTotal: ${sol(p.total)}\nMétodo: ${p.metodo}`;
+    if (sinStock.length > 0) {
+      confirmMsg += `\n\n⚠️ ALERTA: Los siguientes productos tienen stock insuficiente:\n`;
+      sinStock.forEach(item => {
+        const prod = DB.productos.find(x => x.id === item.prodId);
+        confirmMsg += `• ${item.nombre}: necesitas ${item.cant}, disponible ${prod?.stock||0}\n`;
+      });
+      confirmMsg += '\n¿Continuar de todas formas?';
+    }
+
+    if (!confirm(confirmMsg)) return;
+
+    // Descontar stock solo de items activos
+    (p.items||[]).filter(i=>i.cant>0&&!i.eliminado).forEach(item => {
       const prod = DB.productos.find(x => x.id === item.prodId);
       if (prod) prod.stock = Math.max(0, prod.stock - item.cant);
     });
+
+    // Registrar en historial de ventas
     if (!DB.historialVentas) DB.historialVentas = [];
+    const itemsFinales = (p.items||[]).filter(i=>i.cant>0&&!i.eliminado);
     DB.historialVentas.push({
-      id: p.id, fecha: p.fecha, hora: p.hora, cajero: 'Online', clienteId: null, clienteNombre: p.clienteNombre,
-      items: p.items, subtotal: p.total, descuento: 0, total: p.total, metodo: p.metodo,
-      origen: 'online', estado: 'completado', estadoStock: 'descontado'
+      id: p.id,
+      fecha: p.fecha, hora: p.hora,
+      cajero: 'Online', clienteId: null, clienteNombre: p.clienteNombre,
+      items: itemsFinales,
+      subtotal: itemsFinales.reduce((s,i)=>s+i.precio*i.cant,0),
+      descuento: p.descuento || 0,
+      total: p.total,
+      metodo: p.metodo,
+      origen: 'online',
+      estado: 'completado',
+      estadoStock: 'descontado',
+      notaAdmin: p.notaAdmin || ''
     });
   }
+
+  // Si se cancela, no descontar nada — solo cambiar estado
   p.estado = nuevoEstado;
   fbGuardar();
+  fbGuardarProductos();
   renderPedidosOnline();
-  renderInventario && renderInventario();
-  alert('✅ Estado actualizado');
-}
-
-function verPedidoOnline(id) {
-  if (!DB.pedidosOnline) return;
-  const p = DB.pedidosOnline.find(x => String(x.id) === String(id));
-  if (!p) return;
-  const items = (p.items||[]).map(i=>`• ${i.nombre} x${i.cant} — ${sol(i.precio*i.cant)}`).join('\n');
-  alert(`📦 Pedido de ${p.clienteNombre||'Cliente'}\n${p.clienteTel?'📱 '+p.clienteTel+'\n':''}\nProductos:\n${items}\n\nTotal: ${sol(p.total)}\nMétodo: ${p.metodo}\nEntrega: ${p.entrega==='delivery'?'🚚 Delivery':'🏪 Recojo en tienda'}\nFecha: ${formatDate(p.fecha)} ${p.hora||''}`);
+  try { renderInvTable(); } catch(e){}
+  try { renderHistorialVentas(); } catch(e){}
+  try { renderDashboard(); } catch(e){}
+  alert(nuevoEstado === 'entregado' ? '✅ Pedido entregado. Stock descontado e historial actualizado.' : '✅ Estado actualizado.');
 }
 
 // ===================== TIENDA PÚBLICA (/tienda) =====================
