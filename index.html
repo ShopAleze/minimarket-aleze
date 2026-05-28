@@ -20,6 +20,7 @@
 })();
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <!-- Firebase SDK (Compat — funciona sin bundler) -->
 <script>
@@ -754,6 +755,72 @@
   .inv-check-ok{background:var(--accent-light)}
   .inv-check-diff{background:var(--danger-light)}
 
+  /* ===== PANEL EXCEL IMPORTAR / EXPORTAR ===== */
+  .excel-panel {
+    background: white;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    margin-bottom: 0.75rem;
+    overflow: hidden;
+    border: 1.5px solid var(--gray-200);
+  }
+  .excel-panel-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.65rem 1rem; cursor: pointer;
+    background: linear-gradient(90deg, #F5F3FF 0%, #ECFDF5 100%);
+    user-select: none;
+    border-bottom: 1px solid transparent;
+    transition: border-color 0.2s;
+  }
+  .excel-panel-header.open { border-bottom-color: var(--gray-200); }
+  .excel-panel-header-left { display: flex; align-items: center; gap: 0.5rem; font-weight: 700; font-size: 0.88rem; color: var(--gray-800); }
+  .excel-panel-header-right { display: flex; align-items: center; gap: 0.5rem; }
+  .excel-panel-body { display: none; padding: 1rem; }
+  .excel-panel-body.open { display: block; }
+  .excel-section-title { font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--gray-500); margin-bottom: 0.6rem; }
+  .excel-filters { display: flex; gap: 0.6rem; flex-wrap: wrap; align-items: flex-end; margin-bottom: 0.75rem; }
+  .excel-filter-group { display: flex; flex-direction: column; gap: 0.2rem; }
+  .excel-filter-group label { font-size: 0.72rem; font-weight: 600; color: var(--gray-600); }
+  .excel-filter-group select, .excel-filter-group input { padding: 0.42rem 0.6rem; border: 1.5px solid var(--gray-200); border-radius: 7px; font-size: 0.8rem; outline: none; background: white; }
+  .excel-filter-group select:focus, .excel-filter-group input:focus { border-color: var(--primary); }
+  .excel-divider { border: none; border-top: 1px dashed var(--gray-200); margin: 0.85rem 0; }
+  .excel-upload-area {
+    border: 2px dashed var(--gray-300); border-radius: 10px;
+    padding: 1rem 1.25rem; text-align: center;
+    cursor: pointer; transition: all 0.2s;
+    background: var(--gray-50);
+    position: relative;
+  }
+  .excel-upload-area:hover, .excel-upload-area.drag-over { border-color: var(--primary); background: var(--primary-light); }
+  .excel-upload-area input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+  .excel-upload-icon { font-size: 1.8rem; margin-bottom: 0.3rem; }
+  .excel-upload-text { font-size: 0.82rem; color: var(--gray-600); }
+  .excel-upload-text strong { color: var(--primary); }
+  /* ===== MODAL REVISION CAMBIOS EXCEL ===== */
+  .excel-review-item {
+    border: 1.5px solid var(--gray-200); border-radius: 9px;
+    padding: 0.75rem 0.9rem; margin-bottom: 0.6rem;
+    transition: border-color 0.2s;
+  }
+  .excel-review-item.accepted { border-color: var(--accent); background: #F0FDF4; }
+  .excel-review-item.rejected { border-color: var(--gray-300); background: var(--gray-50); opacity: 0.6; }
+  .excel-review-item.new-prod { border-color: var(--info); background: #EFF6FF; }
+  .excel-review-item.new-prod.accepted { border-color: var(--accent); background: #F0FDF4; }
+  .excel-review-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.45rem; }
+  .excel-review-name { font-weight: 700; font-size: 0.88rem; color: var(--gray-900); }
+  .excel-review-badge { font-size: 0.7rem; padding: 0.15rem 0.5rem; border-radius: 20px; font-weight: 700; }
+  .excel-review-badge.mod { background: var(--warning-light); color: #92400E; }
+  .excel-review-badge.new { background: var(--info-light); color: #1D4ED8; }
+  .excel-review-changes { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.5rem; }
+  .excel-change-pill { font-size: 0.72rem; border-radius: 6px; padding: 0.18rem 0.5rem; background: var(--gray-100); color: var(--gray-700); }
+  .excel-change-pill span.old { color: var(--danger); text-decoration: line-through; margin-right: 0.2rem; }
+  .excel-change-pill span.new { color: var(--accent-dark); font-weight: 700; }
+  .excel-review-actions { display: flex; gap: 0.4rem; }
+  .btn-accept-change { background: var(--accent); color: white; border: none; border-radius: 6px; padding: 0.3rem 0.75rem; font-size: 0.78rem; font-weight: 600; cursor: pointer; }
+  .btn-reject-change { background: var(--gray-100); color: var(--gray-600); border: 1px solid var(--gray-300); border-radius: 6px; padding: 0.3rem 0.75rem; font-size: 0.78rem; font-weight: 600; cursor: pointer; }
+  .excel-review-summary { background: var(--primary-light); border-radius: 8px; padding: 0.65rem 0.9rem; margin-bottom: 0.9rem; font-size: 0.82rem; color: var(--primary-dark); display: flex; gap: 1.2rem; flex-wrap: wrap; }
+  .excel-review-summary span { font-weight: 700; }
+
   @media (max-width: 768px) {
     :root { --sidebar-w: 220px; }
     .grid-4 { grid-template-columns: repeat(2, 1fr); }
@@ -1072,6 +1139,79 @@
             <button class="btn btn-outline btn-sm" onclick="abrirInventarioMensual()">📋 Inventario Mensual</button>
             <button class="btn btn-outline btn-sm" onclick="abrirSugerirPrecios()">💡 Sugerir precios</button>
             <button class="btn btn-primary btn-sm" onclick="abrirModalProducto()">+ Nuevo Producto</button>
+          </div>
+        </div>
+        <!-- PANEL EXCEL — solo admin, se muestra/oculta via JS -->
+        <div class="excel-panel" id="excel-panel-inv" style="display:none">
+          <div class="excel-panel-header" id="excel-panel-toggle" onclick="toggleExcelPanel()">
+            <div class="excel-panel-header-left">
+              📊 Exportar / Importar Inventario (Excel)
+              <span style="font-size:0.72rem;font-weight:400;color:var(--gray-500)">— Gestión masiva de productos</span>
+            </div>
+            <div class="excel-panel-header-right">
+              <span id="excel-panel-arrow" style="font-size:0.9rem;color:var(--gray-400);transition:transform 0.2s">▼</span>
+            </div>
+          </div>
+          <div class="excel-panel-body" id="excel-panel-body">
+            <!-- EXPORTAR -->
+            <div class="excel-section-title">📤 Exportar a Excel</div>
+            <div class="excel-filters">
+              <div class="excel-filter-group">
+                <label>Categoría</label>
+                <select id="xls-filtro-cat">
+                  <option value="">Todas</option>
+                </select>
+              </div>
+              <div class="excel-filter-group">
+                <label>Estado stock</label>
+                <select id="xls-filtro-estado">
+                  <option value="">Todos</option>
+                  <option value="con-stock">Con stock</option>
+                  <option value="sin-stock">Sin stock (= 0)</option>
+                  <option value="bajo">Stock bajo</option>
+                  <option value="ok">Stock OK</option>
+                </select>
+              </div>
+              <div class="excel-filter-group">
+                <label>Vencimiento</label>
+                <select id="xls-filtro-venc">
+                  <option value="">Todos</option>
+                  <option value="vence-7">Vence en 7 días</option>
+                  <option value="vence-30">Vence en 30 días</option>
+                  <option value="vencido">Ya vencidos</option>
+                  <option value="sin-venc">Sin fecha venc.</option>
+                </select>
+              </div>
+              <div class="excel-filter-group">
+                <label>Venc. desde</label>
+                <input type="date" id="xls-filtro-desde" />
+              </div>
+              <div class="excel-filter-group">
+                <label>Venc. hasta</label>
+                <input type="date" id="xls-filtro-hasta" />
+              </div>
+              <div class="excel-filter-group" style="justify-content:flex-end">
+                <label>&nbsp;</label>
+                <button class="btn btn-accent btn-sm" onclick="exportarExcelInventario()">⬇️ Descargar Excel</button>
+              </div>
+            </div>
+            <div style="font-size:0.75rem;color:var(--gray-400);margin-top:-0.3rem;margin-bottom:0.5rem">
+              💡 El Excel generado puede modificarse y volver a subirse para actualizar el inventario masivamente.
+            </div>
+            <hr class="excel-divider">
+            <!-- IMPORTAR -->
+            <div class="excel-section-title">📥 Importar desde Excel</div>
+            <div class="excel-upload-area" id="excel-drop-zone"
+              ondragover="event.preventDefault();this.classList.add('drag-over')"
+              ondragleave="this.classList.remove('drag-over')"
+              ondrop="onExcelDrop(event)">
+              <input type="file" accept=".xlsx,.xls" id="excel-file-input" onchange="onExcelFileSelect(event)" />
+              <div class="excel-upload-icon">📂</div>
+              <div class="excel-upload-text">
+                <strong>Haz clic o arrastra</strong> el archivo Excel aquí<br>
+                <span style="color:var(--gray-400);font-size:0.75rem">Formatos aceptados: .xlsx · .xls — Debe ser exportado desde este sistema</span>
+              </div>
+            </div>
           </div>
         </div>
         <div class="card" style="padding:0.75rem 1rem;margin-bottom:0.75rem">
@@ -2021,6 +2161,34 @@
   </div>
 </div>
 
+
+<!-- ===== MODAL REVISIÓN CAMBIOS EXCEL ===== -->
+<div class="modal-overlay" id="modal-excel-review">
+  <div class="modal modal-lg" style="max-width:750px">
+    <div class="modal-header">
+      <h3 id="excel-review-titulo">📋 Revisión de cambios — Importar Excel</h3>
+      <button class="modal-close" onclick="cerrarModal('modal-excel-review')">✕</button>
+    </div>
+    <div id="excel-review-summary-bar" class="excel-review-summary">
+      <div>🔄 Modificados: <span id="xls-count-mod">0</span></div>
+      <div>🆕 Nuevos: <span id="xls-count-new">0</span></div>
+      <div>✅ Aceptados: <span id="xls-count-accepted">0</span></div>
+    </div>
+    <div style="display:flex;gap:0.5rem;margin-bottom:0.85rem;flex-wrap:wrap">
+      <button class="btn btn-accent btn-sm" onclick="aceptarTodosExcel()">✅ Aceptar todos los cambios</button>
+      <button class="btn btn-outline btn-sm" onclick="rechazarTodosExcel()">❌ Rechazar todos</button>
+      <div style="flex:1"></div>
+      <button class="btn btn-primary btn-sm" id="btn-aplicar-excel" onclick="aplicarCambiosExcel()" disabled>💾 Aplicar cambios aceptados</button>
+    </div>
+    <div id="excel-review-list" style="max-height:52vh;overflow-y:auto;padding-right:0.25rem">
+      <!-- items generados por JS -->
+    </div>
+    <div style="display:flex;justify-content:flex-end;gap:0.5rem;margin-top:1rem;border-top:1px solid var(--gray-100);padding-top:0.75rem">
+      <button class="btn btn-outline" onclick="cerrarModal('modal-excel-review')">Cancelar</button>
+      <button class="btn btn-primary" id="btn-aplicar-excel-2" onclick="aplicarCambiosExcel()" disabled>💾 Aplicar cambios aceptados</button>
+    </div>
+  </div>
+</div>
 <!-- Modal Escáner QR/Barras — POS e Inventario -->
 <div class="modal-overlay" id="modal-scanner">
   <div class="modal">
@@ -2639,6 +2807,7 @@ function imprimirTicket() { window.print(); }
 
 // ===================== INVENTARIO =====================
 function renderInventario() {
+  try { initExcelPanel(); } catch(e) {}
   updateInvCatFilter();
   renderInvTable();
 }
@@ -2746,7 +2915,7 @@ function editarProducto(id) {
 
 function eliminarProducto(id) {
   if (!confirm('¿Eliminar este producto?')) return;
-  DB.productos = DB.productos.filter(p => p.id !== id); fbGuardar();
+  DB.productos = DB.productos.filter(p => p.id !== id); fbGuardarProductos();
   renderInvTable();
 }
 
@@ -2955,7 +3124,7 @@ function guardarCatRapida() {
     margen: parseFloat(document.getElementById('catr-margen').value) || 0
   };
   DB.categorias.push(nueva);
-  fbGuardar();
+  fbGuardarProductos();
   // Actualizar el select del modal producto y seleccionar la nueva
   updateModalCats();
   document.getElementById('prod-cat').value = nueva.id;
@@ -3005,7 +3174,7 @@ function guardarProducto() {
   } else {
     DB.productos.push(prod);
   }
-  fbGuardar();
+  fbGuardarProductos();
   cerrarModal('modal-producto');
   renderInvTable();
   updateAlertCount();
@@ -3081,7 +3250,7 @@ function actualizarPreciosCat(modo) {
       p.precio = nuevo;
       actualizados++;
     });
-    fbGuardar();
+    fbGuardarProductos();
     cerrarModal('modal-categoria');
     renderCategorias();
     renderInvTable();
@@ -3116,7 +3285,7 @@ function aplicarPreciosCatSeleccionados() {
       n++;
     }
   });
-  fbGuardar();
+  fbGuardarProductos();
   cerrarModal('modal-cat-update-precios');
   cerrarModal('modal-categoria');
   renderInvTable();
@@ -3126,7 +3295,7 @@ function aplicarPreciosCatSeleccionados() {
 function eliminarCategoria(id) {
   if (DB.productos.some(p => p.cat == id)) { alert('No puedes eliminar una categoría con productos asignados'); return; }
   if (!confirm('¿Eliminar esta categoría?')) return;
-  DB.categorias = DB.categorias.filter(c => c.id !== id); fbGuardar();
+  DB.categorias = DB.categorias.filter(c => c.id !== id); fbGuardarProductos();
   renderCategorias();
 }
 
@@ -3715,12 +3884,13 @@ function guardarMerma() {
     if (cant > prod.stock) { alert('La cantidad supera el stock disponible'); if(oldProd) oldProd.stock -= old.cant; return; }
     old.prodId = prodId; old.cant = cant; old.motivo = motivo; old.obs = obs;
     prod.stock -= cant;
-    fbGuardar();
+    fbGuardar(); fbGuardarProductos();
   } else {
     if (cant > prod.stock) { alert('La cantidad supera el stock disponible'); return; }
     DB.mermas.push({ id: getId(), prodId, cant, motivo, obs, fecha: today(), usuario: currentUser });
     fbGuardar();
     prod.stock -= cant;
+    fbGuardarProductos();
     // Descontar del capital recuperado
     if (DB_EXT && DB_EXT.capital) { DB_EXT.capital.recuperado -= prod.costo * cant; fbGuardarExt(); }
   }
@@ -4670,7 +4840,7 @@ function sincronizarMermasInventario() {
     }
   });
   if (registradas > 0) {
-    fbGuardar();
+    fbGuardar(); fbGuardarProductos();
     alert('✅ ' + registradas + ' diferencia(s) sincronizadas con mermas y stock actualizado.');
     updateAlertCount();
   } else {
@@ -4766,7 +4936,7 @@ function aplicarTodosPrecios() {
     if (!isNaN(v) && v > 0) { const p = DB.productos.find(x => x.id===sd.id); if(p) p.precio = v; }
   });
   cerrarModal('modal-sugerir-precios');
-  fbGuardar();
+  fbGuardarProductos();
   renderInvTable();
   alert('✅ Todos los precios actualizados');
 }
@@ -4938,7 +5108,7 @@ function guardarComboSinergia() {
     precioOrig:(p1.precio*cant1)+(p2.precio*cant2), precioPromo:precio,
     desde:today(), hasta, activa:true
   });
-  fbGuardar();
+  fbGuardarProductos();
   cerrarModal('modal-combo-sinergia');
   renderInvTable();
   alert(`✅ Combo "${nombre}" creado.\nAl venderse descuenta: ${cant1} de ${p1.nombre} y ${cant2} de ${p2.nombre}`);
@@ -5411,44 +5581,70 @@ function fbGuardarExt() {
   }, 1200);
 }
 
-// ── Referencia al único documento que contiene toda la DB ──
-function fbDocRef() {
-  return fbFS.collection('aleze').doc('db');
-}
+// ── Referencias Firestore ──
+// db        → operaciones, ventas, caja, clientes, fiados, mermas, etc.
+// db_productos → productos + categorias (documento separado, más liviano)
+//               Lo leen: admin al iniciar + tienda online (caché 5 min)
+function fbDocRef()      { return fbFS.collection('aleze').doc('db'); }
+function fbProdDocRef()  { return fbFS.collection('aleze').doc('db_productos'); }
 
-// ── Guardar: debounce 1200ms + flag anti-loop ──
-// Una sola escritura Firestore por sesión de cambios
+// ── Guardar operaciones (excluye productos y categorias) ──
+// Debounce 1200ms — agrupa cambios rápidos en 1 sola escritura
+let _fbSaveTimerProd = null;
 function fbGuardar() {
   if (!fbFS) return;
   clearTimeout(_fbSaveTimer);
   _fbSaveTimer = setTimeout(() => {
     _fbEscribiendo = true;
-    const payload = JSON.parse(JSON.stringify(DB)); // copia limpia sin proxies
+    // Excluir productos y categorias — tienen su propio documento
+    const payload = JSON.parse(JSON.stringify(DB));
+    delete payload.productos;
+    delete payload.categorias;
     fbDocRef().set(payload)
-      .then(() => {
-        setTimeout(() => { _fbEscribiendo = false; }, 300);
-      })
-      .catch(e => {
-        _fbEscribiendo = false;
-        console.warn('Firestore write error:', e);
-      });
+      .then(() => { setTimeout(() => { _fbEscribiendo = false; }, 300); })
+      .catch(e => { _fbEscribiendo = false; console.warn('Firestore write error:', e); });
   }, 1200);
 }
 
-// ── Escuchar cambios de OTROS dispositivos (onSnapshot sobre 1 doc) ──
-// Cada cambio externo = 1 lectura Firestore
+// ── Guardar solo productos y categorias en documento separado ──
+// Se llama únicamente cuando el admin edita inventario/categorias
+function fbGuardarProductos() {
+  if (!fbFS) return;
+  clearTimeout(_fbSaveTimerProd);
+  _fbSaveTimerProd = setTimeout(() => {
+    _fbEscribiendo = true;
+    const payload = {
+      productos:  JSON.parse(JSON.stringify(DB.productos)),
+      categorias: JSON.parse(JSON.stringify(DB.categorias)),
+      config:     JSON.parse(JSON.stringify(DB.config))
+    };
+    fbProdDocRef().set(payload)
+      .then(() => {
+        _fbProdCacheTs = Date.now(); // actualizar timestamp caché
+        setTimeout(() => { _fbEscribiendo = false; }, 300);
+      })
+      .catch(e => { _fbEscribiendo = false; console.warn('Firestore db_productos write error:', e); });
+  }, 1200);
+}
+
+// ── Escuchar cambios de OTROS dispositivos ──
+// doc 'db' → operaciones  |  doc 'db_productos' → catálogo
+let _fbProdCacheTs = 0; // timestamp última carga de db_productos
 function fbEscuchar() {
   if (!fbFS) return;
+
+  // Listener operaciones (ventas, caja, clientes, etc.)
   _fbSnapshotUnsub = fbDocRef().onSnapshot(snapshot => {
     if (_fbEscribiendo) return;
     if (!snapshot.exists) return;
     const data = snapshot.data();
     if (!data) return;
-    Object.keys(data).forEach(k => { if (k in DB) DB[k] = data[k]; });
-    // Refrescar siempre
+    // Solo campos operativos (no productos/categorias que vienen de db_productos)
+    const camposOp = ['ventas','clientes','fiados','mermas','movimientos',
+                      'proveedores','promociones','caja','config','inventariosMensuales','historialVentas'];
+    camposOp.forEach(k => { if (k in data && k in DB) DB[k] = data[k]; });
     try { renderDashboard(); }    catch(e){}
     try { updateAlertCount(); }   catch(e){}
-    // Refrescar el módulo visible actualmente
     const activePage = document.querySelector('.page.active');
     const pageId = activePage ? activePage.id.replace('page-','') : '';
     try {
@@ -5465,6 +5661,27 @@ function fbEscuchar() {
       if (pageId === 'reportes')    { generarReporte(); }
     } catch(e){}
   }, err => { console.warn('Firestore listener error:', err.code); });
+
+  // Listener db_productos (catálogo — solo si otro dispositivo admin cambia inventario)
+  fbProdDocRef().onSnapshot(snapshot => {
+    if (_fbEscribiendo) return;
+    if (!snapshot.exists) return;
+    const data = snapshot.data();
+    if (!data) return;
+    if (data.productos)  DB.productos  = data.productos;
+    if (data.categorias) DB.categorias = data.categorias;
+    if (data.config)     DB.config     = data.config;
+    _fbProdCacheTs = Date.now();
+    try { renderDashboard(); } catch(e){}
+    try { updateAlertCount(); } catch(e){}
+    const activePage = document.querySelector('.page.active');
+    const pageId = activePage ? activePage.id.replace('page-','') : '';
+    try {
+      if (pageId === 'pos')        { renderPosProducts(); if (typeof renderMobPos === 'function') renderMobPos(); }
+      if (pageId === 'inventario') { renderInvTable(); }
+      if (pageId === 'categorias') { renderCategorias(); }
+    } catch(e){}
+  }, err => { console.warn('Firestore db_productos listener error:', err.code); });
 
   // Listener para DB_EXT (sueldos, gastos, capital, niveles, navidad)
   fbFS.collection('aleze').doc('db_ext').onSnapshot(snapshot => {
@@ -5488,14 +5705,26 @@ function fbEscuchar() {
 
 // ── Patch DB: interceptar asignaciones de array para auto-guardar ──
 // Solo las colecciones que el usuario modifica activamente
-const _fbPatchCols = ['productos','ventas','clientes','fiados','mermas',
-                      'movimientos','categorias','proveedores','promociones','caja','config'];
+// Columnas que van al doc 'db' (operaciones)
+const _fbPatchColsOp   = ['ventas','clientes','fiados','mermas','movimientos',
+                           'proveedores','promociones','caja','inventariosMensuales'];
+// Columnas que van al doc 'db_productos' (catálogo)
+const _fbPatchColsProd = ['productos','categorias'];
+
 function fbPatchDB() {
-  _fbPatchCols.forEach(col => {
+  _fbPatchColsOp.forEach(col => {
     let _val = DB[col];
     Object.defineProperty(DB, col, {
       get() { return _val; },
       set(v)  { _val = v; fbGuardar(); },
+      configurable: true
+    });
+  });
+  _fbPatchColsProd.forEach(col => {
+    let _val = DB[col];
+    Object.defineProperty(DB, col, {
+      get() { return _val; },
+      set(v)  { _val = v; fbGuardarProductos(); },
       configurable: true
     });
   });
@@ -5507,27 +5736,47 @@ window.onload = function() {
   const fbOk = iniciarFirebase();
 
   if (fbOk) {
-    // getDoc: 1 sola lectura al arrancar (no listener inicial)
-    fbDocRef().get().then(snapshot => {
-      if (snapshot.exists) {
-        // Firestore tiene datos — cargarlos
-        const data = snapshot.data();
-        Object.keys(data).forEach(k => { if (k in DB) DB[k] = data[k]; });
-        console.log('Datos cargados desde Firestore ✓');
-        // Cargar también DB_EXT
-        fbFS.collection('aleze').doc('db_ext').get().then(extSnap => {
-          if (extSnap.exists) {
-            const ext = extSnap.data();
-            Object.keys(ext).forEach(k => { if (k in DB_EXT) DB_EXT[k] = ext[k]; });
-          }
-        }).catch(e => console.warn('db_ext load error:', e));
+    // Carga inicial: 3 lecturas al arrancar (db + db_productos + db_ext)
+    // Después solo onSnapshot reacciona a cambios — sin lecturas adicionales
+    const promOp   = fbDocRef().get();
+    const promProd = fbProdDocRef().get();
+    const promExt  = fbFS.collection('aleze').doc('db_ext').get();
+
+    Promise.all([promOp, promProd, promExt]).then(([snapOp, snapProd, snapExt]) => {
+      let esPrimeraVez = false;
+
+      if (snapOp.exists) {
+        const data = snapOp.data();
+        // Cargar solo campos operativos del doc principal
+        const camposOp = ['ventas','clientes','fiados','mermas','movimientos',
+                          'proveedores','promociones','caja','config','inventariosMensuales','historialVentas'];
+        camposOp.forEach(k => { if (k in data && k in DB) DB[k] = data[k]; });
+        console.log('Operaciones cargadas desde Firestore ✓');
       } else {
-        // Primera vez — sembrar datos demo y subirlos
+        esPrimeraVez = true;
+      }
+
+      if (snapProd.exists) {
+        const pd = snapProd.data();
+        if (pd.productos)  DB.productos  = pd.productos;
+        if (pd.categorias) DB.categorias = pd.categorias;
+        if (pd.config)     DB.config     = { ...DB.config, ...pd.config };
+        _fbProdCacheTs = Date.now();
+        console.log('Catálogo cargado desde Firestore ✓');
+      } else if (esPrimeraVez) {
+        // Primera vez — sembrar datos demo
         _semillaDemo(hoy);
         fbGuardar();
+        fbGuardarProductos();
       }
+
+      if (snapExt.exists) {
+        const ext = snapExt.data();
+        Object.keys(ext).forEach(k => { if (k in DB_EXT) DB_EXT[k] = ext[k]; });
+      }
+
       fbPatchDB();
-      fbEscuchar(); // activar listener DESPUÉS de cargar datos iniciales
+      fbEscuchar(); // activar listeners DESPUÉS de carga inicial
       checkRoute();
       if (!window.location.pathname.includes('/tienda') && !window.location.hash.includes('/tienda')) {
         renderDashboard();
@@ -5802,7 +6051,32 @@ function initTienda() {
     document.body.appendChild(tiendaEl);
   }
   tiendaEl.style.display = 'block';
-  _renderTienda();
+
+  // Cargar catálogo desde db_productos con caché de 5 minutos
+  // Si ya están en memoria y el caché es reciente → render directo (0 lecturas)
+  // Si el caché expiró o no hay datos → 1 lectura a db_productos
+  const CACHE_MS = 5 * 60 * 1000; // 5 minutos
+  const cacheValido = _fbProdCacheTs && (Date.now() - _fbProdCacheTs) < CACHE_MS;
+
+  if (cacheValido && DB.productos && DB.productos.length > 0) {
+    // Caché vigente — render inmediato sin leer Firestore
+    _renderTienda();
+  } else if (fbFS) {
+    // Caché expirado o primera visita — 1 lectura a db_productos
+    fbProdDocRef().get().then(snap => {
+      if (snap.exists) {
+        const pd = snap.data();
+        if (pd.productos)  DB.productos  = pd.productos;
+        if (pd.categorias) DB.categorias = pd.categorias;
+        if (pd.config)     DB.config     = { ...DB.config, ...pd.config };
+        _fbProdCacheTs = Date.now();
+      }
+      _renderTienda();
+    }).catch(() => _renderTienda()); // fallback a datos en memoria si falla
+  } else {
+    // Sin Firestore — usar datos locales
+    _renderTienda();
+  }
 }
 
 function _getStockBadge(p) {
@@ -6440,6 +6714,347 @@ function _initLocal(hoy) {
     mobUpdateBar();
   }
 }
+
+// ===================== EXCEL IMPORTAR / EXPORTAR =====================
+
+// --- Mostrar panel solo si es admin ---
+function initExcelPanel() {
+  const panel = document.getElementById('excel-panel-inv');
+  if (!panel) return;
+  panel.style.display = (currentRole === 'admin') ? 'block' : 'none';
+  // Llenar filtro de categorías
+  const sel = document.getElementById('xls-filtro-cat');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">Todas</option>';
+  (DB.categorias || []).forEach(c => {
+    sel.innerHTML += `<option value="${c.id}">${c.emoji || ''} ${c.nombre}</option>`;
+  });
+}
+
+function toggleExcelPanel() {
+  const body = document.getElementById('excel-panel-body');
+  const header = document.getElementById('excel-panel-toggle');
+  const arrow = document.getElementById('excel-panel-arrow');
+  const open = body.classList.toggle('open');
+  header.classList.toggle('open', open);
+  arrow.style.transform = open ? 'rotate(180deg)' : '';
+}
+
+// --- EXPORTAR ---
+function exportarExcelInventario() {
+  if (currentRole !== 'admin') { alert('Solo el administrador puede exportar el inventario.'); return; }
+
+  let prods = JSON.parse(JSON.stringify(DB.productos));
+
+  // Filtros
+  const filtCat   = document.getElementById('xls-filtro-cat').value;
+  const filtEst   = document.getElementById('xls-filtro-estado').value;
+  const filtVenc  = document.getElementById('xls-filtro-venc').value;
+  const filtDesde = document.getElementById('xls-filtro-desde').value;
+  const filtHasta = document.getElementById('xls-filtro-hasta').value;
+  const hoy = new Date(); hoy.setHours(0,0,0,0);
+
+  if (filtCat)   prods = prods.filter(p => String(p.cat) === String(filtCat));
+  if (filtEst === 'con-stock')  prods = prods.filter(p => p.stock > 0);
+  if (filtEst === 'sin-stock')  prods = prods.filter(p => p.stock === 0);
+  if (filtEst === 'bajo')       prods = prods.filter(p => p.stock <= p.stockMin);
+  if (filtEst === 'ok')         prods = prods.filter(p => p.stock > p.stockMin && (!p.venc || diasHasta(p.venc) > 7));
+  if (filtVenc === 'vence-7')   prods = prods.filter(p => p.venc && diasHasta(p.venc) >= 0 && diasHasta(p.venc) <= 7);
+  if (filtVenc === 'vence-30')  prods = prods.filter(p => p.venc && diasHasta(p.venc) >= 0 && diasHasta(p.venc) <= 30);
+  if (filtVenc === 'vencido')   prods = prods.filter(p => p.venc && diasHasta(p.venc) < 0);
+  if (filtVenc === 'sin-venc')  prods = prods.filter(p => !p.venc);
+  if (filtDesde) prods = prods.filter(p => p.venc && p.venc >= filtDesde);
+  if (filtHasta) prods = prods.filter(p => p.venc && p.venc <= filtHasta);
+
+  if (!prods.length) { alert('No hay productos con los filtros seleccionados.'); return; }
+
+  // Construir filas con nombres legibles
+  const filas = prods.map(p => {
+    const cat = DB.categorias.find(c => c.id == p.cat);
+    const prov = DB.proveedores ? DB.proveedores.find(v => v.id == p.prov) : null;
+    return {
+      'ID_SISTEMA':     p.id,
+      'Codigo_Barras':  p.codigo || '',
+      'Nombre':         p.nombre,
+      'Categoria':      cat ? (cat.emoji + ' ' + cat.nombre) : '',
+      'ID_Categoria':   p.cat || '',
+      'Tipo':           p.tipo || 'unidad',
+      'Unidad':         p.unidad || 'und',
+      'Stock_Actual':   p.stock,
+      'Stock_Minimo':   p.stockMin,
+      'Precio_Costo':   p.costo,
+      'Precio_Venta':   p.precio,
+      'Vencimiento':    p.venc || '',
+      'ID_Proveedor':   p.prov || '',
+      'Proveedor':      prov ? prov.nombre : ''
+    };
+  });
+
+  // Crear hoja con instrucciones en fila 1
+  const ws = XLSX.utils.json_to_sheet(filas);
+
+  // Ancho de columnas
+  ws['!cols'] = [
+    {wch:14},{wch:16},{wch:28},{wch:22},{wch:12},{wch:10},{wch:8},
+    {wch:12},{wch:12},{wch:13},{wch:12},{wch:13},{wch:12},{wch:22}
+  ];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Inventario');
+
+  // Hoja de instrucciones
+  const instrData = [
+    ['INSTRUCCIONES PARA MODIFICAR Y REIMPORTAR'],
+    [''],
+    ['1. NO borrar ni modificar la columna ID_SISTEMA (es la clave de identificacion)'],
+    ['2. Puede modificar: Nombre, Tipo, Unidad, Stock_Actual, Stock_Minimo, Precio_Costo, Precio_Venta, Vencimiento, ID_Categoria, ID_Proveedor, Codigo_Barras'],
+    ['3. Para AGREGAR un producto nuevo: deje ID_SISTEMA en BLANCO y complete todos los demas campos'],
+    ['4. La columna Categoria y Proveedor son solo referencia visual, el sistema usa ID_Categoria e ID_Proveedor'],
+    ['5. El formato de Vencimiento debe ser: AAAA-MM-DD (ej: 2026-12-31). Dejar en blanco si no aplica'],
+    ['6. Guarde el archivo y vuelvalo a subir en el sistema para actualizar'],
+    [''],
+    ['CATEGORIAS DISPONIBLES:'],
+    ['ID', 'Nombre']
+  ];
+  (DB.categorias || []).forEach(c => instrData.push([c.id, c.emoji + ' ' + c.nombre]));
+  instrData.push(['']);
+  instrData.push(['PROVEEDORES DISPONIBLES:']);
+  instrData.push(['ID', 'Nombre']);
+  (DB.proveedores || []).forEach(v => instrData.push([v.id, v.nombre]));
+
+  const wsInstr = XLSX.utils.aoa_to_sheet(instrData);
+  wsInstr['!cols'] = [{wch:12},{wch:40}];
+  XLSX.utils.book_append_sheet(wb, wsInstr, 'Instrucciones');
+
+  const fecha = today().replace(/-/g,'');
+  XLSX.writeFile(wb, `inventario_aleze_${fecha}.xlsx`);
+}
+
+// --- IMPORTAR: Drag & Drop ---
+function onExcelDrop(e) {
+  e.preventDefault();
+  document.getElementById('excel-drop-zone').classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) procesarArchivoExcel(file);
+}
+
+function onExcelFileSelect(e) {
+  const file = e.target.files[0];
+  if (file) procesarArchivoExcel(file);
+  e.target.value = '';
+}
+
+// --- IMPORTAR: Procesar archivo ---
+let _excelCambiosPendientes = [];
+
+function procesarArchivoExcel(file) {
+  if (currentRole !== 'admin') { alert('Solo el administrador puede importar.'); return; }
+  if (!file.name.match(/\.(xlsx|xls)$/i)) { alert('Por favor sube un archivo .xlsx o .xls'); return; }
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = new Uint8Array(e.target.result);
+      const wb = XLSX.read(data, { type: 'array' });
+      const ws = wb.Sheets['Inventario'];
+      if (!ws) { alert('❌ El archivo no tiene una hoja llamada "Inventario". Asegúrate de exportar desde este sistema.'); return; }
+
+      const filas = XLSX.utils.sheet_to_json(ws, { defval: '' });
+      if (!filas.length) { alert('La hoja Inventario está vacía.'); return; }
+
+      // Detectar cambios
+      const cambios = [];
+
+      filas.forEach(fila => {
+        const idSistema = fila['ID_SISTEMA'];
+
+        if (!idSistema || idSistema === '') {
+          // Producto NUEVO
+          if (!fila['Nombre'] || fila['Nombre'].toString().trim() === '') return;
+          cambios.push({ tipo: 'nuevo', fila });
+          return;
+        }
+
+        const prodExistente = DB.productos.find(p => p.id == idSistema);
+        if (!prodExistente) return; // ID no encontrado, ignorar
+
+        // Comparar campos modificables
+        const diffs = [];
+        const mapCampos = [
+          { key: 'nombre',   col: 'Nombre',         fmt: v => v.toString().trim() },
+          { key: 'tipo',     col: 'Tipo',            fmt: v => v.toString().trim() },
+          { key: 'unidad',   col: 'Unidad',          fmt: v => v.toString().trim() },
+          { key: 'stock',    col: 'Stock_Actual',    fmt: v => parseFloat(v) || 0 },
+          { key: 'stockMin', col: 'Stock_Minimo',    fmt: v => parseFloat(v) || 0 },
+          { key: 'costo',    col: 'Precio_Costo',    fmt: v => parseFloat(v) || 0 },
+          { key: 'precio',   col: 'Precio_Venta',    fmt: v => parseFloat(v) || 0 },
+          { key: 'venc',     col: 'Vencimiento',     fmt: v => v.toString().trim() },
+          { key: 'cat',      col: 'ID_Categoria',    fmt: v => parseInt(v) || prodExistente.cat },
+          { key: 'prov',     col: 'ID_Proveedor',    fmt: v => parseInt(v) || null },
+          { key: 'codigo',   col: 'Codigo_Barras',   fmt: v => v.toString().trim() },
+        ];
+
+        mapCampos.forEach(({ key, col, fmt }) => {
+          if (!(col in fila)) return;
+          const nuevoVal = fmt(fila[col]);
+          const viejoVal = prodExistente[key];
+          if (String(nuevoVal) !== String(viejoVal)) {
+            diffs.push({ campo: key, etiqueta: col.replace(/_/g,' '), viejo: viejoVal, nuevo: nuevoVal });
+          }
+        });
+
+        if (diffs.length > 0) {
+          cambios.push({ tipo: 'mod', prodId: idSistema, nombre: prodExistente.nombre, diffs });
+        }
+      });
+
+      if (!cambios.length) {
+        alert('✅ No se detectaron diferencias entre el Excel y el inventario actual. Todo está al día.');
+        return;
+      }
+
+      // Guardar pendientes y abrir modal
+      _excelCambiosPendientes = cambios.map(c => ({ ...c, aceptado: false }));
+      renderExcelReviewModal();
+      abrirModal('modal-excel-review');
+
+    } catch(err) {
+      alert('❌ Error al leer el archivo: ' + err.message);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// --- Renderizar modal de revisión ---
+function renderExcelReviewModal() {
+  const lista = document.getElementById('excel-review-list');
+  const nMod = _excelCambiosPendientes.filter(c => c.tipo === 'mod').length;
+  const nNew = _excelCambiosPendientes.filter(c => c.tipo === 'nuevo').length;
+  document.getElementById('xls-count-mod').textContent = nMod;
+  document.getElementById('xls-count-new').textContent = nNew;
+  actualizarContadorAceptados();
+
+  lista.innerHTML = _excelCambiosPendientes.map((c, i) => {
+    const esNew = c.tipo === 'nuevo';
+    const estadoClass = c.aceptado ? (esNew ? 'new-prod accepted' : 'accepted') : (esNew ? 'new-prod' : '');
+    const badge = esNew
+      ? `<span class="excel-review-badge new">🆕 NUEVO</span>`
+      : `<span class="excel-review-badge mod">🔄 MODIFICADO</span>`;
+    const nombre = esNew ? (c.fila['Nombre'] || 'Sin nombre') : c.nombre;
+
+    let cambiosHtml = '';
+    if (esNew) {
+      const cat = DB.categorias.find(cat => cat.id == c.fila['ID_Categoria']);
+      cambiosHtml = `
+        <div class="excel-review-changes">
+          <span class="excel-change-pill">Categoría: <span class="new">${cat ? cat.emoji + ' ' + cat.nombre : c.fila['ID_Categoria'] || 'Sin cat.'}</span></span>
+          <span class="excel-change-pill">Stock: <span class="new">${c.fila['Stock_Actual']}</span></span>
+          <span class="excel-change-pill">Costo: <span class="new">S/ ${parseFloat(c.fila['Precio_Costo']||0).toFixed(2)}</span></span>
+          <span class="excel-change-pill">Venta: <span class="new">S/ ${parseFloat(c.fila['Precio_Venta']||0).toFixed(2)}</span></span>
+          <span class="excel-change-pill">Tipo: <span class="new">${c.fila['Tipo'] || 'unidad'}</span></span>
+          ${c.fila['Vencimiento'] ? `<span class="excel-change-pill">Venc: <span class="new">${c.fila['Vencimiento']}</span></span>` : ''}
+        </div>`;
+    } else {
+      cambiosHtml = `<div class="excel-review-changes">` +
+        c.diffs.map(d => {
+          const viejoFmt = typeof d.viejo === 'number' ? (d.campo === 'costo' || d.campo === 'precio' ? 'S/ ' + parseFloat(d.viejo).toFixed(2) : d.viejo) : (d.viejo || '—');
+          const nuevoFmt = typeof d.nuevo === 'number' ? (d.campo === 'costo' || d.campo === 'precio' ? 'S/ ' + parseFloat(d.nuevo).toFixed(2) : d.nuevo) : (d.nuevo || '—');
+          return `<span class="excel-change-pill">${d.etiqueta}: <span class="old">${viejoFmt}</span><span class="new">${nuevoFmt}</span></span>`;
+        }).join('') +
+        `</div>`;
+    }
+
+    const btnAccept = c.aceptado
+      ? `<button class="btn-reject-change" onclick="toggleExcelCambio(${i})">↩ Deshacer</button>`
+      : `<button class="btn-accept-change" onclick="toggleExcelCambio(${i})">✅ Aceptar</button>`;
+
+    return `
+      <div class="excel-review-item ${estadoClass}" id="excel-item-${i}">
+        <div class="excel-review-header">
+          <span class="excel-review-name">${nombre}</span>
+          ${badge}
+        </div>
+        ${cambiosHtml}
+        <div class="excel-review-actions">
+          ${btnAccept}
+          <span style="font-size:0.75rem;color:var(--gray-400);margin-left:0.3rem">${c.aceptado ? '✔ Incluido en la actualización' : 'Pendiente de revisión'}</span>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function toggleExcelCambio(i) {
+  _excelCambiosPendientes[i].aceptado = !_excelCambiosPendientes[i].aceptado;
+  renderExcelReviewModal();
+}
+
+function aceptarTodosExcel() {
+  _excelCambiosPendientes.forEach(c => c.aceptado = true);
+  renderExcelReviewModal();
+}
+
+function rechazarTodosExcel() {
+  _excelCambiosPendientes.forEach(c => c.aceptado = false);
+  renderExcelReviewModal();
+}
+
+function actualizarContadorAceptados() {
+  const n = _excelCambiosPendientes.filter(c => c.aceptado).length;
+  document.getElementById('xls-count-accepted').textContent = n;
+  const disabled = n === 0;
+  document.getElementById('btn-aplicar-excel').disabled = disabled;
+  document.getElementById('btn-aplicar-excel-2').disabled = disabled;
+}
+
+function aplicarCambiosExcel() {
+  const aceptados = _excelCambiosPendientes.filter(c => c.aceptado);
+  if (!aceptados.length) { alert('No hay cambios aceptados para aplicar.'); return; }
+
+  let modCount = 0, newCount = 0;
+
+  aceptados.forEach(c => {
+    if (c.tipo === 'mod') {
+      const idx = DB.productos.findIndex(p => p.id == c.prodId);
+      if (idx === -1) return;
+      c.diffs.forEach(d => { DB.productos[idx][d.campo] = d.nuevo; });
+      modCount++;
+    } else if (c.tipo === 'nuevo') {
+      const f = c.fila;
+      const nuevoProd = {
+        id: getId(),
+        nombre:   f['Nombre'].toString().trim(),
+        cat:      parseInt(f['ID_Categoria']) || (DB.categorias[0] ? DB.categorias[0].id : 1),
+        tipo:     f['Tipo'] || 'unidad',
+        unidad:   f['Unidad'] || 'und',
+        costo:    parseFloat(f['Precio_Costo']) || 0,
+        precio:   parseFloat(f['Precio_Venta']) || 0,
+        stock:    parseFloat(f['Stock_Actual']) || 0,
+        stockMin: parseFloat(f['Stock_Minimo']) || 5,
+        venc:     f['Vencimiento'] ? f['Vencimiento'].toString().trim() : '',
+        codigo:   f['Codigo_Barras'] ? f['Codigo_Barras'].toString().trim() : ('7' + getId().toString().slice(-12)),
+        prov:     parseInt(f['ID_Proveedor']) || null
+      };
+      DB.productos.push(nuevoProd);
+      newCount++;
+    }
+  });
+
+  fbGuardarProductos();
+  cerrarModal('modal-excel-review');
+  renderInvTable();
+  updateAlertCount();
+  try { renderDashboard(); } catch(e) {}
+  try { renderPosProducts(); } catch(e) {}
+
+  _excelCambiosPendientes = [];
+
+  const msg = [];
+  if (modCount) msg.push(`${modCount} producto(s) actualizado(s)`);
+  if (newCount) msg.push(`${newCount} producto(s) nuevo(s) agregado(s)`);
+  alert('✅ ' + msg.join(' · ') + '. Inventario sincronizado correctamente.');
+}
+
+// ===================== FIN EXCEL =====================
 </script>
 <!-- ══════════════════════════════════
      BARRA INFERIOR FIJA DEL CARRITO
