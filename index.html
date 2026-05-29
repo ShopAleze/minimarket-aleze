@@ -4451,7 +4451,7 @@ function generarReporte() {
 }
 
 function reporteVentas(desde, hasta) {
-  const ventas = DB.ventas.filter(v => v.fecha >= desde && v.fecha <= hasta);
+ const ventas = [...(DB.ventas || []), ...(DB.historialVentas || []).filter(h => h.origen === 'pago_fiado')].filter(v => v.fecha >= desde && v.fecha <= hasta);
   const porDia = {};
   ventas.forEach(v => porDia[v.fecha] = (porDia[v.fecha]||0) + v.total);
   const labels = Object.keys(porDia).sort();
@@ -4496,7 +4496,7 @@ function reporteVentas(desde, hasta) {
 }
 
 function reporteProductos(desde, hasta) {
-  const ventas = DB.ventas.filter(v => v.fecha >= desde && v.fecha <= hasta);
+  const ventas = [...(DB.ventas || []), ...(DB.historialVentas || []).filter(h => h.origen === 'pago_fiado')].filter(v => v.fecha >= desde && v.fecha <= hasta);
   const prods = {};
   ventas.forEach(v => v.items.forEach(i => {
     if (!prods[i.nombre]) prods[i.nombre] = { cant: 0, total: 0, costo: 0 };
@@ -4524,7 +4524,7 @@ function reporteProductos(desde, hasta) {
 }
 
 function reporteRentabilidad(desde, hasta) {
-  const ventas = DB.ventas.filter(v => v.fecha >= desde && v.fecha <= hasta);
+  const ventas = [...(DB.ventas || []), ...(DB.historialVentas || []).filter(h => h.origen === 'pago_fiado')].filter(v => v.fecha >= desde && v.fecha <= hasta);
   // Por producto
   const porProd = {};
   ventas.forEach(v => v.items.forEach(i => {
@@ -4609,7 +4609,10 @@ function reporteMermas(desde, hasta) {
 }
 
 function reporteFiados() {
-  const data = DB.clientes.filter(c=>c.deuda>0).map(c=>({nombre:c.alias||c.nombre,deuda:c.deuda})).sort((a,b)=>b.deuda-a.deuda);
+ const data = DB.clientes.map(c => {
+    const deudaReal = DB.fiados.filter(f => f.clienteId === c.id).reduce((s,f) => s + Math.max(0, f.total - f.pagado), 0);
+    return { nombre: c.alias||c.nombre, deuda: deudaReal };
+  }).filter(d => d.deuda > 0).sort((a,b) => b.deuda - a.deuda);
   const total = data.reduce((s,d)=>s+d.deuda,0);
   if (chartReporte) chartReporte.destroy();
   chartReporte = new Chart(document.getElementById('chart-reporte').getContext('2d'), {
