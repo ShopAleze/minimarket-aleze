@@ -2972,10 +2972,18 @@ function procesarVenta() {
   DB.historialVentas.push({ ...venta, origen: 'pos', estado: 'completado', estadoStock: 'descontado' });
 
   // Actualizar stock
-  cart.forEach(item => {
+ cart.forEach(item => {
     const prod = DB.productos.find(p => p.id === item.prodId);
-    if (prod) prod.stock = Math.max(0, prod.stock - item.cant);
-  });
+    if (prod) {
+        prod.stock = Math.max(0, prod.stock - item.cant);
+        if (prod.esCombo && prod.componentes) {
+            prod.componentes.forEach(comp => {
+                const cp = DB.productos.find(x => x.id === comp.prodId);
+                if (cp) cp.stock = Math.max(0, cp.stock - comp.cant * item.cant);
+            });
+        }
+    }
+});
 
   // Caja: register always (ensureCajaAbierta abre si hace falta)
   ensureCajaAbierta();
@@ -3013,6 +3021,8 @@ function cobrarFiado() {
     total, pagado: 0, fecha: today(), descuentoCombo: comboDesc, descuentoManual: desc
   };
   DB.fiados.push(fiado);
+  if (!DB.historialVentas) DB.historialVentas = [];
+DB.historialVentas.push({ ...fiado, origen: 'pos', estado: 'fiado', estadoStock: 'descontado' });
 
   cart.forEach(item => {
     const prod = DB.productos.find(p => p.id === item.prodId);
@@ -3020,7 +3030,7 @@ function cobrarFiado() {
   });
 
   const cli = DB.clientes.find(c => c.id === clienteId);
-  if (cli) { cli.deuda = (cli.deuda||0) + total; cli.compras = (cli.compras||0) + 1; }
+if (cli) { cli.deuda = (cli.deuda||0) + total; cli.compras = (cli.compras||0) + 1; cli.total = (cli.total||0) + total; cli.puntos = (cli.puntos||0) + Math.floor(total); }
 
   ensureCajaAbierta();
   DB.movimientos.push({ tipo:'fiado', desc:'Fiado — ' + getClienteNombre(clienteId), monto:total, hora:nowTime(), fecha:today(), cajero:currentUser });
