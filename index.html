@@ -3236,6 +3236,8 @@ function limpiarImgProd() {
 
 function eliminarProducto(id) {
   if (!confirm('¿Eliminar este producto?')) return;
+  const tieneFiado = DB.fiados.some(f => f.items.some(i => i.prodId === id));
+  if (tieneFiado) { alert('Este producto tiene fiados pendientes. Salda los fiados antes de eliminarlo.'); return; }
   DB.productos = DB.productos.filter(p => p.id !== id); fbGuardarProductos();
   renderInvTable();
 }
@@ -3500,6 +3502,8 @@ function guardarProducto() {
   cerrarModal('modal-producto');
   renderInvTable();
   updateAlertCount();
+  try { renderDashboard(); } catch(e){}
+  try { renderPosProducts(); } catch(e){}
 }
 
 // ===================== CATEGORIAS =====================
@@ -5325,7 +5329,7 @@ function sincronizarMermasInventario() {
   let registradas = 0;
   invMensualData.forEach((d, i) => {
     if (d.contado === null || d.contado === '') return;
-    const p = DB.productos[i];
+   const p = DB.productos.find(prod => prod.id === invMensualData[i].prodId) || DB.productos[i];
     const diff = d.contado - p.stock;
     if (diff < 0 && d.verificado) {
       // Faltante confirmado → registrar como merma
