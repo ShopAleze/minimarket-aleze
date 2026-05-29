@@ -7126,7 +7126,16 @@ function confirmarEntregaPedido(id) {
       if (prod) prod.stock = Math.max(0, prod.stock - item.cant);
     });
 
-    // Registrar en historial de ventas
+    // Registrar en ventas y historial
+    const ventaOnline = {
+      id: p.id, fecha: p.fecha, hora: p.hora,
+      cajero: 'Online', clienteId: null, clienteNombre: p.clienteNombre,
+      items: (p.items||[]).filter(i=>i.cant>0&&!i.eliminado),
+      subtotal: (p.items||[]).filter(i=>i.cant>0&&!i.eliminado).reduce((s,i)=>s+i.precio*i.cant,0),
+      descuento: p.descuento || 0, total: p.total,
+      metodo: p.metodo, origen: 'online'
+    };
+    DB.ventas.push(ventaOnline);
     if (!DB.historialVentas) DB.historialVentas = [];
     const itemsFinales = (p.items||[]).filter(i=>i.cant>0&&!i.eliminado);
     DB.historialVentas.push({
@@ -7149,12 +7158,9 @@ function confirmarEntregaPedido(id) {
   p.estado = nuevoEstado;
   // Register cash movement for online delivery
   if (nuevoEstado === 'entregado') {
-    if (DB.caja.abierta) {
-      DB.caja.ingresos += p.total;
-      DB.movimientos.push({ tipo:'ingreso', desc:`Pedido online entregado — ${p.clienteNombre||'cliente'}`, monto: p.total, hora: nowTime(), fecha: today() });
-    } else {
-      DB.movimientos.push({ tipo:'ingreso', desc:`Pedido online (caja cerrada) — ${p.clienteNombre||'cliente'}`, monto: p.total, hora: nowTime(), fecha: today() });
-    }
+    ensureCajaAbierta();
+    DB.caja.ingresos += p.total;
+    DB.movimientos.push({ tipo:'ingreso', desc:`Pedido online entregado — ${p.clienteNombre||'cliente'}`, monto: p.total, hora: nowTime(), fecha: today() });
   }
   fbGuardar();
   fbGuardarProductos();
