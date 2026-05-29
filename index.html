@@ -2320,6 +2320,7 @@
 <script>
 // ===================== DATOS =====================
 const PASSWORDS = { 'Jose Carlos': '1234', 'Shessira': '1234', 'José Luis': '1234' };
+// Las contraseñas guardadas en Firestore se cargan en fbEscuchar/onload y sobreescriben estas
 let currentUser = null;
 let currentRole = null;
 
@@ -2632,10 +2633,11 @@ function renderDashboard() {
   const mes = getMesActual();
   // Use historialVentas as source of truth (reflects annulments/returns)
   const hvAll = DB.historialVentas || [];
-  const ventasHoy = hvAll.filter(v => v.fecha === hoy && v.estado !== 'anulado');
+  const ventasHoy = hvAll.filter(v => v.fecha === hoy && v.estado !== 'anulado' && v.origen !== 'pago_fiado');
+  const fiadosCobradosHoy = hvAll.filter(v => v.fecha === hoy && v.origen === 'pago_fiado').reduce((s,v) => s + (v.total||0), 0);
   const totalHoy = ventasHoy.reduce((s, v) => s + (v.total||0), 0);
   const txHoy = ventasHoy.length;
-  document.getElementById('dash-ventas').textContent = sol(totalHoy);
+document.getElementById('dash-ventas').textContent = sol(totalHoy + fiadosCobradosHoy);
   document.getElementById('dash-ventas-num').textContent = txHoy + ' transacciones';
 
   // Rentabilidad hoy (cost uses actual item prices from historial)
@@ -3444,7 +3446,8 @@ function guardarCatRapida() {
     id: getId(),
     nombre,
     emoji: document.getElementById('catr-emoji').value || '📦',
-    margen: parseFloat(document.getElementById('catr-margen').value) || 0
+    margen: parseFloat(document.getElementById('catr-margen').value) || 0,
+    imagen: ''
   };
   DB.categorias.push(nueva);
   fbGuardarProductos();
@@ -3453,6 +3456,26 @@ function guardarCatRapida() {
   document.getElementById('prod-cat').value = nueva.id;
   actualizarPrecioSugerido();
   cerrarModal('modal-cat-rapida');
+}
+
+function guardarCategoria() {
+  const nombre = document.getElementById('cat-nombre').value.trim();
+  if (!nombre) { alert('El nombre es obligatorio'); return; }
+  const emoji  = document.getElementById('cat-emoji').value.trim() || '📦';
+  const margen = parseFloat(document.getElementById('cat-margen').value) || 0;
+  const imagen = document.getElementById('cat-img-data').value || '';
+  if (editingCatId) {
+    const c = DB.categorias.find(x => x.id === editingCatId);
+    if (c) { c.nombre = nombre; c.emoji = emoji; c.margen = margen; c.imagen = imagen; }
+  } else {
+    DB.categorias.push({ id: getId(), nombre, emoji, margen, imagen });
+  }
+  fbGuardarProductos();
+  cerrarModal('modal-categoria');
+  renderCategorias();
+  try { renderPos(); } catch(e){}
+  try { updateInvCatFilter(); } catch(e){}
+  try { updateModalCats(); } catch(e){}
 }
 
 function verCodigoBarras(id) {
@@ -3802,12 +3825,13 @@ function guardarProveedor() {
   const nombre = document.getElementById('prov-nombre').value.trim();
   if (!nombre) { alert('Ingresa el nombre'); return; }
   const data = { nombre, contacto: document.getElementById('prov-contacto').value, tel: document.getElementById('prov-tel').value, productos: document.getElementById('prov-productos').value };
-  if (editingProvId) {
+ if (editingProvId) {
     const p = DB.proveedores.find(x => x.id === editingProvId);
     Object.assign(p, data);
   } else {
     DB.proveedores.push({ id: getId(), ...data, boletas: [] });
-    fbGuardar();
+  }
+  fbGuardar();
   }
   cerrarModal('modal-proveedor');
   renderProveedores();
@@ -3856,7 +3880,7 @@ function renderClientes() {
     <td><span class="badge badge-blue">${c.alias||'-'}</span></td>
     <td>${c.tel||'-'}</td>
     <td>${c.cumple ? formatDate(c.cumple) : '-'}</td>
-    <td>${c.total>=100 ? '<span class="badge badge-gold">⭐ Frecuente</span>' : '<span class="badge badge-gray">Regular</span>'}</td>
+   <td>${getNivel(c.total||0) ? `<span class="badge badge-gold">⭐ ${getNivel(c.total||0).desc}</span>` : '<span class="badge badge-gray">Regular</span>'}</td>
     <td><strong>${sol(c.total||0)}</strong></td>
     <td style="color:${c.deuda>0?'var(--danger)':'var(--accent)'}"><strong>${c.deuda > 0 ? sol(c.deuda) : '✅ Al día'}</strong></td>
     <td style="white-space:nowrap">
@@ -3902,7 +3926,15 @@ function guardarCliente() {
   updateAlertCount();
 }
 
-function eliminarCliente(id) { if (!confirm('¿Eliminar cliente?')) return; DB.clientes = DB.clientes.filter(c => c.id !== id); fbGuardar(); renderClientes(); }
+function eliminarCliente(id) {
+  const c = DB.clientes.find(x => x.id === id);
+  if (c && c.deuda > 0) { alert('Este cliente tiene deuda pendiente de S/ ' + sol(c.deuda) + '. Salda los fiados antes de eliminarlo.'); return; }
+  if (!confirm('¿Eliminar cliente?')) return;
+  DB.clientes = DB.clientes.filter(c => c.id !== id);
+  fbGuardar();
+  renderClientes();
+  updatePosClientes();
+}
 
 // ===================== FIADOS =====================
 function renderFiados() {
@@ -4705,7 +4737,9 @@ function guardarConfig() {
   DB.config.ticketMsg = document.getElementById('cfg-ticket-msg').value;
   DB.config.diasVenc  = parseInt(document.getElementById('cfg-dias-venc').value) || 7;
   DB.config.montoAperturaAuto = parseFloat(document.getElementById('cfg-monto-apertura').value) || 0;
+fbGuardarProductos(); // config también va en db_productos para que la tienda lo lea
   fbGuardar();
+  try { renderDashboard(); } catch(e){}
   alert('✅ Configuración guardada');
 }
 
@@ -4739,7 +4773,10 @@ function cambiarPassword() {
   const conf  = document.getElementById('cfg-pass-conf').value;
   if (!nueva) { alert('Ingresa la nueva contraseña'); return; }
   if (nueva !== conf) { alert('Las contraseñas no coinciden'); return; }
-  PASSWORDS[user] = nueva;
+ PASSWORDS[user] = nueva;
+  if (!DB.config.passwords) DB.config.passwords = {};
+  DB.config.passwords[user] = nueva;
+  fbGuardar();
   document.getElementById('cfg-pass-nueva').value = '';
   document.getElementById('cfg-pass-conf').value = '';
   alert('✅ Contraseña actualizada para ' + user);
@@ -5018,7 +5055,8 @@ function getPremioSugerido(clienteId) {
   const cands = DB.productos.filter(p => {
     if (p.precio > nv.max || p.stock <= 0) return false;
     const vencePronto = p.venc && diasHasta(p.venc) <= 14 && diasHasta(p.venc) >= 0;
-    const bajaRot = DB.ventas.reduce((s,v) => s + (v.items.find(i => i.prodId===p.id)?.cant||0), 0) < 3;
+   const fuenteVentas = [...(DB.ventas||[]), ...(DB.historialVentas||[]).filter(h=>h.origen==='online')];
+    const bajaRot = fuenteVentas.reduce((s,v) => s + (v.items.find(i => i.prodId===p.id)?.cant||0), 0) < 3;
     return vencePronto || bajaRot;
   });
   const prod = cands.sort((a,b) => a.precio - b.precio)[0] || null;
@@ -5138,9 +5176,16 @@ function guardarGasto() {
     monto,
     fecha: document.getElementById('g-fecha').value
   });
+// Registrar también en caja y movimientos del día
+  ensureCajaAbierta();
+  DB.caja.egresos = (DB.caja.egresos||0) + monto;
+  DB.movimientos.push({ tipo:'egreso', desc:`Gasto: ${document.getElementById('g-desc').value} (${document.getElementById('g-tipo').value})`, monto, hora: nowTime(), fecha: document.getElementById('g-fecha').value });
+  fbGuardar();
   fbGuardarExt();
   cerrarModal('modal-gasto');
   renderGastos();
+  try { renderCaja(); } catch(e){}
+  try { renderDashboard(); } catch(e){}
 }
 
 function abrirModalGastoRec() {
@@ -5542,12 +5587,20 @@ function guardarPromocion() {
   } else {
     DB.promociones.push({ id: getId(), ...data });
   }
-  fbGuardar();
+ fbGuardar();
   cerrarModal('modal-promocion');
   renderPromociones();
+  try { renderPosGrid(); } catch(e){}
+  try { renderMobPosGrid(); } catch(e){}
 }
 
-function togglePromo(id) { const p = DB.promociones.find(x => x.id === id); if (p) { p.activa = !p.activa; fbGuardar(); } renderPromociones(); }
+function togglePromo(id) {
+  const p = DB.promociones.find(x => x.id === id);
+  if (p) { p.activa = !p.activa; fbGuardar(); }
+  renderPromociones();
+  try { renderPosGrid(); } catch(e){}
+  try { renderMobPosGrid(); } catch(e){}
+}
 function eliminarPromo(id) { if (!confirm('¿Eliminar?')) return; DB.promociones = DB.promociones.filter(p => p.id !== id); fbGuardar(); renderPromociones(); }
 
 // ===================== COMBO SINERGIA (Punto 8) =====================
@@ -6329,6 +6382,7 @@ window.onload = function() {
                           'proveedores','promociones','caja','config','inventariosMensuales','historialVentas','pedidosOnline'];
         camposOp.forEach(k => { if (k in data && k in DB) DB[k] = data[k]; });
         console.log('Operaciones cargadas desde Firestore ✓');
+        if (data.config && data.config.passwords) Object.assign(PASSWORDS, data.config.passwords);
       } else {
         esPrimeraVez = true;
       }
