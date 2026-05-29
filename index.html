@@ -45,7 +45,7 @@
 </script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-<style>
+<>
   :root {
     --primary: #7C3AED;
     --primary-light: #EDE9FE;
@@ -1093,53 +1093,62 @@
       </div>
 
       <!-- POS -->
-      <div id="page-pos" class="page">
+     <div id="page-pos" class="page">
 
-        <!-- ══════════════════════════════════
-             DESKTOP layout (>760px)
-             ══════════════════════════════════ -->
-        <div class="pos-tabs" style="display:none"><!-- legacy tabs hidden --></div>
+        <div class="pos-tabs" style="display:none"></div>
         <div class="pos-wrap">
-          <div class="pos-products" id="pos-products-panel">
+          
+          <section class="pos-products" id="pos-products-panel">
             <div class="pos-search">
               <span class="pos-search-icon">🔍</span>
               <input type="text" id="pos-search" placeholder="Buscar producto o código de barras..." oninput="filterPosProducts()" />
             </div>
-            <div style="margin-bottom:0.75rem;display:flex;gap:0.5rem;flex-wrap:wrap" id="pos-categorias"></div>
+            
+            <nav class="pos-header-filtros" id="pos-categorias"></nav>
+            
             <div class="product-grid" id="pos-grid"></div>
-          </div>
-          <div class="pos-cart" id="pos-cart-panel">
-            <div class="cart-header">
+          </section>
+
+          <aside class="pos-cart" id="pos-cart-panel">
+            <header class="cart-header">
               <div class="flex-between">
                 <h3>🛒 Carrito de venta</h3>
-                <div style="display:flex;gap:0.5rem">
+                <div class="pos-header-acciones">
                   <button class="btn btn-outline btn-sm" onclick="openCamScanner()">📷 Escanear</button>
                   <button class="btn btn-outline btn-sm" onclick="clearCart()" title="Vaciar carrito">🗑️ Vaciar</button>
                 </div>
               </div>
+              
               <div style="margin-top:0.5rem;display:flex;gap:.4rem">
                 <select id="pos-cliente" class="form-control" style="font-size:0.8rem;padding:0.4rem" onchange="onClienteChange()">
                   <option value="">👤 Cliente anónimo</option>
                 </select>
                 <button class="btn btn-outline btn-sm" onclick="abrirCliRapido()" title="Registrar nuevo cliente rápido">+ Cliente</button>
               </div>
-              <div id="pos-cli-info" style="display:none;background:var(--primary-light);border-radius:8px;padding:.4rem .65rem;margin-top:.4rem;font-size:.75rem">
-                <span id="pos-cli-nombre" style="font-weight:700;color:var(--primary)"></span>
-                <span id="pos-cli-consumo" style="color:var(--gray-600)"></span>
+              
+              <div id="pos-cli-info" class="pos-cliente-resumen">
+                <span id="pos-cli-nombre" class="pos-cliente-nombre"></span>
+                <span id="pos-cli-consumo" class="pos-cliente-consumo"></span>
               </div>
+              
               <div id="pos-premio-alert" class="premio-alert">🎁 <span id="pos-premio-txt"></span></div>
-            </div>
+            </header>
+
             <div class="cart-items" id="cart-items"></div>
-            <div class="cart-footer">
-              <div style="margin-bottom:0.5rem">
-                <input type="number" class="form-control" id="pos-descuento" placeholder="Descuento manual (S/)" style="font-size:0.85rem;padding:0.5rem" oninput="calcTotal()" />
+
+            <footer class="cart-footer">
+              <div class="cart-control-descuento">
+                <input type="number" class="form-control cart-input-descuento" id="pos-descuento" placeholder="Descuento manual (S/)" oninput="calcTotal()" />
               </div>
+              
               <div id="cart-combo-desc" style="display:none;margin-bottom:.45rem"></div>
+              
               <div class="cart-total">
                 <span class="cart-total-label">TOTAL</span>
                 <span class="cart-total-val" id="cart-total">S/ 0.00</span>
               </div>
-              <select id="pos-metodo-pago" class="form-control" style="margin-bottom:0.65rem;font-size:0.85rem">
+              
+              <select id="pos-metodo-pago" class="form-control cart-select-pago">
                 <option value="Efectivo">💵 Efectivo</option>
                 <option value="Yape">💜 Yape</option>
                 <option value="Plin">💚 Plin</option>
@@ -1149,13 +1158,42 @@
                 <option value="Tarjeta POS Móvil">📲 Tarjeta POS Móvil</option>
                 <option value="Transferencia">🏦 Transferencia</option>
               </select>
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem">
-                <button class="btn btn-outline" style="padding:0.65rem;font-size:0.9rem" onclick="cobrarFiado()">📋 Fiado</button>
-                <button class="btn btn-accent w-full" style="padding:0.65rem;font-size:0.95rem;font-weight:700" onclick="procesarVenta()">✅ Cobrar</button>
+              
+              <div class="cart-botones-grid">
+                <button class="btn btn-outline btn-pos-fiado" onclick="cobrarFiado()">📋 Fiado</button>
+                <button class="btn btn-accent w-full btn-pos-cobrar" onclick="procesarVenta()">✅ Cobrar</button>
               </div>
-            </div>
-          </div>
+            </footer>
+          </aside>
         </div>
+
+        <header class="mob-pos-topbar">
+          <div class="mob-pos-topbar-row1">
+            <div class="pos-search" style="flex:1;margin:0;position:relative">
+              <span class="pos-search-icon">🔍</span>
+              <input type="text" id="mob-pos-search" placeholder="Buscar producto o código..." oninput="mobFilterPos()" />
+            </div>
+            <button class="mob-scan-btn" onclick="openCamScanner()">📷 Escanear</button>
+          </div>
+          <div class="mob-pos-topbar-row2">
+            <select id="mob-pos-cliente" class="form-control" onchange="mobOnClienteChange()">
+              <option value="">👤 Cliente anónimo</option>
+            </select>
+            <button class="mob-add-cliente-btn" onclick="abrirCliRapido()">+ Cliente</button>
+          </div>
+          <div id="mob-pos-cli-info" class="pos-cliente-resumen">
+            <span id="mob-pos-cli-nombre" class="pos-cliente-nombre"></span>
+            <span id="mob-pos-cli-consumo" class="pos-cliente-consumo"></span>
+          </div>
+        </header>
+
+        <nav class="mob-pos-cats" id="mob-pos-categorias"></nav>
+
+        <section class="mob-pos-grid-wrap">
+          <div class="product-grid" id="mob-pos-grid"></div>
+        </section>
+
+      </div>
 
         <!-- ══════════════════════════════════
              MOBILE layout (≤760px)
