@@ -844,6 +844,65 @@
   .nav-item.active { background: var(--primary-light); color: var(--primary); font-weight: 600; }
   .nav-item .icon { font-size: 1.15rem; width: 22px; text-align: center; flex-shrink: 0; }
   .nav-label { white-space: nowrap; overflow: hidden; }
+  /* ============================================
+     REFACCIONAMIENTO POS Y CARRITO (FASE 1)
+     ============================================ */
+  
+  /* Contenedores de Información del Cliente */
+  .pos-cliente-resumen {
+    display: none;
+    background: var(--primary-light);
+    border-radius: 8px;
+    padding: 0.4rem 0.65rem;
+    margin-top: 0.4rem;
+    font-size: 0.75rem;
+  }
+  .pos-cliente-nombre {
+    font-weight: 700;
+    color: var(--primary);
+  }
+  .pos-cliente-consumo {
+    color: var(--gray-600);
+  }
+
+  /* Acciones Superiores del POS */
+  .pos-header-acciones {
+    display: flex;
+    gap: 0.5rem;
+  }
+  .pos-header-filtros {
+    margin-bottom: 0.75rem;
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  /* Controles del Carrito (Footer) */
+  .cart-control-descuento {
+    margin-bottom: 0.5rem;
+  }
+  .cart-input-descuento {
+    font-size: 0.85rem;
+    padding: 0.5rem;
+  }
+  .cart-select-pago {
+    margin-bottom: 0.65rem;
+    font-size: 0.85rem;
+  }
+  .cart-botones-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+  }
+  .btn-pos-fiado {
+    padding: 0.65rem;
+    font-size: 0.9rem;
+  }
+  .btn-pos-cobrar {
+    padding: 0.65rem;
+    font-size: 0.95rem;
+    font-weight: 700;
+  }
 </style>
 </head>
 <body>
