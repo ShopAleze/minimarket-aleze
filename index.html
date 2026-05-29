@@ -4216,8 +4216,9 @@ function renderCaja() {
 
 function abrirCaja() {
   const monto = parseFloat(document.getElementById('caja-monto-inicial').value) || 0;
-  DB.caja = { abierta:true, inicial:monto, ingresos:0, egresos:0, turnoInicio:nowTime(), cajero:currentUser, fecha:today(), apertura:'manual' };
-  DB.movimientos = [{ tipo:'ingreso', desc:'Apertura de caja', monto, hora:nowTime(), fecha:today() }];
+ DB.caja = { abierta:true, inicial:monto, ingresos:0, egresos:0, turnoInicio:nowTime(), cajero:currentUser, fecha:today(), apertura:'manual' };
+  if (!DB.movimientos) DB.movimientos = [];
+  DB.movimientos.push({ tipo:'ingreso', desc:'Apertura de caja', monto, hora:nowTime(), fecha:today() });
   fbGuardar(); renderCaja();
 }
 
@@ -4271,7 +4272,7 @@ function registrarMovimiento() {
   const desc = document.getElementById('mov-desc').value;
   if (monto <= 0) { alert('Ingresa un monto válido'); return; }
   if (tipo === 'ingreso') DB.caja.ingresos += monto; else DB.caja.egresos += monto;
-  DB.movimientos.push({ tipo, desc: desc || tipo, monto, hora: nowTime() });
+  DB.movimientos.push({ tipo, desc: desc || tipo, monto, hora: nowTime(), fecha: today() });
   fbGuardar();
   document.getElementById('mov-monto').value = ''; document.getElementById('mov-desc').value = '';
   updateCajaStats();
