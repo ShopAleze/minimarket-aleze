@@ -4031,6 +4031,8 @@ function confirmarPagoFiado() {
   ensureCajaAbierta();
   DB.caja.ingresos += monto;
   DB.movimientos.push({ tipo:'ingreso', desc:'Pago fiado: ' + getClienteNombre(f.clienteId), monto, hora:nowTime(), fecha:today() });
+  if (!DB.historialVentas) DB.historialVentas = [];
+  DB.historialVentas.push({ id: getId(), fecha: today(), hora: nowTime(), origen: 'pago_fiado', estado: 'completado', clienteId: f.clienteId, total: monto, cajero: currentUser });
   fbGuardar();
   cerrarModal('modal-pago-fiado');
   renderFiados();
@@ -5956,7 +5958,9 @@ function mobCobrarFiado() {
     total, pagado: 0, fecha: today(),
     descuentoCombo: comboInfo.total, descuentoManual: desc
   };
-  DB.fiados.push(fiado);
+DB.fiados.push(fiado);
+  if (!DB.historialVentas) DB.historialVentas = [];
+  DB.historialVentas.push({ ...fiado, origen: 'pos', estado: 'fiado', estadoStock: 'descontado' });
 
   // Descontar stock
   mobCart.forEach(item => {
@@ -5966,7 +5970,7 @@ function mobCobrarFiado() {
 
   // Actualizar deuda del cliente
   const cli = DB.clientes.find(c => c.id === clienteId);
-  if (cli) { cli.deuda = (cli.deuda||0) + total; cli.compras = (cli.compras||0) + 1; }
+if (cli) { cli.deuda = (cli.deuda||0) + total; cli.compras = (cli.compras||0) + 1; cli.total = (cli.total||0) + total; cli.puntos = (cli.puntos||0) + Math.floor(total); }
 
   // Always register movement with ensureCajaAbierta
   ensureCajaAbierta();
