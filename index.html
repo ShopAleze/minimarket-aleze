@@ -6781,13 +6781,14 @@ function guardarActualizarVenta() {
     const vi2 = DB.ventas.findIndex(x => String(x.id) === String(_hvEditId));
     if (vi2 >= 0) { DB.ventas[vi2].total = 0; DB.ventas[vi2].estado = 'anulado'; }
 
-    // Register reembolso movement regardless of caja state
+    // Si la caja estaba cerrada registrar igualmente el movimiento
     if (!DB.caja.abierta) {
       DB.movimientos.push({
         tipo: 'egreso',
         desc: `Reembolso anulación (caja cerrada) — ${vDB.cajero||vDB.clienteNombre||'cliente'} (${metodo})`,
         monto: montoReembolso, hora: nowTime(), fecha: today(), usuario: autoriza
       });
+      DB.caja.egresos = (DB.caja.egresos||0) + montoReembolso;
     }
 
     fbGuardar();
@@ -7531,7 +7532,7 @@ function tndRenderCats() {
   const el = document.getElementById('tnd-cats');
   if (!el) return;
   el.innerHTML = `<span class="tnd-cat-tag active" onclick="tndSetCat('')">Todos</span>` +
-    (DB.categorias||[]).map(c => `<span class="tnd-cat-tag" onclick="tndSetCat(${c.id})">${c.emoji} ${c.nombre}</span>`).join('');
+    (DB.categorias||[]).map(c => `<span class="tnd-cat-tag" onclick="tndSetCat(${c.id})">${c.imagen ? `<img src="${c.imagen}" style="width:16px;height:16px;object-fit:cover;border-radius:3px;vertical-align:middle">` : c.emoji} ${c.nombre}</span>`).join('');
 }
 
 function tndSetCat(id) {
@@ -7544,9 +7545,11 @@ function tndSetCat(id) {
 function tndFiltrar() {
   const buscar = (document.getElementById('tnd-search')?.value||'').toLowerCase();
   const hoy = today();
+  const hoy = today();
   let prods = (DB.productos||[]).filter(p => {
     if (_tndCatActiva && p.cat != _tndCatActiva) return false;
     if (buscar && !(p.nombre||'').toLowerCase().includes(buscar)) return false;
+    if (p.venc && p.venc < hoy) return false; // ocultar productos vencidos
     return true;
   });
 
@@ -7555,7 +7558,9 @@ function tndFiltrar() {
   grid.innerHTML = prods.map(p => {
     const agotado = p.stock <= 0;
     const cat = (DB.categorias||[]).find(c => c.id === p.cat);
-    const icon = cat ? cat.emoji : '📦';
+    const icon = cat?.imagen
+      ? `<img src="${cat.imagen}" style="width:40px;height:40px;object-fit:cover;border-radius:8px">`
+      : (cat?.emoji || '📦');
     const badge = _getStockBadge(p);
     const promo = _getPromoTienda(p);
     const precio = promo && promo.precioPromo ? promo.precioPromo : p.precio;
@@ -7579,6 +7584,7 @@ function tndFiltrar() {
 function tndAgregarCarrito(prodId) {
   const p = DB.productos.find(x => x.id === prodId);
   if (!p || p.stock <= 0) return;
+  if (p.venc && p.venc < today()) { alert('Este producto ya no está disponible.'); tndFiltrar(); return; }
   const promo = _getPromoTienda(p);
   const precio = promo && promo.precioPromo ? promo.precioPromo : p.precio;
   const cat = (DB.categorias||[]).find(c => c.id === p.cat);
