@@ -904,7 +904,17 @@
     font-size: 0.95rem;
     font-weight: 700;
   }
+  /* --- AJUSTES DE DISEÑO PARA QUE EL POS SE VEA BIEN --- */
+  .pos-wrap { display: flex; gap: 1rem; padding: 1rem; }
+  .pos-products { flex: 2; }
+  .pos-cart { flex: 1; background: #fff; padding: 1rem; border-radius: 8px; border: 1px solid #ddd; }
+  .flex-between { display: flex; justify-content: space-between; align-items: center; }
+  .cart-total { display: flex; justify-content: space-between; margin: 1rem 0; font-size: 1.2rem; font-weight: bold; }
+  .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 1rem; }
   
+  /* Asegurar que el carrito no se vea plano */
+  .cart-header { border-bottom: 1px solid #eee; padding-bottom: 1rem; margin-bottom: 1rem; }
+  .cart-footer { border-top: 1px solid #eee; padding-top: 1rem; }
 </style>
 </head>
 <body>
