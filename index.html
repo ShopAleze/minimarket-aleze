@@ -4363,6 +4363,7 @@ function guardarMerma() {
   const motivo = document.getElementById('merma-motivo-sel').value;
   const obs = document.getElementById('merma-obs').value;
   const prod = DB.productos.find(p => p.id === prodId);
+if (!prod) { alert('Producto no encontrado. Recarga el inventario.'); return; }
   if (!cant || cant <= 0) { alert('Ingresa una cantidad válida'); return; }
 
   if (editingMermaId) {
@@ -4411,6 +4412,8 @@ function eliminarMerma(id) {
   DB.mermas = DB.mermas.filter(m => m.id !== id);
   fbGuardar();
   renderMermas();
+  try { renderDashboard(); } catch(e){}
+  try { generarReporte(); } catch(e){}
 }
 
 // ===================== REPORTES =====================
