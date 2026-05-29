@@ -1071,8 +1071,9 @@
             <div class="cart-items" id="cart-items"></div>
             <div class="cart-footer">
               <div style="margin-bottom:0.5rem">
-                <input type="number" class="form-control" id="pos-descuento" placeholder="Descuento promo (S/)" style="font-size:0.85rem;padding:0.5rem" oninput="calcTotal()" />
+                <input type="number" class="form-control" id="pos-descuento" placeholder="Descuento manual (S/)" style="font-size:0.85rem;padding:0.5rem" oninput="calcTotal()" />
               </div>
+              <div id="cart-combo-desc" style="display:none;margin-bottom:.45rem"></div>
               <div class="cart-total">
                 <span class="cart-total-label">TOTAL</span>
                 <span class="cart-total-val" id="cart-total">S/ 0.00</span>
@@ -1137,6 +1138,7 @@
           <div class="page-title" style="margin:0">Inventario</div>
           <div style="display:flex;gap:.5rem">
             <button class="btn btn-outline btn-sm" onclick="abrirInventarioMensual()">📋 Inventario Mensual</button>
+            <button class="btn btn-outline btn-sm" onclick="abrirImprimirQrMasivo()">🖨️ Imprimir QR</button>
             <button class="btn btn-outline btn-sm" onclick="abrirSugerirPrecios()">💡 Sugerir precios</button>
             <button class="btn btn-primary btn-sm" onclick="abrirModalProducto()">+ Nuevo Producto</button>
           </div>
@@ -1310,14 +1312,18 @@
       <div id="page-caja" class="page">
         <div class="page-title">Control de Caja</div>
         <div id="caja-cerrada">
-          <div class="card" style="max-width:400px;margin:2rem auto;text-align:center">
+          <div class="card" style="max-width:420px;margin:2rem auto;text-align:center">
             <div style="font-size:3rem;margin-bottom:1rem">💰</div>
             <h3 style="margin-bottom:1rem">Caja Cerrada</h3>
-            <div class="form-group">
+            <div class="form-group" style="text-align:left">
               <label>Monto inicial (S/)</label>
               <input type="number" class="form-control" id="caja-monto-inicial" placeholder="0.00" />
+              <div style="font-size:.73rem;color:var(--gray-400);margin-top:.25rem" id="caja-auto-hint"></div>
             </div>
-            <button class="btn btn-accent w-full" onclick="abrirCaja()">Abrir Caja</button>
+            <div style="display:flex;gap:.5rem">
+              <button class="btn btn-outline w-full" onclick="guardarMontoAperturaDefault()" title="Guardar como monto por defecto">💾 Guardar como default</button>
+              <button class="btn btn-accent w-full" onclick="abrirCaja()">Abrir Caja</button>
+            </div>
           </div>
         </div>
         <div id="caja-abierta" style="display:none">
@@ -1498,6 +1504,7 @@
             <div class="card-title">🎨 Preferencias del ticket</div>
             <div class="form-group"><label>Mensaje de pie de ticket</label><input type="text" class="form-control" id="cfg-ticket-msg" value="¡Gracias por su compra!" /></div>
             <div class="form-group"><label>Días alerta vencimiento</label><input type="number" class="form-control" id="cfg-dias-venc" value="7" /></div>
+            <div class="form-group"><label>💰 Monto apertura automática de caja (S/)</label><input type="number" class="form-control" id="cfg-monto-apertura" placeholder="0.00" min="0" step="0.50" /><div style="font-size:.72rem;color:var(--gray-400);margin-top:.25rem">La caja se abre automáticamente al primer uso del día con este monto</div></div>
             <button class="btn btn-primary" onclick="guardarConfig()">Guardar</button>
           </div>
         </div>
@@ -1714,6 +1721,19 @@
         <div style="font-size:.72rem;color:var(--gray-500);margin-top:.4rem">Escanea este QR desde el POS para agregar al carrito</div>
       </div>
     </div>
+    <div class="form-group">
+      <label>📷 Imagen del producto (opcional)</label>
+      <div style="display:flex;gap:.75rem;align-items:flex-start;flex-wrap:wrap">
+        <div id="prod-img-preview" style="width:80px;height:80px;border:2px dashed var(--gray-300);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:2rem;background:var(--gray-50);overflow:hidden;flex-shrink:0">🖼️</div>
+        <div style="flex:1;min-width:180px">
+          <input type="file" id="prod-img-file" accept="image/*" style="display:none" onchange="onProdImgSelect(event)" />
+          <button class="btn btn-outline btn-sm" onclick="document.getElementById('prod-img-file').click()" style="margin-bottom:.4rem;width:100%">📁 Seleccionar imagen</button>
+          <div style="font-size:.71rem;color:var(--gray-400);line-height:1.4">JPG, PNG, WEBP. Se guarda localmente en el dispositivo.</div>
+          <button class="btn btn-xs" onclick="limpiarImgProd()" style="margin-top:.3rem;background:var(--danger-light);color:var(--danger)">✕ Quitar imagen</button>
+        </div>
+      </div>
+      <input type="hidden" id="prod-img-data" />
+    </div>
     <div style="display:flex;justify-content:flex-end;gap:0.5rem;margin-top:1rem">
       <button class="btn btn-outline" onclick="cerrarModal('modal-producto')">Cancelar</button>
       <button class="btn btn-primary" onclick="guardarProducto()">Guardar Producto</button>
@@ -1743,7 +1763,23 @@
       <button class="modal-close" onclick="cerrarModal('modal-categoria')">✕</button>
     </div>
     <div class="form-group"><label>Nombre *</label><input type="text" class="form-control" id="cat-nombre" /></div>
-    <div class="form-group"><label>Emoji / Ícono</label><input type="text" class="form-control" id="cat-emoji" placeholder="Ej: 🥤" maxlength="2" /></div>
+    <div class="form-group">
+      <label>Emoji / Ícono (se usa si no hay imagen)</label>
+      <input type="text" class="form-control" id="cat-emoji" placeholder="Ej: 🥤" maxlength="2" />
+    </div>
+    <div class="form-group">
+      <label>📷 Imagen de categoría (opcional, 64×64px)</label>
+      <div style="display:flex;gap:.75rem;align-items:flex-start">
+        <div id="cat-img-preview" style="width:64px;height:64px;border:2px dashed var(--gray-300);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.8rem;background:var(--gray-50);overflow:hidden;flex-shrink:0">🖼️</div>
+        <div style="flex:1">
+          <input type="file" id="cat-img-file" accept="image/*" style="display:none" onchange="onCatImgSelect(event)"/>
+          <button class="btn btn-outline btn-sm" onclick="document.getElementById('cat-img-file').click()" style="width:100%;margin-bottom:.3rem">📁 Seleccionar imagen</button>
+          <button class="btn btn-xs" onclick="limpiarImgCat()" style="background:var(--danger-light);color:var(--danger);width:100%">✕ Quitar imagen</button>
+          <div style="font-size:.7rem;color:var(--gray-400);margin-top:.3rem">Se comprime a 64×64px automáticamente. Se sincroniza en toda la app.</div>
+        </div>
+      </div>
+      <input type="hidden" id="cat-img-data"/>
+    </div>
     <div class="form-group"><label>Margen de ganancia % (precio sugerido)</label><input type="number" class="form-control" id="cat-margen" placeholder="Ej: 30" min="0" max="200" /></div>
     <div id="cat-update-prods-wrap" style="display:none;background:var(--warning-light);border-radius:8px;padding:.65rem;margin-bottom:.75rem">
       <div style="font-size:.82rem;font-weight:600;margin-bottom:.4rem">⚙️ Actualizar precios de productos de esta categoría</div>
@@ -2345,8 +2381,8 @@ let DB = {
   mermas: [],
   promociones: [],
   movimientos: [],
-  config: { nombre: 'Minimarket Aleze', direccion: 'Jr. Tigrillo Mz. Ll4 Lt. 5 Asoc. Percin Deza SJL', telefono: '', ticketMsg: '¡Gracias por su compra!', diasVenc: 7, whatsappTienda: '980037284' },
-  caja: { abierta: false, inicial: 0, ingresos: 0, egresos: 0, turnoInicio: null, cajero: '' },
+  config: { nombre: 'Minimarket Aleze', direccion: 'Jr. Tigrillo Mz. Ll4 Lt. 5 Asoc. Percin Deza SJL', telefono: '', ticketMsg: '¡Gracias por su compra!', diasVenc: 7, whatsappTienda: '980037284', montoAperturaAuto: 0 },
+  caja: { abierta: false, inicial: 0, ingresos: 0, egresos: 0, turnoInicio: null, cajero: '', fecha: '' },
   historialVentas: [],
   pedidosOnline: []
 };
@@ -2479,6 +2515,7 @@ function doLogout() {
 
 // ===================== NAVIGATION =====================
 function navigate(page) {
+  checkAutoAbrirCaja();
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('page-' + page).classList.add('active');
@@ -2533,7 +2570,12 @@ function nowTime() { return new Date().toLocaleTimeString('es-PE', { hour: '2-di
 function formatDate(d) { if (!d) return '-'; const [y,m,dd] = d.split('-'); return dd+'/'+m+'/'+y; }
 function diasHasta(fecha) { if (!fecha) return 9999; return Math.ceil((new Date(fecha) - new Date()) / 86400000); }
 function getId() { return Date.now() + Math.floor(Math.random()*9999); }
-function getCategoriaNombre(id) { const c = DB.categorias.find(c => c.id == id); return c ? c.emoji + ' ' + c.nombre : '-'; }
+function getCategoriaNombre(id) {
+  const c = DB.categorias.find(c => c.id == id);
+  if (!c) return '-';
+  const icon = c.imagen ? `<img src="${c.imagen}" style="width:18px;height:18px;object-fit:cover;border-radius:3px;vertical-align:middle;margin-right:3px"/>` : (c.emoji+' ');
+  return icon + c.nombre;
+}
 function getProveedorNombre(id) { const p = DB.proveedores.find(p => p.id == id); return p ? p.nombre : '-'; }
 function getClienteNombre(id) { const c = DB.clientes.find(c => c.id == id); return c ? (c.alias||c.nombre) : 'Anónimo'; }
 function getMesActual() { return today().substring(0,7); }
@@ -2587,28 +2629,46 @@ function cerrarModal(id) { document.getElementById(id).classList.remove('open');
 // ===================== DASHBOARD =====================
 function renderDashboard() {
   const hoy = today();
-  const ventasHoy = DB.ventas.filter(v => v.fecha === hoy);
-  const totalHoy = ventasHoy.reduce((s, v) => s + v.total, 0);
+  const mes = getMesActual();
+  // Use historialVentas as source of truth (reflects annulments/returns)
+  const hvAll = DB.historialVentas || [];
+  const ventasHoy = hvAll.filter(v => v.fecha === hoy && v.estado !== 'anulado');
+  const totalHoy = ventasHoy.reduce((s, v) => s + (v.total||0), 0);
+  const txHoy = ventasHoy.length;
   document.getElementById('dash-ventas').textContent = sol(totalHoy);
-  document.getElementById('dash-ventas-num').textContent = ventasHoy.length + ' transacciones';
-  // Rentabilidad hoy
-  const costoHoy = ventasHoy.reduce((s,v) => s + v.items.reduce((ss,i) => { const p = DB.productos.find(x=>x.id===i.prodId); return ss+(p?p.costo*i.cant:0); },0), 0);
-  const gastosHoy = DB_EXT.gastos.filter(g=>g.fecha===hoy).reduce((s,g)=>s+g.monto,0);
-  document.getElementById('dash-rent').textContent = sol(totalHoy - costoHoy - gastosHoy);
+  document.getElementById('dash-ventas-num').textContent = txHoy + ' transacciones';
+
+  // Rentabilidad hoy (cost uses actual item prices from historial)
+  const costoHoy = ventasHoy.reduce((s,v) => s + (v.items||[]).reduce((ss,i) => {
+    const p = DB.productos.find(x=>x.id===i.prodId);
+    return ss + (p ? p.costo * i.cant : 0);
+  }, 0), 0);
+  // Mermas del día
+  const mermasHoy = (DB.mermas||[]).filter(m=>m.fecha===hoy).reduce((s,m)=>{
+    const p=DB.productos.find(x=>x.id===m.prodId); return s+(p?p.costo*m.cant:0);
+  },0);
+  const gastosHoy = (DB_EXT.gastos||[]).filter(g=>g.fecha===hoy).reduce((s,g)=>s+g.monto,0);
+  document.getElementById('dash-rent').textContent = sol(totalHoy - costoHoy - gastosHoy - mermasHoy);
+
   document.getElementById('dash-stock-bajo').textContent = DB.productos.filter(p => p.stock <= p.stockMin).length;
   document.getElementById('dash-vencimientos').textContent = DB.productos.filter(p => p.venc && diasHasta(p.venc) <= 7 && diasHasta(p.venc) >= 0).length;
+
   // Capital
   const pct = DB_EXT.capital.total > 0 ? Math.min(100, DB_EXT.capital.recuperado/DB_EXT.capital.total*100) : 0;
   document.getElementById('dash-capital-pct').textContent = pct.toFixed(1)+'%';
   document.getElementById('dash-capital-sub').textContent = sol(DB_EXT.capital.recuperado)+' / '+sol(DB_EXT.capital.total);
-  // Panel financiero rápido
-  const mes = getMesActual();
-  const ventasMes = DB.ventas.filter(v=>v.fecha.startsWith(mes)).reduce((s,v)=>s+v.total,0);
-  const gastosMes = DB_EXT.gastos.filter(g=>g.fecha&&g.fecha.startsWith(mes)).reduce((s,g)=>s+g.monto,0);
-  const sueldosMes = Object.values(DB_EXT.sueldos).reduce((s,v)=>s+v,0);
-  const gastosRec = DB_EXT.gastosRec.reduce((s,g)=>s+g.monto,0);
-  const costoMes = DB.ventas.filter(v=>v.fecha.startsWith(mes)).reduce((s,v)=>s+v.items.reduce((ss,i)=>{const p=DB.productos.find(x=>x.id===i.prodId);return ss+(p?p.costo*i.cant:0);},0),0);
-  const rentReal = ventasMes - costoMes - gastosMes - sueldosMes - gastosRec - DB_EXT.capital.cuota;
+
+  // Panel financiero mensual
+  const ventasMes = hvAll.filter(v=>v.fecha&&v.fecha.startsWith(mes)&&v.estado!=='anulado').reduce((s,v)=>s+(v.total||0),0);
+  const gastosMes = (DB_EXT.gastos||[]).filter(g=>g.fecha&&g.fecha.startsWith(mes)).reduce((s,g)=>s+g.monto,0);
+  const sueldosMes = Object.values(DB_EXT.sueldos||{}).reduce((s,v)=>s+v,0);
+  const gastosRec = (DB_EXT.gastosRec||[]).reduce((s,g)=>s+g.monto,0);
+  const costoMes = hvAll.filter(v=>v.fecha&&v.fecha.startsWith(mes)&&v.estado!=='anulado')
+    .reduce((s,v)=>s+(v.items||[]).reduce((ss,i)=>{const p=DB.productos.find(x=>x.id===i.prodId);return ss+(p?p.costo*i.cant:0);},0),0);
+  const mermasMes = (DB.mermas||[]).filter(m=>m.fecha&&m.fecha.startsWith(mes)).reduce((s,m)=>{
+    const p=DB.productos.find(x=>x.id===m.prodId); return s+(p?p.costo*m.cant:0);
+  },0);
+  const rentReal = ventasMes - costoMes - gastosMes - sueldosMes - gastosRec - mermasMes - DB_EXT.capital.cuota;
   const deficit = rentReal - DB_EXT.capital.meta;
   document.getElementById('fin-cuota').textContent = sol(DB_EXT.capital.cuota);
   document.getElementById('fin-ing').textContent = sol(ventasMes);
@@ -2621,12 +2681,12 @@ function renderDashboard() {
     ? '<p style="color:var(--gray-500);font-size:0.85rem">✅ Sin alertas</p>'
     : alertas.map(a => `<div class="alert-item ${a.tipo}"><span>${icons[a.tipo]}</span><div class="alert-text"><strong>${a.titulo}</strong><span>${a.sub}</span></div></div>`).join('');
 
-  // Top frecuentes
-  const sortedCli = [...DB.clientes].sort((a,b)=>b.total-a.total).slice(0,5);
+  // Top clientes por gasto
+  const sortedCli = [...DB.clientes].sort((a,b)=>(b.total||0)-(a.total||0)).slice(0,5);
   const crowns = ['🥇','🥈','🥉','4️⃣','5️⃣'];
   document.getElementById('dash-frecuentes').innerHTML = sortedCli.map((c,i) => {
-    const nv = getNivel(c.total);
-    return `<div class="flex-between" style="padding:.35rem 0;border-bottom:1px solid var(--gray-100)"><span>${crowns[i]} <strong style="font-size:.85rem">${c.alias||c.nombre}</strong></span><div style="text-align:right"><div style="font-size:.85rem;font-weight:700;color:var(--primary)">${sol(c.total)}</div>${nv?`<span class="badge badge-gold">${nv.desc}</span>`:''}</div></div>`;
+    const nv = getNivel(c.total||0);
+    return `<div class="flex-between" style="padding:.35rem 0;border-bottom:1px solid var(--gray-100)"><span>${crowns[i]} <strong style="font-size:.85rem">${c.alias||c.nombre}</strong></span><div style="text-align:right"><div style="font-size:.85rem;font-weight:700;color:var(--primary)">${sol(c.total||0)}</div>${nv?`<span class="badge badge-gold">${nv.desc}</span>`:''}</div></div>`;
   }).join('');
 
   // Cumpleaños próximos
@@ -2651,11 +2711,12 @@ function renderDashboard() {
 function renderChartVentas() {
   const labels = [];
   const data = [];
+  const hvAll = DB.historialVentas || [];
   for (let i = 6; i >= 0; i--) {
     const d = new Date(); d.setDate(d.getDate() - i);
     const ds = d.toISOString().split('T')[0];
     labels.push(d.toLocaleDateString('es-PE', { weekday: 'short', day: 'numeric' }));
-    data.push(DB.ventas.filter(v => v.fecha === ds).reduce((s, v) => s + v.total, 0));
+    data.push(hvAll.filter(v => v.fecha === ds && v.estado !== 'anulado').reduce((s, v) => s + (v.total||0), 0));
   }
   if (chartVentas) chartVentas.destroy();
   const ctx = document.getElementById('chart-ventas').getContext('2d');
@@ -2676,9 +2737,12 @@ function renderPos() {
 
 function renderPosCategorias() {
   const wrap = document.getElementById('pos-categorias');
-  wrap.innerHTML = `<span class="tag ${posFilterCat === '' ? 'active' : ''}" onclick="setPosFilter('')">Todos</span>`;
+  wrap.innerHTML = `<span class="tag ${posFilterCat === '' ? 'active' : ''}" onclick="setPosFilter('')">🏪 Todos</span>`;
   DB.categorias.forEach(c => {
-    wrap.innerHTML += `<span class="tag ${posFilterCat == c.id ? 'active' : ''}" onclick="setPosFilter(${c.id})">${c.emoji} ${c.nombre}</span>`;
+    const icon = c.imagen
+      ? `<img src="${c.imagen}" style="width:16px;height:16px;object-fit:cover;border-radius:3px;vertical-align:middle;margin-right:3px"/>`
+      : (c.emoji + ' ');
+    wrap.innerHTML += `<span class="tag ${posFilterCat == c.id ? 'active' : ''}" onclick="setPosFilter(${c.id})">${icon}${c.nombre}</span>`;
   });
 }
 
@@ -2694,11 +2758,18 @@ function renderPosGrid(search = '') {
 
   document.getElementById('pos-grid').innerHTML = prods.map(p => {
     const promo = promoActivas.find(pr => pr.prod1 == p.id || pr.prod2 == p.id);
-    const precioMostrar = promo ? promo.precioPromo : p.precio;
+    const esCombo2 = promo && promo.prod2;
+    const precioMostrar = (!esCombo2 && promo) ? promo.precioPromo : p.precio;
+    const iconHtml = p.imagen
+      ? `<div style="width:46px;height:46px;margin:0 auto .3rem;border-radius:8px;overflow:hidden"><img src="${p.imagen}" style="width:100%;height:100%;object-fit:cover" /></div>`
+      : `<div class="p-icon">${getCatIcono(p.cat)}</div>`;
+    const promoTag = esCombo2
+      ? `<span class="promo-tag" style="background:var(--accent)">COMBO</span>`
+      : (promo ? '<span class="promo-tag">PROMO</span>' : '');
     return `<div class="product-card" onclick="addToCart(${p.id})">
-      <div class="p-icon">${DB.categorias.find(c=>c.id==p.cat)?.emoji || '📦'}</div>
+      ${iconHtml}
       <div class="p-name">${p.nombre}</div>
-      <div class="p-price">${sol(precioMostrar)} ${promo ? '<span class="promo-tag">PROMO</span>' : ''}</div>
+      <div class="p-price">${sol(precioMostrar)} ${promoTag}</div>
       <div class="p-stock">Stock: ${p.stock} ${p.unidad}</div>
     </div>`;
   }).join('') || '<p style="color:var(--gray-400);font-size:0.85rem;padding:1rem">Sin productos</p>';
@@ -2711,7 +2782,10 @@ function addToCart(prodId) {
   if (!prod) return;
   const promoActivas = DB.promociones.filter(p => p.activa && p.hasta >= today());
   const promo = promoActivas.find(pr => pr.prod1 == prodId || pr.prod2 == prodId);
-  const precio = promo ? promo.precioPromo : prod.precio;
+  // 2-product combos: keep regular price, discount applied in calcTotal
+  // Single-product promos: apply promo price per unit
+  const esCombo2 = promo && promo.prod2;
+  const precio = (!esCombo2 && promo) ? promo.precioPromo : prod.precio;
 
   const existing = cart.find(i => i.prodId === prodId);
   if (existing) {
@@ -2755,10 +2829,114 @@ function changeQty(i, delta) {
 function removeItem(i) { cart.splice(i, 1); renderCart(); calcTotal(); }
 function clearCart() { cart = []; renderCart(); calcTotal(); document.getElementById('pos-search').value = ''; renderPosGrid(); }
 
+
+// ── Helper: get category icon (image if available, else emoji) ──
+function getCatIcono(catId, size) {
+  const c = DB.categorias.find(x => x.id == catId);
+  if (!c) return '📦';
+  if (c.imagen) return c.imagen.startsWith('data:') || c.imagen.startsWith('http')
+    ? '<img src="'+c.imagen+'" style="width:'+(size||28)+'px;height:'+(size||28)+'px;object-fit:cover;border-radius:4px;vertical-align:middle"/>'
+    : (c.emoji || '📦');
+  return c.emoji || '📦';
+}
+
+// ── Helper: distribute combo discount proportionally across items ──
+function aplicarPreciosProporcionales(cartRef, comboInfo) {
+  const result = cartRef.map(i => ({ ...i }));
+  if (!comboInfo || comboInfo.total === 0) return result;
+  const promoActivas = DB.promociones.filter(p => p.activa && p.hasta >= today() && p.prod2);
+  promoActivas.forEach(promo => {
+    const idx1 = result.findIndex(i => i.prodId == promo.prod1);
+    const idx2 = result.findIndex(i => i.prodId == promo.prod2);
+    if (idx1 < 0 || idx2 < 0) return;
+    const sets = Math.min(result[idx1].cant, result[idx2].cant);
+    if (sets <= 0) return;
+    const p1 = DB.productos.find(p => p.id == promo.prod1);
+    const p2 = DB.productos.find(p => p.id == promo.prod2);
+    const r1 = p1 ? p1.precio : result[idx1].precio;
+    const r2 = p2 ? p2.precio : result[idx2].precio;
+    const sumR = r1 + r2;
+    if (sumR === 0) return;
+    const comboP1 = Math.round((r1/sumR) * promo.precioPromo * 100) / 100;
+    const comboP2 = Math.round((promo.precioPromo - comboP1) * 100) / 100;
+    const blend = (base, comboP, cant) => Math.round((comboP * sets + base * (cant - sets)) / cant * 100) / 100;
+    result[idx1] = { ...result[idx1], precio: blend(r1, comboP1, result[idx1].cant), precioOriginal: r1, enCombo: true };
+    result[idx2] = { ...result[idx2], precio: blend(r2, comboP2, result[idx2].cant), precioOriginal: r2, enCombo: true };
+  });
+  return result;
+}
+
+// ── Auto-open caja when date changes or first action of the day ──
+function ensureCajaAbierta() {
+  const fechaHoy = today();
+  const montoAuto = parseFloat(DB.config && DB.config.montoAperturaAuto) || 0;
+  if (DB.caja.abierta && DB.caja.fecha === fechaHoy) return; // already open today
+  if (DB.caja.abierta && DB.caja.fecha && DB.caja.fecha !== fechaHoy) {
+    const saldoAnt = (DB.caja.inicial||0) + (DB.caja.ingresos||0) - (DB.caja.egresos||0);
+    DB.movimientos.push({ tipo:'cierre-auto', desc:'Cierre automático — '+DB.caja.fecha+' Saldo: '+sol(saldoAnt), monto:saldoAnt, hora:'23:59', fecha:DB.caja.fecha });
+  }
+  DB.caja = { abierta:true, inicial:montoAuto, ingresos:0, egresos:0, turnoInicio:nowTime(), cajero:currentUser||'Sistema', fecha:fechaHoy, apertura:'auto' };
+  if (!DB.movimientos) DB.movimientos = [];
+  DB.movimientos.push({ tipo:'ingreso', desc:'Apertura automática — '+fechaHoy, monto:montoAuto, hora:nowTime(), fecha:fechaHoy });
+}
+
+function checkAutoAbrirCaja() {
+  const fechaHoy = today();
+  const changed = DB.caja.fecha && DB.caja.fecha !== fechaHoy;
+  const closedWithAuto = !DB.caja.abierta && parseFloat(DB.config && DB.config.montoAperturaAuto) > 0;
+  if (changed || closedWithAuto) {
+    ensureCajaAbierta();
+    fbGuardar();
+    try { renderCaja(); } catch(e){}
+    try { renderDashboard(); } catch(e){}
+  }
+}
+
+function calcComboDescuento(cartRef) {
+  // Returns { total: number, lineas: [{nombre, sets, descuento}] }
+  cartRef = cartRef || cart;
+  const promoActivas = DB.promociones.filter(p => p.activa && p.hasta >= today() && p.prod2);
+  let totalDesc = 0;
+  const lineas = [];
+  promoActivas.forEach(promo => {
+    const item1 = cartRef.find(i => i.prodId == promo.prod1);
+    const item2 = cartRef.find(i => i.prodId == promo.prod2);
+    if (!item1 || !item2) return;
+    const sets = Math.min(item1.cant, item2.cant);
+    if (sets <= 0) return;
+    // Price without combo: sum of regular prices × sets
+    const prod1 = DB.productos.find(p => p.id == promo.prod1);
+    const prod2 = DB.productos.find(p => p.id == promo.prod2);
+    const precioSinCombo = ((prod1 ? prod1.precio : item1.precio) + (prod2 ? prod2.precio : item2.precio)) * sets;
+    const precioConCombo = promo.precioPromo * sets;
+    const descuento = Math.max(0, precioSinCombo - precioConCombo);
+    if (descuento > 0) {
+      totalDesc += descuento;
+      lineas.push({ nombre: promo.nombre, sets, descuento });
+    }
+  });
+  return { total: totalDesc, lineas };
+}
+
 function calcTotal() {
   const sub = cart.reduce((s, i) => s + i.precio * i.cant, 0);
   const desc = parseFloat(document.getElementById('pos-descuento').value) || 0;
-  const total = Math.max(0, sub - desc);
+  const combo = calcComboDescuento(cart);
+  const total = Math.max(0, sub - desc - combo.total);
+  // Render combo discount lines
+  const comboEl = document.getElementById('cart-combo-desc');
+  if (comboEl) {
+    if (combo.total > 0) {
+      comboEl.style.display = '';
+      comboEl.innerHTML = combo.lineas.map(l =>
+        `<div style="display:flex;justify-content:space-between;align-items:center;font-size:.78rem;background:var(--accent-light);border-radius:6px;padding:.25rem .5rem;margin-bottom:.2rem">
+          <span style="color:var(--accent-dark)">🎁 Combo: ${l.nombre}${l.sets > 1 ? ' ×'+l.sets : ''}</span>
+          <span style="font-weight:700;color:var(--accent-dark)">-${sol(l.descuento)}</span>
+        </div>`).join('');
+    } else {
+      comboEl.style.display = 'none';
+    }
+  }
   document.getElementById('cart-total').textContent = sol(total);
 }
 
@@ -2773,17 +2951,23 @@ function procesarVenta() {
   if (cart.length === 0) { alert('El carrito está vacío'); return; }
   const sub = cart.reduce((s, i) => s + i.precio * i.cant, 0);
   const desc = parseFloat(document.getElementById('pos-descuento').value) || 0;
-  const total = Math.max(0, sub - desc);
+  const comboInfo = calcComboDescuento(cart);
+  const comboDesc = comboInfo.total;
+  const total = Math.max(0, sub - desc - comboDesc);
   const metodo = document.getElementById('pos-metodo-pago').value;
   const clienteId = parseInt(document.getElementById('pos-cliente').value) || null;
 
+  // Items with proportional combo prices for accurate margin reporting
+  const itemsConPrecioReal = aplicarPreciosProporcionales(cart, comboInfo);
+
   const venta = {
     id: getId(), fecha: today(), hora: nowTime(), cajero: currentUser,
-    items: cart.map(i => ({ ...i })), subtotal: sub, descuento: desc, total, metodo, clienteId
+    items: itemsConPrecioReal, subtotal: sub,
+    descuento: desc + comboDesc, descuentoManual: desc, descuentoCombo: comboDesc,
+    total, metodo, clienteId
   };
   DB.ventas.push(venta);
 
-  // Registrar en historial de ventas
   if (!DB.historialVentas) DB.historialVentas = [];
   DB.historialVentas.push({ ...venta, origen: 'pos', estado: 'completado', estadoStock: 'descontado' });
 
@@ -2793,19 +2977,21 @@ function procesarVenta() {
     if (prod) prod.stock = Math.max(0, prod.stock - item.cant);
   });
 
-  // Actualizar caja
-  if (DB.caja.abierta) {
-    DB.caja.ingresos += total;
-    DB.movimientos.push({ tipo: 'ingreso', desc: 'Venta #' + venta.id, monto: total, hora: nowTime() });
-  }
+  // Caja: register always (ensureCajaAbierta abre si hace falta)
+  ensureCajaAbierta();
+  DB.caja.ingresos += total;
+  DB.movimientos.push({ tipo:'ingreso', desc:`Venta #${venta.id} (${metodo})`, monto:total, hora:nowTime(), fecha:today(), cajero:currentUser });
 
   // Actualizar cliente
   if (clienteId) {
     const cli = DB.clientes.find(c => c.id === clienteId);
-    if (cli) { cli.compras++; cli.total += total; }
+    if (cli) { cli.compras = (cli.compras||0)+1; cli.total = (cli.total||0)+total; cli.puntos=(cli.puntos||0)+Math.floor(total); }
   }
 
-  fbGuardar();
+  fbGuardar(); fbGuardarProductos();
+  try { renderDashboard(); } catch(e){}
+  try { renderCaja(); } catch(e){}
+  try { generarReporte(); } catch(e){}
   mostrarTicket(venta);
   clearCart();
   updateAlertCount();
@@ -2817,28 +3003,40 @@ function cobrarFiado() {
   if (!clienteId) { alert('Selecciona un cliente para registrar el fiado'); return; }
   const sub = cart.reduce((s, i) => s + i.precio * i.cant, 0);
   const desc = parseFloat(document.getElementById('pos-descuento').value) || 0;
-  const total = Math.max(0, sub - desc);
+  const comboInfo = calcComboDescuento(cart);
+  const comboDesc = comboInfo.total;
+  const total = Math.max(0, sub - desc - comboDesc);
+  const itemsConPrecioReal = aplicarPreciosProporcionales(cart, comboInfo);
 
-  const fiado = { id: getId(), clienteId, items: cart.map(i => ({ nombre: i.nombre, cant: i.cant, precio: i.precio })), total, pagado: 0, fecha: today() };
+  const fiado = {
+    id: getId(), clienteId, items: itemsConPrecioReal,
+    total, pagado: 0, fecha: today(), descuentoCombo: comboDesc, descuentoManual: desc
+  };
   DB.fiados.push(fiado);
 
-  // Actualizar stock y cliente
   cart.forEach(item => {
     const prod = DB.productos.find(p => p.id === item.prodId);
     if (prod) prod.stock = Math.max(0, prod.stock - item.cant);
   });
-  const cli = DB.clientes.find(c => c.id === clienteId);
-  if (cli) cli.deuda += total;
 
-  fbGuardar();
+  const cli = DB.clientes.find(c => c.id === clienteId);
+  if (cli) { cli.deuda = (cli.deuda||0) + total; cli.compras = (cli.compras||0) + 1; }
+
+  ensureCajaAbierta();
+  DB.movimientos.push({ tipo:'fiado', desc:'Fiado — ' + getClienteNombre(clienteId), monto:total, hora:nowTime(), fecha:today(), cajero:currentUser });
+
+  fbGuardar(); fbGuardarProductos();
+  try { renderDashboard(); } catch(e){}
+  try { renderCaja(); } catch(e){}
   alert('Fiado registrado para ' + getClienteNombre(clienteId) + ': ' + sol(total));
-  clearCart();
-  updateAlertCount();
+  clearCart(); updateAlertCount();
 }
 
 // ===================== TICKET =====================
 function mostrarTicket(venta) {
   const cfg = DB.config;
+  const comboDescuento = venta.descuentoCombo || 0;
+  const descManual = venta.descuentoManual || (comboDescuento === 0 ? (venta.descuento||0) : 0);
   const html = `<div class="ticket" id="ticket-print">
     <div class="ticket-center"><strong style="font-size:1rem">${cfg.nombre}</strong></div>
     <div class="ticket-center" style="font-size:0.7rem;color:#666">${cfg.direccion}</div>
@@ -2849,9 +3047,13 @@ function mostrarTicket(venta) {
     <div class="ticket-row"><span>Cajero:</span><span>${venta.cajero}</span></div>
     <div class="ticket-row"><span>Pago:</span><span>${venta.metodo}</span></div>
     <div class="ticket-line"></div>
-    ${venta.items.map(i => `<div class="ticket-row"><span>${i.nombre} x${i.tipo==='granel'?i.cant.toFixed(2):i.cant}</span><span>${sol(i.precio*i.cant)}</span></div>`).join('')}
+    ${venta.items.map(i => {
+      const tag = i.enCombo ? ' 🎁' : '';
+      return `<div class="ticket-row"><span>${i.nombre}${tag} x${i.tipo==='granel'?i.cant.toFixed(2):i.cant}</span><span>${sol(i.precio*i.cant)}</span></div>`;
+    }).join('')}
     <div class="ticket-line"></div>
-    ${venta.descuento > 0 ? `<div class="ticket-row"><span>Descuento:</span><span>-${sol(venta.descuento)}</span></div>` : ''}
+    ${comboDescuento > 0 ? `<div class="ticket-row" style="color:#6c3fff"><span>🎁 Dcto. combo:</span><span>-${sol(comboDescuento)}</span></div>` : ''}
+    ${descManual > 0 ? `<div class="ticket-row"><span>Descuento:</span><span>-${sol(descManual)}</span></div>` : ''}
     <div class="ticket-row"><strong>TOTAL</strong><strong>${sol(venta.total)}</strong></div>
     <div class="ticket-line"></div>
     <div class="ticket-center" style="color:#666">${cfg.ticketMsg}</div>
@@ -2872,7 +3074,11 @@ function renderInventario() {
 function updateInvCatFilter() {
   const sel = document.getElementById('inv-cat');
   sel.innerHTML = '<option value="">Todas las categorías</option>';
-  DB.categorias.forEach(c => sel.innerHTML += `<option value="${c.id}">${c.emoji} ${c.nombre}</option>`);
+  DB.categorias.forEach(c => {
+    // <select> options don't render HTML — use emoji if no image, or label with name
+    const label = c.emoji ? c.emoji + ' ' + c.nombre : c.nombre;
+    sel.innerHTML += `<option value="${c.id}">${label}</option>`;
+  });
 }
 
 function renderInvTable(prods) {
@@ -2936,6 +3142,11 @@ function abrirModalProducto() {
   document.getElementById('prod-stock-min').value = '5';
   document.getElementById('prod-margen').value = '';
   document.getElementById('barcode-container').style.display = 'none';
+  // Clear image
+  document.getElementById('prod-img-data').value = '';
+  document.getElementById('prod-img-file').value = '';
+  const _prevImg = document.getElementById('prod-img-preview');
+  if (_prevImg) { _prevImg.innerHTML = '🖼️'; _prevImg.style.fontSize='2rem'; }
   updateModalCats(); updateModalProvs();
   abrirModal('modal-producto');
 }
@@ -2967,7 +3178,50 @@ function editarProducto(id) {
   } else {
     document.getElementById('barcode-container').style.display = 'none';
   }
+  // Load product image
+  const imgData = p.imagen || '';
+  document.getElementById('prod-img-data').value = imgData;
+  const preview = document.getElementById('prod-img-preview');
+  if (imgData) {
+    preview.innerHTML = `<img src="${imgData}" style="width:100%;height:100%;object-fit:cover;border-radius:8px" />`;
+  } else {
+    preview.innerHTML = '🖼️';
+    preview.style.fontSize = '2rem';
+  }
   abrirModal('modal-producto');
+}
+
+function onProdImgSelect(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    const img = new Image();
+    img.onload = function() {
+      const canvas = document.createElement('canvas');
+      canvas.width = 128; canvas.height = 128;
+      const ctx = canvas.getContext('2d');
+      // Cover crop: center the image
+      const scale = Math.max(128/img.width, 128/img.height);
+      const sw = 128/scale, sh = 128/scale;
+      const sx = (img.width - sw)/2, sy = (img.height - sh)/2;
+      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, 128, 128);
+      const data = canvas.toDataURL('image/webp', 0.78);
+      document.getElementById('prod-img-data').value = data;
+      const preview = document.getElementById('prod-img-preview');
+      if (preview) preview.innerHTML = `<img src="${data}" style="width:100%;height:100%;object-fit:cover;border-radius:8px"/>`;
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function limpiarImgProd() {
+  document.getElementById('prod-img-data').value = '';
+  document.getElementById('prod-img-file').value = '';
+  const preview = document.getElementById('prod-img-preview');
+  preview.innerHTML = '🖼️';
+  preview.style.fontSize = '2rem';
 }
 
 function eliminarProducto(id) {
@@ -3222,7 +3476,8 @@ function guardarProducto() {
     stockMin: parseFloat(document.getElementById('prod-stock-min').value) || 5,
     venc: document.getElementById('prod-venc').value,
     codigo: document.getElementById('prod-codigo').value || '7' + getId().toString().slice(-12),
-    prov: parseInt(document.getElementById('prod-prov').value) || null
+    prov: parseInt(document.getElementById('prod-prov').value) || null,
+    imagen: document.getElementById('prod-img-data').value || ''
   };
 
   if (editingProductId) {
@@ -3241,10 +3496,51 @@ function guardarProducto() {
 // ===================== CATEGORIAS =====================
 let editingCatId = null;
 
+function onCatImgSelect(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    // Compress to 64×64 before storing
+    const img = new Image();
+    img.onload = function() {
+      const canvas = document.createElement('canvas');
+      canvas.width = 64; canvas.height = 64;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, 64, 64);
+      const data = canvas.toDataURL('image/webp', 0.75);
+      document.getElementById('cat-img-data').value = data;
+      const preview = document.getElementById('cat-img-preview');
+      preview.innerHTML = `<img src="${data}" style="width:100%;height:100%;object-fit:cover;border-radius:8px"/>`;
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function limpiarImgCat() {
+  document.getElementById('cat-img-data').value = '';
+  document.getElementById('cat-img-file').value = '';
+  const p = document.getElementById('cat-img-preview');
+  if (p) { p.innerHTML = '🖼️'; p.style.fontSize='1.8rem'; }
+}
+
+function _setCatImgPreview(img) {
+  const p = document.getElementById('cat-img-preview');
+  if (!p) return;
+  if (img) {
+    p.innerHTML = `<img src="${img}" style="width:100%;height:100%;object-fit:cover;border-radius:8px"/>`;
+  } else {
+    p.innerHTML = '🖼️'; p.style.fontSize = '1.8rem';
+  }
+}
+
 function renderCategorias() {
   document.getElementById('cats-grid').innerHTML = DB.categorias.map(c => `
     <div class="card" style="text-align:center">
-      <div style="font-size:2.5rem;margin-bottom:0.5rem">${c.emoji}</div>
+      <div style="width:56px;height:56px;margin:0 auto .5rem;border-radius:12px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:var(--gray-100);font-size:2rem">
+        ${c.imagen ? `<img src="${c.imagen}" style="width:100%;height:100%;object-fit:cover"/>` : (c.emoji || '📦')}
+      </div>
       <div style="font-weight:700;font-size:1rem;margin-bottom:0.25rem">${c.nombre}</div>
       <div class="badge badge-purple" style="margin-bottom:.3rem">Margen: ${c.margen||0}%</div>
       <div style="font-size:0.8rem;color:var(--gray-500);margin-bottom:0.75rem">${DB.productos.filter(p=>p.cat==c.id).length} productos</div>
@@ -3261,6 +3557,9 @@ function abrirModalCategoria() {
   document.getElementById('cat-nombre').value = '';
   document.getElementById('cat-emoji').value = '';
   document.getElementById('cat-margen').value = '';
+  document.getElementById('cat-img-data').value = '';
+  document.getElementById('cat-img-file').value = '';
+  _setCatImgPreview(null);
   document.getElementById('cat-update-prods-wrap').style.display = 'none';
   abrirModal('modal-categoria');
 }
@@ -3270,28 +3569,124 @@ function editarCategoria(id) {
   const c = DB.categorias.find(x => x.id === id);
   document.getElementById('cat-modal-titulo').textContent = 'Editar Categoría: ' + c.nombre;
   document.getElementById('cat-nombre').value = c.nombre;
-  document.getElementById('cat-emoji').value = c.emoji;
+  document.getElementById('cat-emoji').value = c.emoji || '';
   document.getElementById('cat-margen').value = c.margen || 0;
+  document.getElementById('cat-img-data').value = c.imagen || '';
+  document.getElementById('cat-img-file').value = '';
+  _setCatImgPreview(c.imagen || null);
   const nProds = DB.productos.filter(p => p.cat == id).length;
   document.getElementById('cat-update-prods-wrap').style.display = nProds > 0 ? 'block' : 'none';
   abrirModal('modal-categoria');
 }
 
-function guardarCategoria() {
-  const nombre = document.getElementById('cat-nombre').value.trim();
-  if (!nombre) { alert('Ingresa el nombre'); return; }
-  const margen = parseFloat(document.getElementById('cat-margen').value) || 0;
-  if (editingCatId) {
-    const c = DB.categorias.find(x => x.id === editingCatId);
-    c.nombre = nombre;
-    c.emoji = document.getElementById('cat-emoji').value || '📦';
-    c.margen = margen;
-  } else {
-    DB.categorias.push({ id: getId(), nombre, emoji: document.getElementById('cat-emoji').value || '📦', margen });
+function abrirImprimirQrMasivo() {
+  // Build modal dynamically
+  let m = document.getElementById('modal-qr-masivo');
+  if (!m) {
+    m = document.createElement('div');
+    m.id = 'modal-qr-masivo';
+    m.className = 'modal-overlay';
+    document.body.appendChild(m);
   }
-  cerrarModal('modal-categoria');
-  renderCategorias();
-  updateModalCats();
+  const cats = DB.categorias.map(c => `<option value="${c.id}">${c.imagen?'🖼':c.emoji} ${c.nombre}</option>`).join('');
+  m.innerHTML = `
+  <div class="modal" style="max-width:620px;width:96vw">
+    <div class="modal-header">
+      <h3>🖨️ Impresión masiva de QR</h3>
+      <button class="modal-close" onclick="cerrarModal('modal-qr-masivo')">✕</button>
+    </div>
+    <div style="display:flex;gap:.75rem;flex-wrap:wrap;margin-bottom:.75rem">
+      <div style="flex:1;min-width:160px">
+        <label style="font-size:.8rem;font-weight:600">Categoría</label>
+        <select class="form-control" id="qrm-cat" onchange="renderQrMasivoLista()">
+          <option value="">Todas</option>${cats}
+        </select>
+      </div>
+      <div style="flex:1;min-width:160px">
+        <label style="font-size:.8rem;font-weight:600">Buscar producto</label>
+        <input type="text" class="form-control" id="qrm-buscar" placeholder="Nombre o código..." oninput="renderQrMasivoLista()"/>
+      </div>
+      <div style="flex:0 0 auto;min-width:140px">
+        <label style="font-size:.8rem;font-weight:600">Layout</label>
+        <select class="form-control" id="qrm-layout">
+          <option value="4">4 columnas</option>
+          <option value="3">3 columnas</option>
+          <option value="2">2 columnas grandes</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:flex;gap:.5rem;margin-bottom:.6rem;align-items:center">
+      <button class="btn btn-outline btn-sm" onclick="qrmSelAll(true)">☑ Todos</button>
+      <button class="btn btn-outline btn-sm" onclick="qrmSelAll(false)">☐ Ninguno</button>
+      <span id="qrm-count" style="font-size:.78rem;color:var(--gray-500);margin-left:.5rem"></span>
+      <div style="flex:1"></div>
+      <button class="btn btn-primary btn-sm" onclick="imprimirQrsMasivos()">🖨️ Imprimir seleccionados</button>
+    </div>
+    <div id="qrm-lista" style="max-height:340px;overflow-y:auto;border:1px solid var(--gray-200);border-radius:8px;padding:.5rem"></div>
+  </div>`;
+  abrirModal('modal-qr-masivo');
+  renderQrMasivoLista();
+}
+
+function renderQrMasivoLista() {
+  const catFil = document.getElementById('qrm-cat')?.value;
+  const buscar = (document.getElementById('qrm-buscar')?.value || '').toLowerCase();
+  let prods = DB.productos.filter(p =>
+    (!catFil || p.cat == catFil) &&
+    (!buscar || p.nombre.toLowerCase().includes(buscar) || (p.codigo||'').toLowerCase().includes(buscar))
+  );
+  const el = document.getElementById('qrm-lista');
+  if (!el) return;
+  el.innerHTML = prods.map(p => {
+    const cat = DB.categorias.find(c => c.id == p.cat);
+    return `<div style="display:flex;align-items:center;gap:.6rem;padding:.4rem .5rem;border-bottom:1px solid var(--gray-100)">
+      <input type="checkbox" class="qrm-chk" data-id="${p.id}" checked style="width:18px;height:18px;cursor:pointer" onchange="qrmUpdateCount()"/>
+      <span style="font-size:1.1rem">${cat?.imagen?`<img src="${cat.imagen}" style="width:20px;height:20px;object-fit:cover;border-radius:3px;vertical-align:middle"/>`:(cat?.emoji||'📦')}</span>
+      <span style="flex:1;font-size:.85rem;font-weight:600">${p.nombre}</span>
+      <span style="font-size:.72rem;color:var(--gray-400)">${p.codigo||'—'}</span>
+    </div>`;
+  }).join('') || '<div style="padding:1rem;text-align:center;color:var(--gray-400)">Sin productos</div>';
+  qrmUpdateCount();
+}
+
+function qrmSelAll(v) {
+  document.querySelectorAll('.qrm-chk').forEach(c => c.checked = v);
+  qrmUpdateCount();
+}
+
+function qrmUpdateCount() {
+  const n = document.querySelectorAll('.qrm-chk:checked').length;
+  const el = document.getElementById('qrm-count');
+  if (el) el.textContent = `${n} seleccionado${n!==1?'s':''}`;
+}
+
+function imprimirQrsMasivos() {
+  const cols = parseInt(document.getElementById('qrm-layout')?.value) || 4;
+  const ids = [...document.querySelectorAll('.qrm-chk:checked')].map(c => parseInt(c.dataset.id));
+  if (!ids.length) { alert('Selecciona al menos un producto'); return; }
+  const prods = ids.map(id => DB.productos.find(p => p.id === id)).filter(Boolean);
+  const w = window.open('','_blank','width=900,height=700');
+  const qrSize = cols <= 2 ? 160 : cols === 3 ? 120 : 90;
+  const rows = prods.map(p => {
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${qrSize}x${qrSize}&data=${encodeURIComponent(p.codigo||String(p.id))}`;
+    return `<div style="display:inline-block;width:${100/cols-2}%;margin:1%;text-align:center;border:1px solid #ddd;border-radius:8px;padding:8px;page-break-inside:avoid;vertical-align:top">
+      <img src="${qrUrl}" width="${qrSize}" height="${qrSize}" style="display:block;margin:0 auto 6px"/>
+      <div style="font-size:${cols<=2?11:9}px;font-weight:700;line-height:1.3;margin-bottom:3px">${p.nombre}</div>
+      <div style="font-size:${cols<=2?13:10}px;font-weight:800;color:#6c3fff">S/ ${p.precio.toFixed(2)}</div>
+      <div style="font-size:8px;color:#888">${p.codigo||p.id}</div>
+    </div>`;
+  }).join('');
+  w.document.write(`<!DOCTYPE html><html><head><title>QR Masivo</title>
+  <style>body{font-family:Arial,sans-serif;padding:10px;} @media print{button{display:none!important}}</style>
+  </head><body>
+  <div style="text-align:center;margin-bottom:10px">
+    <button onclick="window.print()" style="background:#6c3fff;color:white;border:none;padding:8px 20px;border-radius:6px;cursor:pointer;font-size:14px">🖨️ Imprimir</button>
+    <button onclick="window.close()" style="background:#eee;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;margin-left:8px">✕ Cerrar</button>
+    <span style="font-size:12px;color:#666;margin-left:12px">${prods.length} códigos QR — ${DB.config.nombre||'Minimarket'}</span>
+  </div>
+  <div>${rows}</div>
+  </body></html>`);
+  w.document.close();
 }
 
 function actualizarPreciosCat(modo) {
@@ -3618,9 +4013,17 @@ function confirmarPagoFiado() {
   f.pagado += monto;
   const cli = DB.clientes.find(c => c.id === f.clienteId);
   if (cli) cli.deuda = Math.max(0, cli.deuda - monto);
-  if (DB.caja.abierta) { DB.caja.ingresos += monto; DB.movimientos.push({ tipo: 'ingreso', desc: 'Pago fiado: ' + getClienteNombre(f.clienteId), monto, hora: nowTime() }); }
+  // Ensure caja is open for today, then register ingreso
+  ensureCajaAbierta();
+  DB.caja.ingresos += monto;
+  DB.movimientos.push({ tipo:'ingreso', desc:'Pago fiado: ' + getClienteNombre(f.clienteId), monto, hora:nowTime(), fecha:today() });
   fbGuardar();
-  cerrarModal('modal-pago-fiado'); renderFiados(); updateAlertCount();
+  cerrarModal('modal-pago-fiado');
+  renderFiados();
+  updateAlertCount();
+  try { renderDashboard(); } catch(e){}
+  try { renderCaja(); } catch(e){}
+  try { generarReporte(); } catch(e){}
 }
 
 function compartirFiadoWhatsapp() {
@@ -3787,21 +4190,36 @@ function renderCaja() {
   } else {
     document.getElementById('caja-cerrada').style.display = 'block';
     document.getElementById('caja-abierta').style.display = 'none';
+    const montoAuto = parseFloat(DB.config && DB.config.montoAperturaAuto) || 0;
+    const elMonto = document.getElementById('caja-monto-inicial');
+    const hint = document.getElementById('caja-auto-hint');
+    if (elMonto && montoAuto > 0) elMonto.value = montoAuto;
+    if (hint) hint.textContent = montoAuto > 0 ? `Monto automático configurado: S/ ${montoAuto.toFixed(2)}` : 'Sin monto automático — configúralo en Configuración';
   }
 }
 
 function abrirCaja() {
   const monto = parseFloat(document.getElementById('caja-monto-inicial').value) || 0;
-  DB.caja = { abierta: true, inicial: monto, ingresos: 0, egresos: 0, turnoInicio: nowTime(), cajero: currentUser };
-  DB.movimientos = [{ tipo: 'ingreso', desc: 'Apertura de caja', monto, hora: nowTime() }];
+  DB.caja = { abierta:true, inicial:monto, ingresos:0, egresos:0, turnoInicio:nowTime(), cajero:currentUser, fecha:today(), apertura:'manual' };
+  DB.movimientos = [{ tipo:'ingreso', desc:'Apertura de caja', monto, hora:nowTime(), fecha:today() }];
+  fbGuardar(); renderCaja();
+}
+
+function guardarMontoAperturaDefault() {
+  const m = parseFloat(document.getElementById('caja-monto-inicial').value) || 0;
+  DB.config.montoAperturaAuto = m;
   fbGuardar();
-  renderCaja();
+  const hint = document.getElementById('caja-auto-hint');
+  if (hint) { hint.textContent = `✅ Monto default guardado: S/ ${m.toFixed(2)}`; hint.style.color='var(--accent)'; }
+  setTimeout(() => { try { renderConfiguracion(); } catch(e){} }, 300);
 }
 
 function cerrarCaja() {
-  const saldo = DB.caja.inicial + DB.caja.ingresos - DB.caja.egresos;
+  const saldo = (DB.caja.inicial||0) + (DB.caja.ingresos||0) - (DB.caja.egresos||0);
   if (!confirm(`Cerrar caja. Saldo final: ${sol(saldo)}\n¿Confirmar cierre de turno?`)) return;
-  DB.caja.abierta = false; fbGuardar(); renderCaja();
+  DB.movimientos.push({ tipo:'cierre', desc:`Cierre de caja — Saldo: ${sol(saldo)}`, monto:saldo, hora:nowTime(), fecha:today() });
+  DB.caja.abierta = false; DB.caja.fechaCierre = today(); DB.caja.saldoFinal = saldo;
+  fbGuardar(); renderCaja();
 }
 
 function updateCajaStats() {
@@ -3939,21 +4357,39 @@ function guardarMerma() {
     const oldProd = DB.productos.find(p => p.id === old.prodId);
     if (oldProd) oldProd.stock += old.cant; // restaurar
     if (cant > prod.stock) { alert('La cantidad supera el stock disponible'); if(oldProd) oldProd.stock -= old.cant; return; }
+    const costoAnterior = (oldProd ? oldProd.costo : 0) * old.cant;
+    const costoNuevo = prod.costo * cant;
+    const diferencia = costoNuevo - costoAnterior;
     old.prodId = prodId; old.cant = cant; old.motivo = motivo; old.obs = obs;
     prod.stock -= cant;
+    // Register difference as movement
+    if (diferencia !== 0) {
+      ensureCajaAbierta();
+      DB.movimientos.push({ tipo:'egreso', desc:`Ajuste merma: ${prod.nombre} x${cant} (${motivo})`, monto: Math.abs(diferencia), hora:nowTime(), fecha:today(), usuario:currentUser });
+      if (diferencia > 0 && DB.caja.abierta) DB.caja.egresos = (DB.caja.egresos||0) + diferencia;
+    }
+    if (DB_EXT && DB_EXT.capital) { DB_EXT.capital.recuperado -= diferencia; fbGuardarExt(); }
     fbGuardar(); fbGuardarProductos();
   } else {
     if (cant > prod.stock) { alert('La cantidad supera el stock disponible'); return; }
-    DB.mermas.push({ id: getId(), prodId, cant, motivo, obs, fecha: today(), usuario: currentUser });
-    fbGuardar();
+    const nuevaMerma = { id: getId(), prodId, cant, motivo, obs, fecha: today(), usuario: currentUser };
+    DB.mermas.push(nuevaMerma);
     prod.stock -= cant;
-    fbGuardarProductos();
-    // Descontar del capital recuperado
-    if (DB_EXT && DB_EXT.capital) { DB_EXT.capital.recuperado -= prod.costo * cant; fbGuardarExt(); }
+    // Register as egreso - always, ensureCajaAbierta handles closed-caja case
+    const costoPerdida = prod.costo * cant;
+    ensureCajaAbierta();
+    DB.movimientos.push({ tipo:'egreso', desc:`Merma: ${prod.nombre} x${cant} (${motivo})`, monto: costoPerdida, hora:nowTime(), fecha:today(), usuario:currentUser });
+    DB.caja.egresos = (DB.caja.egresos||0) + costoPerdida;
+    if (DB_EXT && DB_EXT.capital) { DB_EXT.capital.recuperado -= costoPerdida; fbGuardarExt(); }
+    fbGuardar(); fbGuardarProductos();
   }
   cerrarModal('modal-merma');
   renderMermas();
   updateAlertCount();
+  try { renderDashboard(); } catch(e){}
+  try { renderCaja(); } catch(e){}
+  try { generarReporte(); } catch(e){}
+  renderInvTable();
 }
 
 function eliminarMerma(id) {
@@ -4218,6 +4654,7 @@ function renderConfiguracion() {
   document.getElementById('cfg-whatsapp-tienda').value = DB.config.whatsappTienda || '980037284';
   document.getElementById('cfg-ticket-msg').value= DB.config.ticketMsg || '¡Gracias por su compra!';
   document.getElementById('cfg-dias-venc').value = DB.config.diasVenc  || 7;
+  document.getElementById('cfg-monto-apertura').value = DB.config.montoAperturaAuto || 0;
   document.getElementById('sueldo-jc').value = DB_EXT.sueldos['Jose Carlos'] || 0;
   document.getElementById('sueldo-sh').value = DB_EXT.sueldos['Shessira']    || 0;
   document.getElementById('sueldo-jl').value = DB_EXT.sueldos['José Luis']   || 0;
@@ -4244,6 +4681,7 @@ function guardarConfig() {
   DB.config.whatsappTienda = document.getElementById('cfg-whatsapp-tienda').value.replace(/\D/g,'');
   DB.config.ticketMsg = document.getElementById('cfg-ticket-msg').value;
   DB.config.diasVenc  = parseInt(document.getElementById('cfg-dias-venc').value) || 7;
+  DB.config.montoAperturaAuto = parseFloat(document.getElementById('cfg-monto-apertura').value) || 0;
   fbGuardar();
   alert('✅ Configuración guardada');
 }
@@ -5316,11 +5754,13 @@ function mobFilterPos() {
 function renderMobPosCats() {
   const el = document.getElementById('mob-pos-categorias');
   if (!el) return;
-  const cats = [{ id: '', emoji: '🏪', nombre: 'Todos' }, ...DB.categorias];
-  el.innerHTML = cats.map(c =>
-    `<span class="tag${c.id === '' ? ' active' : ''}" data-cat="${c.id}"
-      onclick="mobSelectCat('${c.id}',this)">${c.emoji} ${c.nombre}</span>`
-  ).join('');
+  const cats = [{ id: '', emoji: '🏪', nombre: 'Todos', imagen: null }, ...DB.categorias];
+  el.innerHTML = cats.map(c => {
+    const icon = c.imagen
+      ? `<img src="${c.imagen}" style="width:14px;height:14px;object-fit:cover;border-radius:2px;vertical-align:middle;margin-right:2px"/>`
+      : (c.emoji + ' ');
+    return `<span class="tag${c.id === '' ? ' active' : ''}" data-cat="${c.id}" onclick="mobSelectCat('${c.id}',this)">${icon}${c.nombre}</span>`;
+  }).join('');
 }
 
 function mobSelectCat(catId, el) {
@@ -5336,11 +5776,18 @@ function renderMobPosGrid(prods) {
   const promoActivas = DB.promociones.filter(p => p.activa && p.hasta >= today());
   grid.innerHTML = prods.map(p => {
     const promo = promoActivas.find(pr => pr.prod1 == p.id || pr.prod2 == p.id);
-    const precio = promo ? promo.precioPromo : p.precio;
+    const esCombo2 = promo && promo.prod2;
+    const precio = (!esCombo2 && promo) ? promo.precioPromo : p.precio;
     const stockBajo = p.stock <= p.stockMin;
+    const iconHtml = p.imagen
+      ? `<div style="width:44px;height:44px;margin:0 auto .25rem;border-radius:8px;overflow:hidden"><img src="${p.imagen}" style="width:100%;height:100%;object-fit:cover"/></div>`
+      : `<div class="p-icon">${getCatIcono(p.cat)}</div>`;
+    const tag = esCombo2
+      ? `<span class="promo-tag" style="position:absolute;top:4px;right:4px;font-size:.6rem;background:var(--accent)">COMBO</span>`
+      : promo ? `<span class="promo-tag" style="position:absolute;top:4px;right:4px;font-size:.6rem">PROMO</span>` : '';
     return `<div class="product-card${p.stock === 0 ? ' opacity-50' : ''}" onclick="mobAddToCart(${p.id})" style="${p.stock===0?'opacity:.45;pointer-events:none':''}">
-      ${promo ? '<span class="promo-tag" style="position:absolute;top:4px;right:4px;font-size:.6rem">PROMO</span>' : ''}
-      <div class="p-icon">${DB.categorias.find(c=>c.id==p.cat)?.emoji||'📦'}</div>
+      ${tag}
+      ${iconHtml}
       <div class="p-name">${p.nombre}</div>
       <div class="p-price" style="${stockBajo?'color:var(--danger)':''}">S/ ${precio.toFixed(2)}</div>
       <div class="p-stock" style="${stockBajo?'color:var(--danger);font-weight:700':''}">Stock: ${p.stock} ${p.unidad}</div>
@@ -5354,7 +5801,9 @@ function mobAddToCart(prodId) {
   if (!prod || prod.stock === 0) return;
   const promoActivas = DB.promociones.filter(p => p.activa && p.hasta >= today());
   const promo = promoActivas.find(pr => pr.prod1 == prodId || pr.prod2 == prodId);
-  const precio = promo ? promo.precioPromo : prod.precio;
+  // 2-product combos: use regular price — discount shown in total
+  const esCombo2 = promo && promo.prod2;
+  const precio = (!esCombo2 && promo) ? promo.precioPromo : prod.precio;
   const existing = mobCart.find(i => i.prodId === prodId);
   if (existing) {
     if (existing.cant >= prod.stock) { alert('Stock insuficiente'); return; }
@@ -5421,9 +5870,22 @@ function mobClearCart() {
 function mobCalcTotal() {
   const sub = mobCart.reduce((s, i) => s + i.precio * i.cant, 0);
   const desc = parseFloat(document.getElementById('mob-pos-descuento')?.value) || 0;
-  const total = Math.max(0, sub - desc);
+  const combo = calcComboDescuento(mobCart);
+  const total = Math.max(0, sub - desc - combo.total);
   const el = document.getElementById('mob-cart-total');
   if (el) el.textContent = sol(total);
+  // Show combo lines in mobile drawer
+  const mobComboEl = document.getElementById('mob-cart-combo-desc');
+  if (mobComboEl) {
+    if (combo.total > 0) {
+      mobComboEl.style.display = '';
+      mobComboEl.innerHTML = combo.lineas.map(l =>
+        `<div style="display:flex;justify-content:space-between;font-size:.78rem;background:var(--accent-light);border-radius:6px;padding:.22rem .45rem;margin-bottom:.2rem">
+          <span style="color:var(--accent-dark)">🎁 ${l.nombre}${l.sets>1?' ×'+l.sets:''}</span>
+          <span style="font-weight:700;color:var(--accent-dark)">-${sol(l.descuento)}</span>
+        </div>`).join('');
+    } else { mobComboEl.style.display = 'none'; }
+  }
   mobUpdateBar();
 }
 
@@ -5467,12 +5929,15 @@ function mobCobrarFiado() {
   if (!clienteId) { alert('Selecciona un cliente para registrar el fiado'); return; }
   const sub = mobCart.reduce((s, i) => s + i.precio * i.cant, 0);
   const desc = parseFloat(document.getElementById('mob-pos-descuento')?.value) || 0;
-  const total = Math.max(0, sub - desc);
+  const comboInfo = calcComboDescuento(mobCart);
+  const total = Math.max(0, sub - desc - comboInfo.total);
+  const itemsConPrecioReal = aplicarPreciosProporcionales(mobCart, comboInfo);
 
   const fiado = {
     id: getId(), clienteId,
-    items: mobCart.map(i => ({ nombre: i.nombre, cant: i.cant, precio: i.precio })),
-    total, pagado: 0, fecha: today()
+    items: itemsConPrecioReal,
+    total, pagado: 0, fecha: today(),
+    descuentoCombo: comboInfo.total, descuentoManual: desc
   };
   DB.fiados.push(fiado);
 
@@ -5484,33 +5949,41 @@ function mobCobrarFiado() {
 
   // Actualizar deuda del cliente
   const cli = DB.clientes.find(c => c.id === clienteId);
-  if (cli) cli.deuda = (cli.deuda || 0) + total;
+  if (cli) { cli.deuda = (cli.deuda||0) + total; cli.compras = (cli.compras||0) + 1; }
 
-  fbGuardar();
+  // Always register movement with ensureCajaAbierta
+  ensureCajaAbierta();
+  DB.movimientos.push({ tipo:'fiado', desc:`Fiado — ${getClienteNombre(clienteId)}`, monto:total, hora:nowTime(), fecha:today() });
+
+  fbGuardar(); fbGuardarProductos();
+  try { renderDashboard(); } catch(e){}
   alert('Fiado registrado para ' + getClienteNombre(clienteId) + ': ' + sol(total));
 
-  // Limpiar carrito móvil completamente
   mobCart = [];
-  mobRenderCart();
-  mobCalcTotal();
-  mobUpdateBar();
+  mobRenderCart(); mobCalcTotal(); mobUpdateBar();
   const descEl = document.getElementById('mob-pos-descuento');
   if (descEl) descEl.value = '';
-  renderMobPosGrid();
-  toggleMobCart();
-  updateAlertCount();
+  renderMobPosGrid(); toggleMobCart(); updateAlertCount();
 }
 
 function mobProcesarVenta() {
   if (mobCart.length === 0) { alert('El carrito está vacío'); return; }
   const sub = mobCart.reduce((s, i) => s + i.precio * i.cant, 0);
   const desc = parseFloat(document.getElementById('mob-pos-descuento')?.value) || 0;
-  const total = Math.max(0, sub - desc);
+  const comboInfo = calcComboDescuento(mobCart);
+  const comboDesc = comboInfo.total;
+  const total = Math.max(0, sub - desc - comboDesc);
   const metodo = document.getElementById('mob-pos-metodo-pago')?.value || 'Efectivo';
   const clienteId = parseInt(document.getElementById('mob-pos-cliente')?.value) || null;
+
+  // Build items with proportional combo prices for accurate reporting
+  const itemsConPrecioReal = aplicarPreciosProporcionales(mobCart, comboInfo);
+
   const venta = {
     id: getId(), fecha: today(), hora: nowTime(), cajero: currentUser,
-    items: mobCart.map(i => ({ ...i })), subtotal: sub, descuento: desc, total, metodo, clienteId
+    items: itemsConPrecioReal, subtotal: sub,
+    descuento: desc + comboDesc, descuentoManual: desc, descuentoCombo: comboDesc,
+    total, metodo, clienteId
   };
   // Descontar stock
   mobCart.forEach(item => {
@@ -5527,17 +6000,24 @@ function mobProcesarVenta() {
   });
   if (clienteId) {
     const cli = DB.clientes.find(c => c.id === clienteId);
-    if (cli) { cli.total = (cli.total || 0) + total; cli.puntos = (cli.puntos || 0) + Math.floor(total); }
+    if (cli) { cli.total = (cli.total||0)+total; cli.puntos = (cli.puntos||0)+Math.floor(total); cli.compras=(cli.compras||0)+1; }
   }
+  // Register caja movement always
+  ensureCajaAbierta();
+  DB.caja.ingresos += total;
+  DB.movimientos.push({ tipo:'ingreso', desc:`Venta POS móvil — ${metodo}`, monto:total, hora:nowTime(), fecha:today(), cajero:currentUser });
+
   DB.ventas.push(venta);
   if (!DB.historialVentas) DB.historialVentas = [];
-  DB.historialVentas.push({ ...venta, origen: 'pos', estado: 'completado', estadoStock: 'descontado' });
+  DB.historialVentas.push({ ...venta, origen:'pos', estado:'completado', estadoStock:'descontado' });
   fbGuardar();
+  fbGuardarProductos();
+  try { renderDashboard(); } catch(e){}
+  try { renderCaja(); } catch(e){}
+  try { generarReporte(); } catch(e){}
   toggleMobCart();
   mobCart = [];
-  mobRenderCart();
-  mobCalcTotal();
-  mobUpdateBar();
+  mobRenderCart(); mobCalcTotal(); mobUpdateBar();
   const descEl2 = document.getElementById('mob-pos-descuento');
   if (descEl2) descEl2.value = '';
   renderMobPosGrid();
@@ -5770,6 +6250,20 @@ const _fbPatchColsOp   = ['ventas','clientes','fiados','mermas','movimientos',
 const _fbPatchColsProd = ['productos','categorias'];
 
 function fbPatchDB() {
+  // Ensure new fields exist for users upgrading from older versions
+  if (!DB.config) DB.config = {};
+  if (DB.config.montoAperturaAuto === undefined) DB.config.montoAperturaAuto = 0;
+  if (!DB.caja.fecha) DB.caja.fecha = '';
+  if (!DB.historialVentas) DB.historialVentas = [];
+  // Migrate DB.ventas into historialVentas if historialVentas is empty but ventas has data
+  if (DB.historialVentas.length === 0 && DB.ventas && DB.ventas.length > 0) {
+    DB.historialVentas = DB.ventas.map(v => ({
+      ...v,
+      origen: v.origen || 'pos',
+      estado: v.estado || 'completado',
+      estadoStock: 'descontado'
+    }));
+  }
   _fbPatchColsOp.forEach(col => {
     let _val = DB[col];
     Object.defineProperty(DB, col, {
@@ -5835,6 +6329,7 @@ window.onload = function() {
 
       fbPatchDB();
       fbEscuchar(); // activar listeners DESPUÉS de carga inicial
+      checkAutoAbrirCaja(); // auto-open caja if date changed
       checkRoute();
       if (!window.location.pathname.includes('/tienda') && !window.location.hash.includes('/tienda')) {
         renderDashboard();
@@ -6143,6 +6638,19 @@ function guardarActualizarVenta() {
     vDB.total         = 0;
     vDB.fechaAnulacion = today() + ' ' + nowTime();
 
+    // Sync DB.ventas so dashboard totals are accurate
+    const vi2 = DB.ventas.findIndex(x => String(x.id) === String(_hvEditId));
+    if (vi2 >= 0) { DB.ventas[vi2].total = 0; DB.ventas[vi2].estado = 'anulado'; }
+
+    // Register reembolso movement regardless of caja state
+    if (!DB.caja.abierta) {
+      DB.movimientos.push({
+        tipo: 'egreso',
+        desc: `Reembolso anulación (caja cerrada) — ${vDB.cajero||vDB.clienteNombre||'cliente'} (${metodo})`,
+        monto: montoReembolso, hora: nowTime(), fecha: today(), usuario: autoriza
+      });
+    }
+
     fbGuardar();
     fbGuardarProductos();
     cerrarModal('modal-actualizar-venta');
@@ -6150,6 +6658,7 @@ function guardarActualizarVenta() {
     try { renderInvTable(); } catch(e){}
     try { renderCaja(); } catch(e){}
     try { renderDashboard(); } catch(e){}
+    try { generarReporte(); } catch(e){}
     alert(`✅ Venta anulada correctamente.\n💰 Reembolso registrado: ${sol(montoReembolso)} (${metodo})\n📦 Stock restituido en inventario.`);
     return;
   }
@@ -6206,16 +6715,23 @@ function guardarActualizarVenta() {
   vDB.total  = nuevoTotal;
   vDB.estado = nuevoTotal === 0 ? 'anulado' : 'parcial';
 
-  // Registrar egreso en caja si está abierta
+  // Sync DB.ventas so dashboard is accurate
+  const vi3 = DB.ventas.findIndex(x => String(x.id) === String(_hvEditId));
+  if (vi3 >= 0) { DB.ventas[vi3].total = nuevoTotal; DB.ventas[vi3].estado = vDB.estado; }
+
+  // Registrar egreso en caja (siempre, aunque esté cerrada)
   if (DB.caja.abierta) {
     DB.caja.egresos = (DB.caja.egresos||0) + montoReembolso;
     DB.movimientos.push({
       tipo: 'egreso',
       desc: `Reembolso devolución parcial — ${vDB.cajero||vDB.clienteNombre||'cliente'} (${metodo})`,
-      monto: montoReembolso,
-      hora: nowTime(),
-      fecha: today(),
-      usuario: autoriza
+      monto: montoReembolso, hora: nowTime(), fecha: today(), usuario: autoriza
+    });
+  } else {
+    DB.movimientos.push({
+      tipo: 'egreso',
+      desc: `Reembolso parcial (caja cerrada) — ${vDB.cajero||vDB.clienteNombre||'cliente'} (${metodo})`,
+      monto: montoReembolso, hora: nowTime(), fecha: today(), usuario: autoriza
     });
   }
 
@@ -6234,6 +6750,7 @@ function guardarActualizarVenta() {
   try { renderInvTable(); } catch(e){}
   try { renderCaja(); } catch(e){}
   try { renderDashboard(); } catch(e){}
+  try { generarReporte(); } catch(e){}
   alert(`✅ Devolución registrada correctamente.\n💰 Reembolso: ${sol(montoReembolso)} (${metodo})\n📦 Stock restituido.\nNuevo total de la venta: ${sol(nuevoTotal)}`);
 }
 
@@ -6510,6 +7027,8 @@ function guardarEdicionPedido() {
   if (!DB.pedidosOnline) return;
   const idx = DB.pedidosOnline.findIndex(x => String(x.id) === String(_poEditId));
   if (idx < 0) return;
+  // Lock Firestore listener immediately to prevent revert
+  _fbEscribiendo = true;
   const p = DB.pedidosOnline[idx];
 
   const desc     = parseFloat(document.getElementById('po-edit-descuento')?.value) || 0;
@@ -6538,8 +7057,11 @@ function guardarEdicionPedido() {
   p.fechaEdicion = today() + ' ' + nowTime();
 
   fbGuardar();
+  setTimeout(() => { _fbEscribiendo = false; }, 2000);
   cerrarModal('modal-editar-pedido');
   renderPedidosOnline();
+  try { renderDashboard(); } catch(e){}
+  try { renderHistorialVentas(); } catch(e){}
   alert('✅ Pedido actualizado correctamente.');
 }
 
@@ -6550,6 +7072,8 @@ function confirmarEntregaPedido(id) {
   if (!p) return;
   const nuevoEstado = document.getElementById('po-estado-'+id)?.value;
   if (!nuevoEstado) return;
+  // Lock listener immediately so the re-render after fbGuardar() doesn't revert
+  _fbEscribiendo = true;
 
   // Si se marca como entregado: verificar stock y confirmar
   if (nuevoEstado === 'entregado' && p.estado !== 'entregado') {
@@ -6602,12 +7126,24 @@ function confirmarEntregaPedido(id) {
 
   // Si se cancela, no descontar nada — solo cambiar estado
   p.estado = nuevoEstado;
+  // Register cash movement for online delivery
+  if (nuevoEstado === 'entregado') {
+    if (DB.caja.abierta) {
+      DB.caja.ingresos += p.total;
+      DB.movimientos.push({ tipo:'ingreso', desc:`Pedido online entregado — ${p.clienteNombre||'cliente'}`, monto: p.total, hora: nowTime(), fecha: today() });
+    } else {
+      DB.movimientos.push({ tipo:'ingreso', desc:`Pedido online (caja cerrada) — ${p.clienteNombre||'cliente'}`, monto: p.total, hora: nowTime(), fecha: today() });
+    }
+  }
   fbGuardar();
   fbGuardarProductos();
+  setTimeout(() => { _fbEscribiendo = false; }, 2000);
   renderPedidosOnline();
   try { renderInvTable(); } catch(e){}
   try { renderHistorialVentas(); } catch(e){}
   try { renderDashboard(); } catch(e){}
+  try { renderCaja(); } catch(e){}
+  try { generarReporte(); } catch(e){}
   alert(nuevoEstado === 'entregado' ? '✅ Pedido entregado. Stock descontado e historial actualizado.' : '✅ Estado actualizado.');
 }
 
@@ -7430,21 +7966,42 @@ let _excelCategoriasNuevas = [];
 
 // Convierte número serial de Excel a fecha YYYY-MM-DD
 function excelSerialToDate(serial) {
-  if (!serial || serial === '') return '';
-  // Si ya es string con formato de fecha, devolver como está
+  if (!serial && serial !== 0) return '';
+  // Handle JavaScript Date object (SheetJS cellDates:true)
+  if (serial instanceof Date) {
+    if (isNaN(serial.getTime())) return '';
+    const y = serial.getFullYear();
+    const m = String(serial.getMonth()+1).padStart(2,'0');
+    const d = String(serial.getDate()).padStart(2,'0');
+    return `${y}-${m}-${d}`;
+  }
+  // If already YYYY-MM-DD
   if (typeof serial === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(serial)) return serial;
-  // Si es número, convertir serial Excel a fecha
+  // If Excel serial number
   if (typeof serial === 'number') {
-    // Excel serial: días desde 1900-01-01 (con bug de 1900 = año bisiesto)
-    const utcDays = serial - 25569; // diferencia entre 1970-01-01 y 1900-01-01 en Excel
+    const utcDays = serial - 25569;
     const date = new Date(utcDays * 86400000);
+    if (isNaN(date.getTime())) return '';
     return date.toISOString().split('T')[0];
   }
-  // Intentar parsear string con otros formatos comunes
   const s = serial.toString().trim();
+  // M/D/YYYY or MM/DD/YYYY (US Excel format — month first)
   if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(s)) {
-    const [d,m,y] = s.split('/');
-    return `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`;
+    const parts = s.split('/');
+    const mo = parts[0], dy = parts[1], yr = parts[2];
+    // US format: mo/dy/yr
+    return `${yr}-${mo.padStart(2,'0')}-${dy.padStart(2,'0')}`;
+  }
+  // M/D/YY (US format with 2-digit year, e.g. 8/20/26)
+  if (/^\d{1,2}\/\d{1,2}\/\d{2}$/.test(s)) {
+    const parts = s.split('/');
+    const mo = parts[0], dy = parts[1], yr = '20' + parts[2];
+    return `${yr}-${mo.padStart(2,'0')}-${dy.padStart(2,'0')}`;
+  }
+  // DD-MM-YYYY
+  if (/^\d{2}-\d{2}-\d{4}$/.test(s)) {
+    const [dd,mm,yyyy] = s.split('-');
+    return `${yyyy}-${mm}-${dd}`;
   }
   return s;
 }
@@ -7671,10 +8228,17 @@ function aplicarCambiosExcel() {
         precio:   parseFloat(f['Precio_Venta']) || 0,
         stock:    parseFloat(f['Stock_Actual']) || 0,
         stockMin: parseFloat(f['Stock_Minimo']) || 5,
-        venc:     f['Vencimiento'] ? f['Vencimiento'].toString().trim() : '',
+        venc:     f['Vencimiento'] ? excelSerialToDate(f['Vencimiento'].toString().trim()) : '',
         codigo:   codigoFinal,
         prov:     parseInt(f['ID_Proveedor']) || null
       };
+      // Auto-calculate price from category margin when price is 0
+      if (nuevoProd.precio === 0 && nuevoProd.costo > 0) {
+        const catObj = DB.categorias.find(c => c.id === nuevoProd.cat);
+        if (catObj && catObj.margen > 0) {
+          nuevoProd.precio = precioSugerido(nuevoProd.costo, catObj.margen);
+        }
+      }
       DB.productos.push(nuevoProd);
       if (autoGenerado) prodsSinCodigo.push({ nombre: nuevoProd.nombre, codigo: codigoFinal });
       newCount++;
@@ -7766,6 +8330,12 @@ function confirmarCategoriasNuevasExcel() {
       _excelCambiosPendientes.forEach(c => {
         if (c.tipo === 'nuevo' && parseInt(c.fila['ID_Categoria']) === cat.idOriginal) {
           c.fila['ID_Categoria'] = existenteId;
+          // Apply existing category margin if price is 0
+          const existCat = DB.categorias.find(x => x.id === existenteId);
+          if (existCat && existCat.margen > 0 && parseFloat(c.fila['Precio_Venta']||0) === 0) {
+            const costo = parseFloat(c.fila['Precio_Costo']||0);
+            if (costo > 0) c.fila['Precio_Venta'] = precioSugerido(costo, existCat.margen);
+          }
         }
       });
     } else {
@@ -7781,13 +8351,17 @@ function confirmarCategoriasNuevasExcel() {
       nuevaCat.id = idFinal;
       DB.categorias.push(nuevaCat);
       // Si hubo cambio de ID, actualizar en los cambios pendientes
-      if (idFinal !== cat.idOriginal) {
-        _excelCambiosPendientes.forEach(c => {
-          if (c.tipo === 'nuevo' && parseInt(c.fila['ID_Categoria']) === cat.idOriginal) {
-            c.fila['ID_Categoria'] = idFinal;
+      // Also apply margin to calculate prices for new products in this category
+      _excelCambiosPendientes.forEach(c => {
+        if (c.tipo === 'nuevo' && parseInt(c.fila['ID_Categoria']) === cat.idOriginal) {
+          if (idFinal !== cat.idOriginal) c.fila['ID_Categoria'] = idFinal;
+          // Auto-price from margin when Precio_Venta is 0
+          if (margen > 0 && parseFloat(c.fila['Precio_Venta']||0) === 0) {
+            const costo = parseFloat(c.fila['Precio_Costo']||0);
+            if (costo > 0) c.fila['Precio_Venta'] = precioSugerido(costo, margen);
           }
-        });
-      }
+        }
+      });
     }
   });
 
@@ -7836,8 +8410,9 @@ function confirmarCategoriasNuevasExcel() {
   </div>
   <div class="mob-cart-drawer-footer">
     <div style="margin-bottom:0.5rem">
-<input type="number" class="form-control" id="mob-pos-descuento" placeholder="Descuento promo (S/)" style="font-size:0.88rem;padding:0.5rem" oninput="mobCalcTotal()" />
+<input type="number" class="form-control" id="mob-pos-descuento" placeholder="Descuento manual (S/)" style="font-size:0.88rem;padding:0.5rem" oninput="mobCalcTotal()" />
     </div>
+    <div id="mob-cart-combo-desc" style="display:none;margin-bottom:.4rem"></div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.6rem">
 <span style="font-size:0.9rem;color:var(--gray-600)">TOTAL</span>
 <span style="font-size:1.35rem;font-weight:800;color:var(--gray-900)" id="mob-cart-total">S/ 0.00</span>
