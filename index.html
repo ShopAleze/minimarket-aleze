@@ -2,8 +2,21 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Minimarket Aleze v2</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Minimarket Aleze</title>
+<meta name="description" content="Sistema de ventas e inventario — Minimarket Aleze, San Juan de Lurigancho">
+<meta name="theme-color" content="#7C3AED">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Aleze">
+<meta property="og:title" content="Minimarket Aleze">
+<meta property="og:description" content="Tu minimarket de confianza en SJL">
+<meta property="og:type" content="website">
+<meta property="og:image" content="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMAAAADACAYAAABS3GwHAAAH30lEQVR4nO3dO5MUVRjG8fcsDcgKgZSFsQTuBSMpr6g5oR9AE/eG">
+<link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAABl0lEQVR4nGOMVdzGgAb+owtQGTAic1jQ+LS2HGYH3FIWRkYmelqO4QiYA+hpOYojWBgZGQfCcrgjWBgZmAgroyFATgMDApgYGZkYKMFzb9l/psiMFPXDZKWB2TdsPiPzUzWO8JJjDmOqxlGSHTDrutVnXHJpmsdIcghjmsZxoh0w87oFTouRQbrmCaIdwZiueYKgA2ZcM8dlMQsDA8MfJBoFZGidJOgQnInw2493DN9+vMNnORsDAwMHFLPjcvi3H+/wJ8JM7TNYQ2DaFWNCwY3V17hAls5ZrKHBmKV9Dm8UTL1i+Pndq/+8/YHvGRgYGBgK1wsyCIkxYnUcNnXZOufxRgMTIyMjAz7MwMDAADMUnY0OsKkjZD7NS0JC5hPlgOajQihBXmv9DiNYm48KfUZXR6QDGPEqoBQQMp/i2rBwvSB+BxAwn+I0AEtszUeFsDuAGmmAEjA80wC21I7TAQTMZywxvj+QbULaRwERDhjhjVIWRgYmRoaB6ZgwMEA7JgwMkG4SvR2B0jWjtyOwdk7p5QiUbAcA7HxwcIMgMmAAAAAASUVORK5CYII=">
+<link rel="apple-touch-icon" href="data:image/png;base64,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">
+<link rel="manifest" href="manifest.json">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
@@ -19,9 +32,33 @@
   document.head.appendChild(s);
 })();
 </script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<!-- html2canvas: carga diferida — solo cuando se imprime ticket -->
+<script>
+function _loadHtml2Canvas(cb) {
+  if (window.html2canvas) { if(cb) cb(); return; }
+  var s = document.createElement('script');
+  s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+  s.onload = cb; document.head.appendChild(s);
+}
+</script>
+<!-- xlsx: carga diferida — solo cuando admin abre panel Excel -->
+<script>
+function _loadXLSX(cb) {
+  if (window.XLSX) { if(cb) cb(); return; }
+  var s = document.createElement('script');
+  s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+  s.onload = cb; document.head.appendChild(s);
+}
+</script>
+<!-- html5-qrcode: carga diferida — solo cuando se abre el escáner -->
+<script>
+function _loadHtml5QrCode(cb) {
+  if (window.Html5Qrcode) { if(cb) cb(); return; }
+  var s = document.createElement('script');
+  s.src = 'https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js';
+  s.onload = cb; document.head.appendChild(s);
+}
+</script>
 <!-- Firebase SDK (Compat — funciona sin bundler) -->
 <script>
 // ── DETECCIÓN DE RUTA TEMPRANA ─────────────────────────────────────────────
@@ -916,6 +953,7 @@
 <div id="login-screen">
   <div class="login-card">
     <div class="login-logo">🛒</div>
+    <div style="text-align:center;margin-bottom:0.5rem"><img src="data:image/png;base64,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" alt="Logo Aleze" style="width:72px;height:72px;border-radius:16px;box-shadow:0 4px 16px rgba(124,58,237,0.3)"></div>
     <h1>Minimarket Aleze</h1>
     <p>Jr. Tigrillo Mz. Ll4 Lt. 5 – SJL</p>
     <select id="login-user" class="form-control" style="margin-bottom:0.75rem">
@@ -924,9 +962,9 @@
       <option value="Shessira|cajero">Shessira (Cajera)</option>
       <option value="José Luis|cajero">José Luis (Cajero)</option>
     </select>
-    <input type="password" id="login-pass" class="form-control" placeholder="Contraseña" onkeydown="if(event.key==='Enter')doLogin()" />
+    <input type="password" id="login-pass" autocomplete="current-password" class="form-control" placeholder="Contraseña" onkeydown="if(event.key==='Enter')doLogin()" />
     <div id="login-error" style="color:var(--danger);font-size:0.8rem;margin-bottom:0.5rem;display:none">Contraseña incorrecta</div>
-    <button class="btn-login" onclick="doLogin()">Ingresar</button>
+    <button type="button" class="btn-login" onclick="doLogin()">Ingresar</button>
     <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid #e5e7eb">
       <a href="#/tienda" onclick="initTienda();return false;" style="color:var(--primary);font-size:.85rem;font-weight:600;text-decoration:none">🛍️ Ver catálogo de la tienda →</a>
     </div>
@@ -936,8 +974,8 @@
 <!-- APP -->
 <div id="app">
   <header>
-    <button class="btn-hamburger" onclick="toggleMobSidebar()" title="Menú" id="mob-ham-btn">☰</button>
-    <div class="header-brand">🛒 Minimarket Aleze</div>
+    <button type="button" class="btn-hamburger" onclick="toggleMobSidebar()" title="Menú" id="mob-ham-btn">☰</button>
+    <div class="header-brand"><img src="data:image/png;base64,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" alt="Aleze" style="width:28px;height:28px;border-radius:6px;vertical-align:middle;margin-right:6px"> Minimarket Aleze</div>
     <div class="header-spacer"></div>
     <div id="bday-banner" style="display:none;background:rgba(255,255,255,.2);border-radius:8px;padding:.3rem .7rem;font-size:.75rem;color:#fff;cursor:pointer;margin-right:.5rem" onclick="showAlerts()">🎂 <span id="bday-msg"></span></div>
     <div class="alert-badge" onclick="showAlerts()" id="alert-count" title="Alertas">0</div>
@@ -945,7 +983,7 @@
       <div class="avatar" id="header-avatar">JC</div>
       <span id="header-username">Jose Carlos</span>
       <span id="header-role" style="font-size:0.75rem;opacity:0.75">(Admin)</span>
-      <button class="btn-logout" onclick="doLogout()">Salir</button>
+      <button type="button" class="btn-logout" onclick="doLogout()">Salir</button>
     </div>
   </header>
 
@@ -954,7 +992,7 @@
       <!-- Header con toggle -->
       <div class="sidebar-header">
         <span class="sidebar-title">MENÚ</span>
-        <button class="sidebar-toggle" onclick="toggleSidebar()" id="sidebar-toggle-btn" title="Colapsar menú">◀</button>
+        <button type="button" class="sidebar-toggle" onclick="toggleSidebar()" id="sidebar-toggle-btn" title="Colapsar menú">◀</button>
       </div>
 
       <div class="nav-section">
@@ -1031,7 +1069,7 @@
       <div id="page-dashboard" class="page active">
         <div class="flex-between" style="margin-bottom:0">
           <div class="page-title" style="margin:0">Dashboard</div>
-          <button class="btn btn-danger btn-sm" onclick="abrirReset('dashboard')" style="font-size:0.78rem">🗑️ Limpiar datos</button>
+          <button type="button" class="btn btn-danger btn-sm" onclick="abrirReset('dashboard')" style="font-size:0.78rem">🗑️ Limpiar datos</button>
         </div>
         <div class="grid-5" style="margin-bottom:1rem;margin-top:1rem">
           <div class="stat-card">
@@ -1113,15 +1151,15 @@
               <div class="flex-between">
                 <h3>🛒 Carrito de venta</h3>
                 <div style="display:flex;gap:0.5rem">
-                  <button class="btn btn-outline btn-sm" onclick="openCamScanner()">📷 Escanear</button>
-                  <button class="btn btn-outline btn-sm" onclick="clearCart()" title="Vaciar carrito">🗑️ Vaciar</button>
+                  <button type="button" class="btn btn-outline btn-sm" onclick="openCamScanner()">📷 Escanear</button>
+                  <button type="button" class="btn btn-outline btn-sm" onclick="clearCart()" title="Vaciar carrito">🗑️ Vaciar</button>
                 </div>
               </div>
               <div style="margin-top:0.5rem;display:flex;gap:.4rem">
                 <select id="pos-cliente" class="form-control" style="font-size:0.8rem;padding:0.4rem" onchange="onClienteChange()">
                   <option value="">👤 Cliente anónimo</option>
                 </select>
-                <button class="btn btn-outline btn-sm" onclick="abrirCliRapido()" title="Registrar nuevo cliente rápido">+ Cliente</button>
+                <button type="button" class="btn btn-outline btn-sm" onclick="abrirCliRapido()" title="Registrar nuevo cliente rápido">+ Cliente</button>
               </div>
               <div id="pos-cli-info" style="display:none;background:var(--primary-light);border-radius:8px;padding:.4rem .65rem;margin-top:.4rem;font-size:.75rem">
                 <span id="pos-cli-nombre" style="font-weight:700;color:var(--primary)"></span>
@@ -1150,8 +1188,8 @@
                 <option value="Transferencia">🏦 Transferencia</option>
               </select>
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem">
-                <button class="btn btn-outline" style="padding:0.65rem;font-size:0.9rem" onclick="cobrarFiado()">📋 Fiado</button>
-                <button class="btn btn-accent w-full" style="padding:0.65rem;font-size:0.95rem;font-weight:700" onclick="procesarVenta()">✅ Cobrar</button>
+                <button type="button" class="btn btn-outline" style="padding:0.65rem;font-size:0.9rem" onclick="cobrarFiado()">📋 Fiado</button>
+                <button type="button" class="btn btn-accent w-full" style="padding:0.65rem;font-size:0.95rem;font-weight:700" onclick="procesarVenta()">✅ Cobrar</button>
               </div>
             </div>
           </div>
@@ -1168,13 +1206,13 @@
               <span class="pos-search-icon">🔍</span>
               <input type="text" id="mob-pos-search" placeholder="Buscar producto o código..." oninput="mobFilterPos()" />
             </div>
-            <button class="mob-scan-btn" onclick="openCamScanner()">📷 Escanear</button>
+            <button type="button" class="mob-scan-btn" onclick="openCamScanner()">📷 Escanear</button>
           </div>
           <div class="mob-pos-topbar-row2">
             <select id="mob-pos-cliente" class="form-control" onchange="mobOnClienteChange()">
               <option value="">👤 Cliente anónimo</option>
             </select>
-            <button class="mob-add-cliente-btn" onclick="abrirCliRapido()">+ Cliente</button>
+            <button type="button" class="mob-add-cliente-btn" onclick="abrirCliRapido()">+ Cliente</button>
           </div>
           <div id="mob-pos-cli-info" style="display:none;background:var(--primary-light);border-radius:8px;padding:.35rem .65rem;font-size:.75rem">
             <span id="mob-pos-cli-nombre" style="font-weight:700;color:var(--primary)"></span>
@@ -1198,10 +1236,10 @@
         <div class="flex-between mb-1" style="margin-bottom:1rem">
           <div class="page-title" style="margin:0">Inventario</div>
           <div style="display:flex;gap:.5rem">
-            <button class="btn btn-outline btn-sm" onclick="abrirInventarioMensual()">📋 Inventario Mensual</button>
-            <button class="btn btn-outline btn-sm" onclick="abrirImprimirQrMasivo()">🖨️ Imprimir QR</button>
-            <button class="btn btn-outline btn-sm" onclick="abrirSugerirPrecios()">💡 Sugerir precios</button>
-            <button class="btn btn-primary btn-sm" onclick="abrirModalProducto()">+ Nuevo Producto</button>
+            <button type="button" class="btn btn-outline btn-sm" onclick="abrirInventarioMensual()">📋 Inventario Mensual</button>
+            <button type="button" class="btn btn-outline btn-sm" onclick="abrirImprimirQrMasivo()">🖨️ Imprimir QR</button>
+            <button type="button" class="btn btn-outline btn-sm" onclick="abrirSugerirPrecios()">💡 Sugerir precios</button>
+            <button type="button" class="btn btn-primary btn-sm" onclick="abrirModalProducto()">+ Nuevo Producto</button>
           </div>
         </div>
         <!-- PANEL EXCEL — solo admin, se muestra/oculta via JS -->
@@ -1255,7 +1293,7 @@
               </div>
               <div class="excel-filter-group" style="justify-content:flex-end">
                 <label>&nbsp;</label>
-                <button class="btn btn-accent btn-sm" onclick="exportarExcelInventario()">⬇️ Descargar Excel</button>
+                <button type="button" class="btn btn-accent btn-sm" onclick="exportarExcelInventario()">⬇️ Descargar Excel</button>
               </div>
             </div>
             <div style="font-size:0.75rem;color:var(--gray-400);margin-top:-0.3rem;margin-bottom:0.5rem">
@@ -1309,7 +1347,7 @@
       <div id="page-categorias" class="page">
         <div class="flex-between" style="margin-bottom:1rem">
           <div class="page-title" style="margin:0">Categorías y márgenes</div>
-          <button class="btn btn-primary btn-sm" onclick="abrirModalCategoria()">+ Nueva Categoría</button>
+          <button type="button" class="btn btn-primary btn-sm" onclick="abrirModalCategoria()">+ Nueva Categoría</button>
         </div>
         <div class="grid-3" id="cats-grid"></div>
       </div>
@@ -1318,7 +1356,7 @@
       <div id="page-proveedores" class="page">
         <div class="flex-between" style="margin-bottom:1rem">
           <div class="page-title" style="margin:0">Proveedores</div>
-          <button class="btn btn-primary btn-sm" onclick="abrirModalProveedor()">+ Nuevo Proveedor</button>
+          <button type="button" class="btn btn-primary btn-sm" onclick="abrirModalProveedor()">+ Nuevo Proveedor</button>
         </div>
         <div class="card" style="padding:0">
           <div class="table-wrap">
@@ -1334,7 +1372,7 @@
       <div id="page-clientes" class="page">
         <div class="flex-between" style="margin-bottom:1rem">
           <div class="page-title" style="margin:0">Clientes</div>
-          <button class="btn btn-primary btn-sm" onclick="abrirModalCliente()">+ Nuevo Cliente</button>
+          <button type="button" class="btn btn-primary btn-sm" onclick="abrirModalCliente()">+ Nuevo Cliente</button>
         </div>
         <div class="card" style="padding:0">
           <div class="table-wrap">
@@ -1350,7 +1388,7 @@
       <div id="page-fiados" class="page">
         <div class="flex-between" style="margin-bottom:1rem">
           <div class="page-title" style="margin:0">Control de Fiados</div>
-          <button class="btn btn-danger btn-sm" onclick="abrirReset('fiados')" style="font-size:0.78rem">🗑️ Limpiar fiados</button>
+          <button type="button" class="btn btn-danger btn-sm" onclick="abrirReset('fiados')" style="font-size:0.78rem">🗑️ Limpiar fiados</button>
         </div>
         <div class="grid-3" style="margin-bottom:1rem">
           <div class="stat-card red">
@@ -1382,8 +1420,8 @@
               <div style="font-size:.73rem;color:var(--gray-400);margin-top:.25rem" id="caja-auto-hint"></div>
             </div>
             <div style="display:flex;gap:.5rem">
-              <button class="btn btn-outline w-full" onclick="guardarMontoAperturaDefault()" title="Guardar como monto por defecto">💾 Guardar como default</button>
-              <button class="btn btn-accent w-full" onclick="abrirCaja()">Abrir Caja</button>
+              <button type="button" class="btn btn-outline w-full" onclick="guardarMontoAperturaDefault()" title="Guardar como monto por defecto">💾 Guardar como default</button>
+              <button type="button" class="btn btn-accent w-full" onclick="abrirCaja()">Abrir Caja</button>
             </div>
           </div>
         </div>
@@ -1406,7 +1444,7 @@
               </div>
               <div class="form-group"><label>Monto (S/)</label><input type="number" class="form-control" id="mov-monto" /></div>
               <div class="form-group"><label>Descripción</label><input type="text" class="form-control" id="mov-desc" /></div>
-              <button class="btn btn-primary w-full" onclick="registrarMovimiento()">Registrar</button>
+              <button type="button" class="btn btn-primary w-full" onclick="registrarMovimiento()">Registrar</button>
             </div>
             <div class="card">
               <div class="card-title">Ventas por método de pago</div>
@@ -1421,7 +1459,7 @@
             </div>
           </div>
           <div style="text-align:right;margin-top:1rem">
-            <button class="btn btn-danger" onclick="cerrarCaja()">Cerrar Caja del Turno</button>
+            <button type="button" class="btn btn-danger" onclick="cerrarCaja()">Cerrar Caja del Turno</button>
           </div>
         </div>
       </div>
@@ -1431,8 +1469,8 @@
         <div class="flex-between" style="margin-bottom:1rem">
           <div class="page-title" style="margin:0">Promociones</div>
           <div style="display:flex;gap:.5rem">
-            <button class="btn btn-outline btn-sm" onclick="abrirModalComboSinergia()">🔗 Combo Sinergia</button>
-            <button class="btn btn-primary btn-sm" onclick="abrirModalPromocion()">+ Nueva Promoción</button>
+            <button type="button" class="btn btn-outline btn-sm" onclick="abrirModalComboSinergia()">🔗 Combo Sinergia</button>
+            <button type="button" class="btn btn-primary btn-sm" onclick="abrirModalPromocion()">+ Nueva Promoción</button>
           </div>
         </div>
         <div class="card" style="margin-bottom:1rem;background:var(--warning-light);border-left:4px solid var(--warning)">
@@ -1453,8 +1491,8 @@
         <div class="flex-between" style="margin-bottom:1rem">
           <div class="page-title" style="margin:0">Control de Mermas</div>
           <div style="display:flex;gap:0.5rem">
-            <button class="btn btn-danger btn-sm" onclick="abrirReset('mermas')" style="font-size:0.78rem">🗑️ Limpiar mermas</button>
-            <button class="btn btn-primary btn-sm" onclick="abrirModalMerma()">+ Registrar Merma</button>
+            <button type="button" class="btn btn-danger btn-sm" onclick="abrirReset('mermas')" style="font-size:0.78rem">🗑️ Limpiar mermas</button>
+            <button type="button" class="btn btn-primary btn-sm" onclick="abrirModalMerma()">+ Registrar Merma</button>
           </div>
         </div>
         <div class="grid-3" style="margin-bottom:1rem">
@@ -1474,7 +1512,7 @@
       <div id="page-reportes" class="page">
         <div class="flex-between" style="margin-bottom:0">
           <div class="page-title" style="margin:0">Reportes</div>
-          <button class="btn btn-danger btn-sm" onclick="abrirReset('reportes')" style="font-size:0.78rem">🗑️ Limpiar reportes</button>
+          <button type="button" class="btn btn-danger btn-sm" onclick="abrirReset('reportes')" style="font-size:0.78rem">🗑️ Limpiar reportes</button>
         </div>
         <div class="card" style="margin-bottom:1rem">
           <div style="display:flex;gap:0.75rem;flex-wrap:wrap;align-items:center">
@@ -1495,7 +1533,7 @@
             </select>
             <input type="date" class="form-control" id="rep-desde" style="width:150px" onchange="generarReporte()" />
             <input type="date" class="form-control" id="rep-hasta" style="width:150px" onchange="generarReporte()" />
-            <button class="btn btn-outline btn-sm" onclick="exportReporte()">📥 Exportar CSV</button>
+            <button type="button" class="btn btn-outline btn-sm" onclick="exportReporte()">📥 Exportar CSV</button>
           </div>
         </div>
         <div class="grid-4" id="rep-stats" style="margin-bottom:1rem"></div>
@@ -1519,7 +1557,7 @@
             <div class="form-group"><label>Teléfono</label><input type="text" class="form-control" id="cfg-telefono" placeholder="Ej: 999 888 777" /></div>
             <div class="form-group"><label>WhatsApp Tienda Online 📱</label><input type="text" class="form-control" id="cfg-whatsapp-tienda" placeholder="Ej: 980037284" value="980037284" /></div>
             <div class="form-group"><label>RUC / DNI (opcional)</label><input type="text" class="form-control" id="cfg-ruc" /></div>
-            <button class="btn btn-primary" onclick="guardarConfig()">Guardar</button>
+            <button type="button" class="btn btn-primary" onclick="guardarConfig()">Guardar</button>
           </div>
           <div class="card">
             <div class="card-title">🔑 Gestión de contraseñas</div>
@@ -1531,33 +1569,33 @@
             </div>
             <div class="form-group"><label>Nueva contraseña</label><input type="password" class="form-control" id="cfg-pass-nueva" /></div>
             <div class="form-group"><label>Confirmar contraseña</label><input type="password" class="form-control" id="cfg-pass-conf" /></div>
-            <button class="btn btn-primary" onclick="cambiarPassword()">Actualizar contraseña</button>
+            <button type="button" class="btn btn-primary" onclick="cambiarPassword()">Actualizar contraseña</button>
           </div>
           <div class="card">
             <div class="card-title">🎁 Niveles programa frecuentes</div>
             <div id="cfg-niveles-form"></div>
-            <button class="btn btn-primary mt-2" onclick="guardarNiveles()">Guardar niveles</button>
+            <button type="button" class="btn btn-primary mt-2" onclick="guardarNiveles()">Guardar niveles</button>
           </div>
           <div class="card">
             <div class="card-title">💼 Sueldos mensuales (S/)</div>
             <div class="form-group"><label>Jose Carlos</label><input type="number" class="form-control" id="sueldo-jc" value="0" /></div>
             <div class="form-group"><label>Shessira</label><input type="number" class="form-control" id="sueldo-sh" value="0" /></div>
             <div class="form-group"><label>José Luis</label><input type="number" class="form-control" id="sueldo-jl" value="0" /></div>
-            <button class="btn btn-primary" onclick="guardarSueldos()">Guardar sueldos</button>
+            <button type="button" class="btn btn-primary" onclick="guardarSueldos()">Guardar sueldos</button>
           </div>
           <div class="card">
             <div class="card-title">🎄 Config. canasta navideña</div>
             <div class="form-group"><label>Número de ganadores</label><input type="number" class="form-control" id="cfg-nav-n" value="3" min="1" max="10" /></div>
             <div class="form-group"><label>Valor máximo canasta (S/)</label><input type="number" class="form-control" id="cfg-nav-v" value="50" /></div>
-            <button class="btn btn-primary" onclick="guardarNavidad()">Guardar</button>
+            <button type="button" class="btn btn-primary" onclick="guardarNavidad()">Guardar</button>
           </div>
           <div class="card">
             <div class="card-title">🔗 Conexión Google Sheets</div>
             <div class="form-group"><label>ID del Spreadsheet</label><input type="text" class="form-control" id="cfg-sheet-id" value="1qCEgjIf22W3LuyPo0i33XIINjRMyMCcP4T29ZhlrEME" /></div>
             <div class="form-group"><label>Credenciales JSON (service account)</label><textarea class="form-control" id="cfg-sheet-json" rows="4" placeholder="Pega aquí el contenido del JSON"></textarea></div>
             <div style="display:flex;gap:0.5rem">
-              <button class="btn btn-outline" onclick="testSheets()">🧪 Probar conexión</button>
-              <button class="btn btn-primary" onclick="guardarSheets()">Guardar</button>
+              <button type="button" class="btn btn-outline" onclick="testSheets()">🧪 Probar conexión</button>
+              <button type="button" class="btn btn-primary" onclick="guardarSheets()">Guardar</button>
             </div>
             <div id="sheets-status" style="margin-top:0.5rem;font-size:0.8rem"></div>
           </div>
@@ -1566,7 +1604,7 @@
             <div class="form-group"><label>Mensaje de pie de ticket</label><input type="text" class="form-control" id="cfg-ticket-msg" value="¡Gracias por su compra!" /></div>
             <div class="form-group"><label>Días alerta vencimiento</label><input type="number" class="form-control" id="cfg-dias-venc" value="7" /></div>
             <div class="form-group"><label>💰 Monto apertura automática de caja (S/)</label><input type="number" class="form-control" id="cfg-monto-apertura" placeholder="0.00" min="0" step="0.50" /><div style="font-size:.72rem;color:var(--gray-400);margin-top:.25rem">La caja se abre automáticamente al primer uso del día con este monto</div></div>
-            <button class="btn btn-primary" onclick="guardarConfig()">Guardar</button>
+            <button type="button" class="btn btn-primary" onclick="guardarConfig()">Guardar</button>
           </div>
         </div>
       </div>
@@ -1587,8 +1625,8 @@
         <div class="flex-between" style="margin-bottom:1rem">
           <div class="page-title" style="margin:0">Gastos Operativos</div>
           <div style="display:flex;gap:0.5rem">
-            <button class="btn btn-danger btn-sm" onclick="abrirReset('gastos')" style="font-size:0.78rem">🗑️ Limpiar gastos</button>
-            <button class="btn btn-primary btn-sm" onclick="abrirModalGasto()">+ Registrar Gasto</button>
+            <button type="button" class="btn btn-danger btn-sm" onclick="abrirReset('gastos')" style="font-size:0.78rem">🗑️ Limpiar gastos</button>
+            <button type="button" class="btn btn-primary btn-sm" onclick="abrirModalGasto()">+ Registrar Gasto</button>
           </div>
         </div>
         <div class="grid-4" style="margin-bottom:1rem">
@@ -1601,7 +1639,7 @@
           <div class="card">
             <div class="card-title">Gastos recurrentes configurados</div>
             <div id="gastos-rec-list"></div>
-            <button class="btn btn-outline btn-sm mt-2" onclick="abrirModalGastoRec()">+ Gasto recurrente</button>
+            <button type="button" class="btn btn-outline btn-sm mt-2" onclick="abrirModalGastoRec()">+ Gasto recurrente</button>
           </div>
           <div class="card"><div class="card-title">Distribución de gastos</div><canvas id="chart-gastos" height="200"></canvas></div>
         </div>
@@ -1614,7 +1652,7 @@
       <div id="page-capital" class="page">
         <div class="flex-between" style="margin-bottom:1rem">
           <div class="page-title" style="margin:0">🏦 Control de Capital e Inversión</div>
-          <button class="btn btn-danger btn-sm" onclick="abrirReset('capital')" style="font-size:0.78rem">🗑️ Limpiar capital</button>
+          <button type="button" class="btn btn-danger btn-sm" onclick="abrirReset('capital')" style="font-size:0.78rem">🗑️ Limpiar capital</button>
         </div>
         <div class="grid-4" style="margin-bottom:1rem">
           <div class="stat-card"><div class="stat-label">Capital total invertido</div><div class="stat-value" id="cap-total">S/ 0.00</div></div>
@@ -1633,8 +1671,8 @@
             <div class="form-group"><label>Capital total invertido (S/)</label><input type="number" class="form-control" id="cap-inp-total" /></div>
             <div class="form-group"><label>Cuota de recuperación mensual (S/)</label><input type="number" class="form-control" id="cap-inp-cuota" /></div>
             <div class="form-group"><label>Meta de rentabilidad mensual (S/)</label><input type="number" class="form-control" id="cap-inp-meta" /></div>
-            <button class="btn btn-primary w-full" onclick="guardarCapital()">Guardar</button>
-            <button class="btn btn-outline w-full mt-2" onclick="abrirAddCapital()">+ Agregar capital adicional</button>
+            <button type="button" class="btn btn-primary w-full" onclick="guardarCapital()">Guardar</button>
+            <button type="button" class="btn btn-outline w-full mt-2" onclick="abrirAddCapital()">+ Agregar capital adicional</button>
           </div>
           <div class="card"><div class="card-title">📊 Rentabilidad real del mes</div><div id="rent-real-detalle"></div></div>
         </div>
@@ -1647,7 +1685,7 @@
       <div id="page-historial-ventas" class="page">
         <div class="flex-between" style="margin-bottom:1rem">
           <div class="page-title" style="margin:0">📜 Historial de Ventas</div>
-          <button class="btn btn-outline btn-sm" onclick="exportHistorialVentas()">📥 Exportar CSV</button>
+          <button type="button" class="btn btn-outline btn-sm" onclick="exportHistorialVentas()">📥 Exportar CSV</button>
         </div>
         <div class="card" style="margin-bottom:1rem">
           <div style="display:flex;gap:.75rem;flex-wrap:wrap;align-items:center">
@@ -1665,7 +1703,7 @@
               <option value="online">Online (tienda web)</option>
             </select>
             <input type="text" class="form-control" id="hv-buscar" placeholder="Buscar cajero, producto..." style="width:200px" oninput="renderHistorialVentas()" />
-            <button class="btn btn-outline btn-sm" onclick="document.getElementById('hv-desde').value='';document.getElementById('hv-hasta').value='';document.getElementById('hv-estado').value='';document.getElementById('hv-origen').value='';document.getElementById('hv-buscar').value='';renderHistorialVentas()">🔄 Limpiar filtros</button>
+            <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('hv-desde').value='';document.getElementById('hv-hasta').value='';document.getElementById('hv-estado').value='';document.getElementById('hv-origen').value='';document.getElementById('hv-buscar').value='';renderHistorialVentas()">🔄 Limpiar filtros</button>
           </div>
         </div>
         <div class="grid-4" id="hv-stats" style="margin-bottom:1rem"></div>
@@ -1716,7 +1754,7 @@
   <div class="modal modal-lg">
     <div class="modal-header">
       <h3 id="modal-prod-titulo">Nuevo Producto</h3>
-      <button class="modal-close" onclick="cerrarModal('modal-producto')">✕</button>
+      <button type="button" class="modal-close" onclick="cerrarModal('modal-producto')">✕</button>
     </div>
     <div class="grid-2">
       <div>
@@ -1725,7 +1763,7 @@
           <label>Categoría *</label>
           <div style="display:flex;gap:.4rem">
             <select class="form-control" id="prod-cat" onchange="actualizarPrecioSugerido()"></select>
-            <button class="btn btn-outline btn-sm" onclick="abrirCatRapida()" title="Nueva categoría rápida">+</button>
+            <button type="button" class="btn btn-outline btn-sm" onclick="abrirCatRapida()" title="Nueva categoría rápida">+</button>
           </div>
         </div>
         <div class="form-group"><label>Tipo de producto</label>
@@ -1749,7 +1787,7 @@
           <label>Precio sugerido por sistema (S/)</label>
           <div style="display:flex;gap:.4rem;align-items:center">
             <input type="text" class="form-control" id="prod-precio-sugerido" readonly style="background:var(--accent-light);font-weight:700;color:var(--accent-dark)" placeholder="Selecciona categoría y costo" />
-            <button class="btn btn-outline btn-sm" onclick="usarPrecioSugerido()" title="Usar precio sugerido">✅</button>
+            <button type="button" class="btn btn-outline btn-sm" onclick="usarPrecioSugerido()" title="Usar precio sugerido">✅</button>
           </div>
           <div id="prod-margen-cat-label" style="font-size:.72rem;color:var(--gray-500);margin-top:.2rem"></div>
         </div>
@@ -1767,9 +1805,9 @@
       <label>Código del producto (QR)</label>
       <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
         <input type="text" class="form-control" id="prod-codigo" placeholder="Escanea o escribe el código" oninput="previsualizarCodigo()" style="flex:1;min-width:150px" />
-        <button class="btn btn-primary btn-sm" onclick="abrirScannerInventario()" title="Escanear código ya impreso en el producto">📷 Escanear</button>
-        <button class="btn btn-outline btn-sm" onclick="generarCodigo()" title="Generar código QR nuevo para productos sin código">🔖 Generar</button>
-        <button class="btn btn-outline btn-sm" onclick="imprimirQrEstante()" title="Imprimir QR para pegar en el estante">🖨️</button>
+        <button type="button" class="btn btn-primary btn-sm" onclick="abrirScannerInventario()" title="Escanear código ya impreso en el producto">📷 Escanear</button>
+        <button type="button" class="btn btn-outline btn-sm" onclick="generarCodigo()" title="Generar código QR nuevo para productos sin código">🔖 Generar</button>
+        <button type="button" class="btn btn-outline btn-sm" onclick="imprimirQrEstante()" title="Imprimir QR para pegar en el estante">🖨️</button>
       </div>
       <div style="font-size:0.72rem;color:var(--gray-500);margin-top:0.3rem;line-height:1.5">
         📷 <strong>Escanear</strong> — lee el QR o código ya impreso en el producto (EAN-13, EAN-8, QR, Code128)<br>
@@ -1788,16 +1826,16 @@
         <div id="prod-img-preview" style="width:80px;height:80px;border:2px dashed var(--gray-300);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:2rem;background:var(--gray-50);overflow:hidden;flex-shrink:0">🖼️</div>
         <div style="flex:1;min-width:180px">
           <input type="file" id="prod-img-file" accept="image/*" style="display:none" onchange="onProdImgSelect(event)" />
-          <button class="btn btn-outline btn-sm" onclick="document.getElementById('prod-img-file').click()" style="margin-bottom:.4rem;width:100%">📁 Seleccionar imagen</button>
+          <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('prod-img-file').click()" style="margin-bottom:.4rem;width:100%">📁 Seleccionar imagen</button>
           <div style="font-size:.71rem;color:var(--gray-400);line-height:1.4">JPG, PNG, WEBP. Se guarda localmente en el dispositivo.</div>
-          <button class="btn btn-xs" onclick="limpiarImgProd()" style="margin-top:.3rem;background:var(--danger-light);color:var(--danger)">✕ Quitar imagen</button>
+          <button type="button" class="btn btn-xs" onclick="limpiarImgProd()" style="margin-top:.3rem;background:var(--danger-light);color:var(--danger)">✕ Quitar imagen</button>
         </div>
       </div>
       <input type="hidden" id="prod-img-data" />
     </div>
     <div style="display:flex;justify-content:flex-end;gap:0.5rem;margin-top:1rem">
-      <button class="btn btn-outline" onclick="cerrarModal('modal-producto')">Cancelar</button>
-      <button class="btn btn-primary" onclick="guardarProducto()">Guardar Producto</button>
+      <button type="button" class="btn btn-outline" onclick="cerrarModal('modal-producto')">Cancelar</button>
+      <button type="button" class="btn btn-primary" onclick="guardarProducto()">Guardar Producto</button>
     </div>
   </div>
 </div>
@@ -1805,13 +1843,13 @@
 <!-- Modal Categoría Rápida (desde producto) -->
 <div class="modal-overlay" id="modal-cat-rapida">
   <div class="modal">
-    <div class="modal-header"><h3>➕ Nueva Categoría rápida</h3><button class="modal-close" onclick="cerrarModal('modal-cat-rapida')">✕</button></div>
+    <div class="modal-header"><h3>➕ Nueva Categoría rápida</h3><button type="button" class="modal-close" onclick="cerrarModal('modal-cat-rapida')">✕</button></div>
     <div class="form-group"><label>Nombre *</label><input type="text" class="form-control" id="catr-nombre" /></div>
     <div class="form-group"><label>Emoji / Ícono</label><input type="text" class="form-control" id="catr-emoji" placeholder="Ej: 🥤" maxlength="2" /></div>
     <div class="form-group"><label>Margen de ganancia % (precio sugerido)</label><input type="number" class="form-control" id="catr-margen" placeholder="Ej: 30" min="0" max="200" /></div>
     <div style="display:flex;justify-content:flex-end;gap:.5rem;margin-top:1rem">
-      <button class="btn btn-outline" onclick="cerrarModal('modal-cat-rapida')">Cancelar</button>
-      <button class="btn btn-primary" onclick="guardarCatRapida()">Crear y seleccionar</button>
+      <button type="button" class="btn btn-outline" onclick="cerrarModal('modal-cat-rapida')">Cancelar</button>
+      <button type="button" class="btn btn-primary" onclick="guardarCatRapida()">Crear y seleccionar</button>
     </div>
   </div>
 </div>
@@ -1821,7 +1859,7 @@
   <div class="modal">
     <div class="modal-header">
       <h3 id="cat-modal-titulo">Nueva Categoría</h3>
-      <button class="modal-close" onclick="cerrarModal('modal-categoria')">✕</button>
+      <button type="button" class="modal-close" onclick="cerrarModal('modal-categoria')">✕</button>
     </div>
     <div class="form-group"><label>Nombre *</label><input type="text" class="form-control" id="cat-nombre" /></div>
     <div class="form-group">
@@ -1834,8 +1872,8 @@
         <div id="cat-img-preview" style="width:64px;height:64px;border:2px dashed var(--gray-300);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.8rem;background:var(--gray-50);overflow:hidden;flex-shrink:0">🖼️</div>
         <div style="flex:1">
           <input type="file" id="cat-img-file" accept="image/*" style="display:none" onchange="onCatImgSelect(event)"/>
-          <button class="btn btn-outline btn-sm" onclick="document.getElementById('cat-img-file').click()" style="width:100%;margin-bottom:.3rem">📁 Seleccionar imagen</button>
-          <button class="btn btn-xs" onclick="limpiarImgCat()" style="background:var(--danger-light);color:var(--danger);width:100%">✕ Quitar imagen</button>
+          <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('cat-img-file').click()" style="width:100%;margin-bottom:.3rem">📁 Seleccionar imagen</button>
+          <button type="button" class="btn btn-xs" onclick="limpiarImgCat()" style="background:var(--danger-light);color:var(--danger);width:100%">✕ Quitar imagen</button>
           <div style="font-size:.7rem;color:var(--gray-400);margin-top:.3rem">Se comprime a 64×64px automáticamente. Se sincroniza en toda la app.</div>
         </div>
       </div>
@@ -1846,13 +1884,13 @@
       <div style="font-size:.82rem;font-weight:600;margin-bottom:.4rem">⚙️ Actualizar precios de productos de esta categoría</div>
       <div style="font-size:.78rem;color:var(--gray-600);margin-bottom:.5rem">Recalcula el precio sugerido con el nuevo margen para todos los productos de esta categoría.</div>
       <div style="display:flex;gap:.5rem">
-        <button class="btn btn-outline btn-sm" onclick="actualizarPreciosCat('individual')">📋 Ver y decidir uno a uno</button>
-        <button class="btn btn-warning btn-sm" style="background:var(--warning);color:white" onclick="actualizarPreciosCat('todos')">⚡ Actualizar todos automáticamente</button>
+        <button type="button" class="btn btn-outline btn-sm" onclick="actualizarPreciosCat('individual')">📋 Ver y decidir uno a uno</button>
+        <button type="button" class="btn btn-warning btn-sm" style="background:var(--warning);color:white" onclick="actualizarPreciosCat('todos')">⚡ Actualizar todos automáticamente</button>
       </div>
     </div>
     <div style="display:flex;justify-content:flex-end;gap:0.5rem;margin-top:1rem">
-      <button class="btn btn-outline" onclick="cerrarModal('modal-categoria')">Cancelar</button>
-      <button class="btn btn-primary" onclick="guardarCategoria()">Guardar</button>
+      <button type="button" class="btn btn-outline" onclick="cerrarModal('modal-categoria')">Cancelar</button>
+      <button type="button" class="btn btn-primary" onclick="guardarCategoria()">Guardar</button>
     </div>
   </div>
 </div>
@@ -1862,15 +1900,15 @@
   <div class="modal">
     <div class="modal-header">
       <h3 id="prov-modal-titulo">Nuevo Proveedor</h3>
-      <button class="modal-close" onclick="cerrarModal('modal-proveedor')">✕</button>
+      <button type="button" class="modal-close" onclick="cerrarModal('modal-proveedor')">✕</button>
     </div>
     <div class="form-group"><label>Nombre / Empresa *</label><input type="text" class="form-control" id="prov-nombre" /></div>
     <div class="form-group"><label>Contacto</label><input type="text" class="form-control" id="prov-contacto" /></div>
     <div class="form-group"><label>Teléfono</label><input type="text" class="form-control" id="prov-tel" /></div>
     <div class="form-group"><label>Productos que provee</label><input type="text" class="form-control" id="prov-productos" placeholder="Ej: Gaseosas, snacks..." /></div>
     <div style="display:flex;justify-content:flex-end;gap:0.5rem;margin-top:1rem">
-      <button class="btn btn-outline" onclick="cerrarModal('modal-proveedor')">Cancelar</button>
-      <button class="btn btn-primary" onclick="guardarProveedor()">Guardar</button>
+      <button type="button" class="btn btn-outline" onclick="cerrarModal('modal-proveedor')">Cancelar</button>
+      <button type="button" class="btn btn-primary" onclick="guardarProveedor()">Guardar</button>
     </div>
   </div>
 </div>
@@ -1880,7 +1918,7 @@
   <div class="modal">
     <div class="modal-header">
       <h3 id="cli-modal-titulo">Nuevo Cliente</h3>
-      <button class="modal-close" onclick="cerrarModal('modal-cliente')">✕</button>
+      <button type="button" class="modal-close" onclick="cerrarModal('modal-cliente')">✕</button>
     </div>
     <div class="form-group"><label>Nombre *</label><input type="text" class="form-control" id="cli-nombre" /></div>
     <div class="form-group"><label>Alias / Nombre corto</label><input type="text" class="form-control" id="cli-alias" placeholder="Ej: Doña Rosa, Vecino del 3" /></div>
@@ -1888,8 +1926,8 @@
     <div class="form-group"><label>Dirección</label><input type="text" class="form-control" id="cli-dir" /></div>
     <div class="form-group"><label>Fecha de cumpleaños (opcional)</label><input type="date" class="form-control" id="cli-cumple" /></div>
     <div style="display:flex;justify-content:flex-end;gap:0.5rem;margin-top:1rem">
-      <button class="btn btn-outline" onclick="cerrarModal('modal-cliente')">Cancelar</button>
-      <button class="btn btn-primary" onclick="guardarCliente()">Guardar</button>
+      <button type="button" class="btn btn-outline" onclick="cerrarModal('modal-cliente')">Cancelar</button>
+      <button type="button" class="btn btn-primary" onclick="guardarCliente()">Guardar</button>
     </div>
   </div>
 </div>
@@ -1899,7 +1937,7 @@
   <div class="modal">
     <div class="modal-header">
       <h3>Registrar Merma</h3>
-      <button class="modal-close" onclick="cerrarModal('modal-merma')">✕</button>
+      <button type="button" class="modal-close" onclick="cerrarModal('modal-merma')">✕</button>
     </div>
     <div class="form-group"><label>Producto *</label><select class="form-control" id="merma-prod"></select></div>
     <div class="form-group"><label>Cantidad *</label><input type="number" class="form-control" id="merma-cant" step="0.01" /></div>
@@ -1910,8 +1948,8 @@
     </div>
     <div class="form-group"><label>Observación</label><input type="text" class="form-control" id="merma-obs" /></div>
     <div style="display:flex;justify-content:flex-end;gap:0.5rem;margin-top:1rem">
-      <button class="btn btn-outline" onclick="cerrarModal('modal-merma')">Cancelar</button>
-      <button class="btn btn-danger" onclick="guardarMerma()">Registrar Merma</button>
+      <button type="button" class="btn btn-outline" onclick="cerrarModal('modal-merma')">Cancelar</button>
+      <button type="button" class="btn btn-danger" onclick="guardarMerma()">Registrar Merma</button>
     </div>
   </div>
 </div>
@@ -1921,7 +1959,7 @@
   <div class="modal modal-lg">
     <div class="modal-header">
       <h3>🔗 Crear Combo Sinergia</h3>
-      <button class="modal-close" onclick="cerrarModal('modal-combo-sinergia')">✕</button>
+      <button type="button" class="modal-close" onclick="cerrarModal('modal-combo-sinergia')">✕</button>
     </div>
     <p style="font-size:.82rem;color:var(--gray-500);margin-bottom:1rem">El combo se crea como un <strong>nuevo producto</strong> en el inventario. Al venderse, descuenta unidades de cada producto individualmente.</p>
     <div class="grid-2">
@@ -1952,8 +1990,8 @@
     </div>
     <div id="combo-aviso" style="font-size:.78rem;color:var(--danger);margin-bottom:.5rem"></div>
     <div style="display:flex;justify-content:flex-end;gap:.5rem;margin-top:1rem">
-      <button class="btn btn-outline" onclick="cerrarModal('modal-combo-sinergia')">Cancelar</button>
-      <button class="btn btn-primary" onclick="guardarComboSinergia()">Crear combo en inventario</button>
+      <button type="button" class="btn btn-outline" onclick="cerrarModal('modal-combo-sinergia')">Cancelar</button>
+      <button type="button" class="btn btn-primary" onclick="guardarComboSinergia()">Crear combo en inventario</button>
     </div>
   </div>
 </div>
@@ -1963,13 +2001,13 @@
   <div class="modal modal-lg">
     <div class="modal-header">
       <h3 id="cup-titulo">Actualizar precios de categoría</h3>
-      <button class="modal-close" onclick="cerrarModal('modal-cat-update-precios')">✕</button>
+      <button type="button" class="modal-close" onclick="cerrarModal('modal-cat-update-precios')">✕</button>
     </div>
     <p style="font-size:.82rem;color:var(--gray-500);margin-bottom:1rem">Revisa el precio sugerido para cada producto. Acepta o rechaza individualmente.</p>
     <div class="table-wrap"><table><thead><tr><th>Producto</th><th>Costo</th><th>Precio actual</th><th>Precio sugerido</th><th>¿Aplicar?</th></tr></thead><tbody id="cup-tbody"></tbody></table></div>
     <div style="display:flex;justify-content:flex-end;gap:.5rem;margin-top:1rem">
-      <button class="btn btn-outline" onclick="cerrarModal('modal-cat-update-precios')">Cerrar</button>
-      <button class="btn btn-primary" onclick="aplicarPreciosCatSeleccionados()">Aplicar seleccionados</button>
+      <button type="button" class="btn btn-outline" onclick="cerrarModal('modal-cat-update-precios')">Cerrar</button>
+      <button type="button" class="btn btn-primary" onclick="aplicarPreciosCatSeleccionados()">Aplicar seleccionados</button>
     </div>
   </div>
 </div>
@@ -1979,7 +2017,7 @@
   <div class="modal modal-lg">
     <div class="modal-header">
       <h3>Nueva Promoción</h3>
-      <button class="modal-close" onclick="cerrarModal('modal-promocion')">✕</button>
+      <button type="button" class="modal-close" onclick="cerrarModal('modal-promocion')">✕</button>
     </div>
     <div class="form-group"><label>Nombre de la promoción *</label><input type="text" class="form-control" id="promo-nombre" /></div>
     <div class="form-group"><label>Tipo</label>
@@ -2002,112 +2040,112 @@
     </div>
     <div id="promo-aviso" style="font-size:0.8rem;color:var(--danger);margin-bottom:0.5rem"></div>
     <div style="display:flex;justify-content:flex-end;gap:0.5rem;margin-top:1rem">
-      <button class="btn btn-outline" onclick="cerrarModal('modal-promocion')">Cancelar</button>
-      <button class="btn btn-primary" onclick="guardarPromocion()">Guardar Promoción</button>
+      <button type="button" class="btn btn-outline" onclick="cerrarModal('modal-promocion')">Cancelar</button>
+      <button type="button" class="btn btn-primary" onclick="guardarPromocion()">Guardar Promoción</button>
     </div>
   </div>
 </div>
 
 <!-- Modal Cliente Rápido POS -->
 <div class="modal-overlay" id="modal-cli-rapido">
-  <div class="modal"><div class="modal-header"><h3>👤 Cliente rápido</h3><button class="modal-close" onclick="cerrarModal('modal-cli-rapido')">✕</button></div>
+  <div class="modal"><div class="modal-header"><h3>👤 Cliente rápido</h3><button type="button" class="modal-close" onclick="cerrarModal('modal-cli-rapido')">✕</button></div>
     <div class="form-group"><label>Nombre o alias *</label><input type="text" class="form-control" id="cr-nombre" /></div>
     <div class="form-group"><label>Teléfono (opcional)</label><input type="text" class="form-control" id="cr-tel" /></div>
     <div style="display:flex;justify-content:flex-end;gap:.5rem;margin-top:1rem">
-      <button class="btn btn-outline" onclick="cerrarModal('modal-cli-rapido')">Cancelar</button>
-      <button class="btn btn-primary" onclick="guardarCliRapido()">Guardar y seleccionar</button>
+      <button type="button" class="btn btn-outline" onclick="cerrarModal('modal-cli-rapido')">Cancelar</button>
+      <button type="button" class="btn btn-primary" onclick="guardarCliRapido()">Guardar y seleccionar</button>
     </div>
   </div>
 </div>
 
 <!-- Modal Sugerir Precios Masivo -->
 <div class="modal-overlay" id="modal-sugerir-precios">
-  <div class="modal" style="max-width:800px"><div class="modal-header"><h3>💡 Sugerencia masiva de precios</h3><button class="modal-close" onclick="cerrarModal('modal-sugerir-precios')">✕</button></div>
+  <div class="modal" style="max-width:800px"><div class="modal-header"><h3>💡 Sugerencia masiva de precios</h3><button type="button" class="modal-close" onclick="cerrarModal('modal-sugerir-precios')">✕</button></div>
     <p style="font-size:.82rem;color:var(--gray-500);margin-bottom:1rem">Precios calculados según margen de cada categoría. Redondeo al 0.10 superior (ej: S/4.5875 → S/4.60).</p>
     <div class="table-wrap"><table><thead><tr><th>Producto</th><th>Categoría</th><th>Costo</th><th>Margen cat.</th><th>Precio sugerido</th><th>Precio actual</th><th>Acción</th></tr></thead><tbody id="sug-tbody"></tbody></table></div>
     <div style="display:flex;justify-content:flex-end;gap:.5rem;margin-top:1rem">
-      <button class="btn btn-outline" onclick="cerrarModal('modal-sugerir-precios')">Cerrar</button>
-      <button class="btn btn-primary" onclick="aplicarTodosPrecios()">Aplicar todos</button>
+      <button type="button" class="btn btn-outline" onclick="cerrarModal('modal-sugerir-precios')">Cerrar</button>
+      <button type="button" class="btn btn-primary" onclick="aplicarTodosPrecios()">Aplicar todos</button>
     </div>
   </div>
 </div>
 
 <!-- Modal Inventario Mensual -->
 <div class="modal-overlay" id="modal-inv-mensual">
-  <div class="modal" style="max-width:900px"><div class="modal-header"><h3>📋 Inventario Mensual</h3><button class="modal-close" onclick="cerrarModal('modal-inv-mensual')">✕</button></div>
+  <div class="modal" style="max-width:900px"><div class="modal-header"><h3>📋 Inventario Mensual</h3><button type="button" class="modal-close" onclick="cerrarModal('modal-inv-mensual')">✕</button></div>
     <div style="display:flex;gap:.75rem;align-items:center;margin-bottom:1rem;flex-wrap:wrap">
       <div class="form-group" style="margin:0"><label style="font-size:.78rem;font-weight:600">Fecha de inventario</label><input type="date" class="form-control" id="inv-mens-fecha" style="width:160px" /></div>
-      <button class="btn btn-accent btn-sm" style="margin-top:1.2rem" onclick="sincronizarMermasInventario()">🔄 Sincronizar mermas</button>
-      <button class="btn btn-outline btn-sm" style="margin-top:1.2rem" onclick="exportarInventarioMensual()">📥 Exportar CSV</button>
+      <button type="button" class="btn btn-accent btn-sm" style="margin-top:1.2rem" onclick="sincronizarMermasInventario()">🔄 Sincronizar mermas</button>
+      <button type="button" class="btn btn-outline btn-sm" style="margin-top:1.2rem" onclick="exportarInventarioMensual()">📥 Exportar CSV</button>
     </div>
     <div class="table-wrap"><table>
       <thead><tr><th>Producto</th><th>Cat.</th><th>Stock sistema</th><th>Cantidad contada</th><th>Diferencia</th><th>Motivo faltante</th><th>✅ Verificado</th></tr></thead>
       <tbody id="inv-mens-tbody"></tbody>
     </table></div>
     <div style="display:flex;justify-content:flex-end;gap:.5rem;margin-top:1rem">
-      <button class="btn btn-outline" onclick="cerrarModal('modal-inv-mensual')">Cerrar</button>
-      <button class="btn btn-primary" onclick="guardarInventarioMensual()">Guardar inventario</button>
+      <button type="button" class="btn btn-outline" onclick="cerrarModal('modal-inv-mensual')">Cerrar</button>
+      <button type="button" class="btn btn-primary" onclick="guardarInventarioMensual()">Guardar inventario</button>
     </div>
   </div>
 </div>
 
 <!-- Modal Gasto -->
 <div class="modal-overlay" id="modal-gasto">
-  <div class="modal"><div class="modal-header"><h3>Registrar Gasto</h3><button class="modal-close" onclick="cerrarModal('modal-gasto')">✕</button></div>
+  <div class="modal"><div class="modal-header"><h3>Registrar Gasto</h3><button type="button" class="modal-close" onclick="cerrarModal('modal-gasto')">✕</button></div>
     <div class="form-group"><label>Tipo *</label><select class="form-control" id="g-tipo"><option>Energía</option><option>Transporte</option><option>Infraestructura</option><option>Limpieza</option><option>Publicidad</option><option>Otro</option></select></div>
     <div class="form-group"><label>Descripción</label><input type="text" class="form-control" id="g-desc" /></div>
     <div class="form-group"><label>Monto (S/) *</label><input type="number" class="form-control" id="g-monto" step="0.01" /></div>
     <div class="form-group"><label>Fecha</label><input type="date" class="form-control" id="g-fecha" /></div>
     <div style="display:flex;justify-content:flex-end;gap:.5rem;margin-top:1rem">
-      <button class="btn btn-outline" onclick="cerrarModal('modal-gasto')">Cancelar</button>
-      <button class="btn btn-primary" onclick="guardarGasto()">Registrar</button>
+      <button type="button" class="btn btn-outline" onclick="cerrarModal('modal-gasto')">Cancelar</button>
+      <button type="button" class="btn btn-primary" onclick="guardarGasto()">Registrar</button>
     </div>
   </div>
 </div>
 
 <!-- Modal Gasto Recurrente -->
 <div class="modal-overlay" id="modal-gasto-rec">
-  <div class="modal"><div class="modal-header"><h3>Gasto Recurrente</h3><button class="modal-close" onclick="cerrarModal('modal-gasto-rec')">✕</button></div>
+  <div class="modal"><div class="modal-header"><h3>Gasto Recurrente</h3><button type="button" class="modal-close" onclick="cerrarModal('modal-gasto-rec')">✕</button></div>
     <div class="form-group"><label>Descripción *</label><input type="text" class="form-control" id="gr-desc" /></div>
     <div class="form-group"><label>Tipo</label><select class="form-control" id="gr-tipo"><option>Energía</option><option>Transporte</option><option>Alquiler</option><option>Otro</option></select></div>
     <div class="form-group"><label>Monto mensual (S/)</label><input type="number" class="form-control" id="gr-monto" step="0.01" /></div>
     <div style="display:flex;justify-content:flex-end;gap:.5rem;margin-top:1rem">
-      <button class="btn btn-outline" onclick="cerrarModal('modal-gasto-rec')">Cancelar</button>
-      <button class="btn btn-primary" onclick="guardarGastoRec()">Guardar</button>
+      <button type="button" class="btn btn-outline" onclick="cerrarModal('modal-gasto-rec')">Cancelar</button>
+      <button type="button" class="btn btn-primary" onclick="guardarGastoRec()">Guardar</button>
     </div>
   </div>
 </div>
 
 <!-- Modal Agregar Capital -->
 <div class="modal-overlay" id="modal-add-capital">
-  <div class="modal"><div class="modal-header"><h3>+ Agregar Capital</h3><button class="modal-close" onclick="cerrarModal('modal-add-capital')">✕</button></div>
+  <div class="modal"><div class="modal-header"><h3>+ Agregar Capital</h3><button type="button" class="modal-close" onclick="cerrarModal('modal-add-capital')">✕</button></div>
     <div class="form-group"><label>Monto adicional (S/) *</label><input type="number" class="form-control" id="ac-monto" step="0.01" /></div>
     <div class="form-group"><label>Concepto</label><input type="text" class="form-control" id="ac-desc" placeholder="Ej: Ampliación de mercadería" /></div>
     <div style="display:flex;justify-content:flex-end;gap:.5rem;margin-top:1rem">
-      <button class="btn btn-outline" onclick="cerrarModal('modal-add-capital')">Cancelar</button>
-      <button class="btn btn-primary" onclick="confirmarAddCapital()">Agregar</button>
+      <button type="button" class="btn btn-outline" onclick="cerrarModal('modal-add-capital')">Cancelar</button>
+      <button type="button" class="btn btn-primary" onclick="confirmarAddCapital()">Agregar</button>
     </div>
   </div>
 </div>
 
 <!-- Modal Boleta Adicional Proveedor -->
 <div class="modal-overlay" id="modal-boleta">
-  <div class="modal"><div class="modal-header"><h3>📄 Agregar boleta/factura</h3><button class="modal-close" onclick="cerrarModal('modal-boleta')">✕</button></div>
+  <div class="modal"><div class="modal-header"><h3>📄 Agregar boleta/factura</h3><button type="button" class="modal-close" onclick="cerrarModal('modal-boleta')">✕</button></div>
     <div class="form-group"><label>N° Boleta / Factura *</label><input type="text" class="form-control" id="b2-num" /></div>
     <div class="form-group"><label>Fecha *</label><input type="date" class="form-control" id="b2-fecha" /></div>
     <div class="form-group"><label>Monto (S/)</label><input type="number" class="form-control" id="b2-monto" step="0.01" /></div>
     <div class="form-group"><label>Descripción</label><input type="text" class="form-control" id="b2-desc" /></div>
     <div class="form-group"><label>Adjuntar imagen/PDF</label><input type="file" class="form-control" id="b2-file" accept="image/*,application/pdf" /></div>
     <div style="display:flex;justify-content:flex-end;gap:.5rem;margin-top:1rem">
-      <button class="btn btn-outline" onclick="cerrarModal('modal-boleta')">Cancelar</button>
-      <button class="btn btn-primary" onclick="guardarBoleta()">Guardar boleta</button>
+      <button type="button" class="btn btn-outline" onclick="cerrarModal('modal-boleta')">Cancelar</button>
+      <button type="button" class="btn btn-primary" onclick="guardarBoleta()">Guardar boleta</button>
     </div>
   </div>
 </div>
 
 <!-- Modal Ver Boletas -->
 <div class="modal-overlay" id="modal-ver-boletas">
-  <div class="modal" style="max-width:680px"><div class="modal-header"><h3 id="vb-titulo">Boletas del proveedor</h3><button class="modal-close" onclick="cerrarModal('modal-ver-boletas')">✕</button></div>
+  <div class="modal" style="max-width:680px"><div class="modal-header"><h3 id="vb-titulo">Boletas del proveedor</h3><button type="button" class="modal-close" onclick="cerrarModal('modal-ver-boletas')">✕</button></div>
     <div class="form-group"><input type="text" class="form-control" id="bol-buscar" placeholder="Buscar por N° boleta, fecha, descripción..." oninput="filtrarBoletas()" /></div>
     <div class="table-wrap"><table><thead><tr><th>N° Boleta</th><th>Fecha</th><th>Descripción</th><th>Monto</th><th>Archivo</th></tr></thead><tbody id="boletas-tbody"></tbody></table></div>
   </div>
@@ -2116,7 +2154,7 @@
   <div class="modal">
     <div class="modal-header">
       <h3>Ticket de venta</h3>
-      <button class="modal-close" onclick="cerrarModal('modal-ticket')">✕</button>
+      <button type="button" class="modal-close" onclick="cerrarModal('modal-ticket')">✕</button>
     </div>
     <div id="ticket-content"></div>
     <div id="premio-box" style="display:none;margin-top:.75rem;background:var(--accent-light);border-left:4px solid var(--accent);border-radius:8px;padding:.75rem">
@@ -2124,9 +2162,9 @@
       <div id="premio-txt" style="font-size:.82rem;color:var(--gray-700);margin-top:.25rem"></div>
     </div>
     <div style="display:flex;gap:0.5rem;margin-top:1rem;justify-content:center;flex-wrap:wrap">
-      <button class="btn btn-outline btn-sm" onclick="imprimirTicket()">🖨️ Imprimir</button>
-      <button class="btn btn-accent btn-sm" onclick="compartirWhatsapp()">💬 WhatsApp imagen</button>
-      <button class="btn btn-primary btn-sm" onclick="cerrarModal('modal-ticket')">Listo</button>
+      <button type="button" class="btn btn-outline btn-sm" onclick="imprimirTicket()">🖨️ Imprimir</button>
+      <button type="button" class="btn btn-accent btn-sm" onclick="compartirWhatsapp()">💬 WhatsApp imagen</button>
+      <button type="button" class="btn btn-primary btn-sm" onclick="cerrarModal('modal-ticket')">Listo</button>
     </div>
   </div>
 </div>
@@ -2136,7 +2174,7 @@
   <div class="modal">
     <div class="modal-header">
       <h3>🚨 Alertas del sistema</h3>
-      <button class="modal-close" onclick="cerrarModal('modal-alertas')">✕</button>
+      <button type="button" class="modal-close" onclick="cerrarModal('modal-alertas')">✕</button>
     </div>
     <div id="modal-alertas-content"></div>
   </div>
@@ -2147,7 +2185,7 @@
   <div class="modal" style="max-width:680px">
     <div class="modal-header">
       <h3 id="hcli-titulo">📋 Historial completo</h3>
-      <button class="modal-close" onclick="cerrarModal('modal-historial-cliente')">✕</button>
+      <button type="button" class="modal-close" onclick="cerrarModal('modal-historial-cliente')">✕</button>
     </div>
     <!-- Resumen -->
     <div id="hcli-resumen" style="background:var(--primary-light);border-radius:8px;padding:.65rem 1rem;margin-bottom:1rem;display:flex;gap:1.5rem;flex-wrap:wrap;font-size:.82rem"></div>
@@ -2161,14 +2199,14 @@
       </select>
       <input type="date" class="form-control" id="hcli-desde" style="width:140px;font-size:.82rem" onchange="renderHistorialCliente()" />
       <input type="date" class="form-control" id="hcli-hasta" style="width:140px;font-size:.82rem" onchange="renderHistorialCliente()" />
-      <button class="btn btn-outline btn-sm" onclick="limpiarFiltrosHistorial()">✕ Limpiar</button>
+      <button type="button" class="btn btn-outline btn-sm" onclick="limpiarFiltrosHistorial()">✕ Limpiar</button>
     </div>
     <!-- Contenido -->
     <div id="hcli-contenido" style="max-height:380px;overflow-y:auto"></div>
     <!-- Pie -->
     <div style="display:flex;justify-content:space-between;align-items:center;margin-top:1rem;padding-top:.75rem;border-top:1px solid var(--gray-200)">
       <span id="hcli-resumen-filtro" style="font-size:.78rem;color:var(--gray-500)"></span>
-      <button class="btn btn-accent btn-sm" onclick="compartirHistorialWhatsapp()">💬 Compartir por WhatsApp</button>
+      <button type="button" class="btn btn-accent btn-sm" onclick="compartirHistorialWhatsapp()">💬 Compartir por WhatsApp</button>
     </div>
   </div>
 </div>
@@ -2178,7 +2216,7 @@
   <div class="modal">
     <div class="modal-header">
       <h3>Registrar pago de fiado</h3>
-      <button class="modal-close" onclick="cerrarModal('modal-pago-fiado')">✕</button>
+      <button type="button" class="modal-close" onclick="cerrarModal('modal-pago-fiado')">✕</button>
     </div>
     <div id="fiado-detalle"></div>
     <div id="fiado-historial-wrap" style="margin-bottom:1rem;display:none">
@@ -2187,9 +2225,9 @@
     </div>
     <div class="form-group"><label>Monto a pagar (S/)</label><input type="number" class="form-control" id="fiado-pago-monto" step="0.01" /></div>
     <div style="display:flex;justify-content:flex-end;gap:0.5rem;margin-top:1rem">
-      <button class="btn btn-outline" onclick="compartirFiadoWhatsapp()">💬 WhatsApp</button>
-      <button class="btn btn-outline" onclick="cerrarModal('modal-pago-fiado')">Cancelar</button>
-      <button class="btn btn-accent" onclick="confirmarPagoFiado()">Registrar pago</button>
+      <button type="button" class="btn btn-outline" onclick="compartirFiadoWhatsapp()">💬 WhatsApp</button>
+      <button type="button" class="btn btn-outline" onclick="cerrarModal('modal-pago-fiado')">Cancelar</button>
+      <button type="button" class="btn btn-accent" onclick="confirmarPagoFiado()">Registrar pago</button>
     </div>
   </div>
 </div>
@@ -2199,7 +2237,7 @@
   <div class="modal modal-lg">
     <div class="modal-header">
       <h3 id="huv-modal-titulo">↩️ Devolución / Ajuste de Venta</h3>
-      <button class="modal-close" onclick="cerrarModal('modal-actualizar-venta')">✕</button>
+      <button type="button" class="modal-close" onclick="cerrarModal('modal-actualizar-venta')">✕</button>
     </div>
 
     <!-- Info resumen de la venta original -->
@@ -2207,11 +2245,11 @@
 
     <!-- Tabs: Devolución parcial | Anular venta completa -->
     <div style="display:flex;gap:0;border:1.5px solid var(--gray-200);border-radius:8px;overflow:hidden;margin-bottom:1rem">
-      <button id="huv-tab-parcial" onclick="huvSetTab('parcial')"
+      <button type="button" id="huv-tab-parcial" onclick="huvSetTab('parcial')"
         style="flex:1;padding:.55rem;font-size:.82rem;font-weight:600;border:none;cursor:pointer;background:var(--primary);color:white;transition:all .15s">
         ↩️ Devolución parcial
       </button>
-      <button id="huv-tab-anular" onclick="huvSetTab('anular')"
+      <button type="button" id="huv-tab-anular" onclick="huvSetTab('anular')"
         style="flex:1;padding:.55rem;font-size:.82rem;font-weight:600;border:none;cursor:pointer;background:white;color:var(--gray-600);transition:all .15s">
         ❌ Anular venta completa
       </button>
@@ -2273,8 +2311,8 @@
     </div>
 
     <div style="display:flex;justify-content:flex-end;gap:.5rem;margin-top:1rem">
-      <button class="btn btn-outline" onclick="cerrarModal('modal-actualizar-venta')">Cancelar</button>
-      <button class="btn btn-danger" id="huv-btn-guardar" onclick="guardarActualizarVenta()">↩️ Confirmar devolución</button>
+      <button type="button" class="btn btn-outline" onclick="cerrarModal('modal-actualizar-venta')">Cancelar</button>
+      <button type="button" class="btn btn-danger" id="huv-btn-guardar" onclick="guardarActualizarVenta()">↩️ Confirmar devolución</button>
     </div>
   </div>
 </div>
@@ -2284,7 +2322,7 @@
   <div class="modal" style="max-width:480px">
     <div class="modal-header" style="background:var(--danger-light);border-radius:12px 12px 0 0">
       <h3 style="color:var(--danger)">⚠️ Limpiar datos</h3>
-      <button class="modal-close" onclick="cerrarModal('modal-reset')">✕</button>
+      <button type="button" class="modal-close" onclick="cerrarModal('modal-reset')">✕</button>
     </div>
     <div style="padding:1.25rem">
       <p style="margin-bottom:0.75rem;color:var(--gray-700)">
@@ -2303,8 +2341,8 @@
         oninput="document.getElementById('btn-reset-ejecutar').disabled = this.value !== 'LIMPIAR'"
         style="margin-bottom:1rem" />
       <div style="display:flex;gap:0.75rem;justify-content:flex-end">
-        <button class="btn btn-outline" onclick="cerrarModal('modal-reset')">Cancelar</button>
-        <button class="btn btn-danger" id="btn-reset-ejecutar" disabled onclick="ejecutarReset()">
+        <button type="button" class="btn btn-outline" onclick="cerrarModal('modal-reset')">Cancelar</button>
+        <button type="button" class="btn btn-danger" id="btn-reset-ejecutar" disabled onclick="ejecutarReset()">
           🗑️ Sí, limpiar datos
         </button>
       </div>
@@ -2318,7 +2356,7 @@
   <div class="modal modal-lg" style="max-width:750px">
     <div class="modal-header">
       <h3 id="excel-review-titulo">📋 Revisión de cambios — Importar Excel</h3>
-      <button class="modal-close" onclick="cerrarModal('modal-excel-review')">✕</button>
+      <button type="button" class="modal-close" onclick="cerrarModal('modal-excel-review')">✕</button>
     </div>
     <div id="excel-review-summary-bar" class="excel-review-summary">
       <div>🔄 Modificados: <span id="xls-count-mod">0</span></div>
@@ -2326,17 +2364,17 @@
       <div>✅ Aceptados: <span id="xls-count-accepted">0</span></div>
     </div>
     <div style="display:flex;gap:0.5rem;margin-bottom:0.85rem;flex-wrap:wrap">
-      <button class="btn btn-accent btn-sm" onclick="aceptarTodosExcel()">✅ Aceptar todos los cambios</button>
-      <button class="btn btn-outline btn-sm" onclick="rechazarTodosExcel()">❌ Rechazar todos</button>
+      <button type="button" class="btn btn-accent btn-sm" onclick="aceptarTodosExcel()">✅ Aceptar todos los cambios</button>
+      <button type="button" class="btn btn-outline btn-sm" onclick="rechazarTodosExcel()">❌ Rechazar todos</button>
       <div style="flex:1"></div>
-      <button class="btn btn-primary btn-sm" id="btn-aplicar-excel" onclick="aplicarCambiosExcel()" disabled>💾 Aplicar cambios aceptados</button>
+      <button type="button" class="btn btn-primary btn-sm" id="btn-aplicar-excel" onclick="aplicarCambiosExcel()" disabled>💾 Aplicar cambios aceptados</button>
     </div>
     <div id="excel-review-list" style="max-height:52vh;overflow-y:auto;padding-right:0.25rem">
       <!-- items generados por JS -->
     </div>
     <div style="display:flex;justify-content:flex-end;gap:0.5rem;margin-top:1rem;border-top:1px solid var(--gray-100);padding-top:0.75rem">
-      <button class="btn btn-outline" onclick="cerrarModal('modal-excel-review')">Cancelar</button>
-      <button class="btn btn-primary" id="btn-aplicar-excel-2" onclick="aplicarCambiosExcel()" disabled>💾 Aplicar cambios aceptados</button>
+      <button type="button" class="btn btn-outline" onclick="cerrarModal('modal-excel-review')">Cancelar</button>
+      <button type="button" class="btn btn-primary" id="btn-aplicar-excel-2" onclick="aplicarCambiosExcel()" disabled>💾 Aplicar cambios aceptados</button>
     </div>
   </div>
 </div>
@@ -2345,7 +2383,7 @@
   <div class="modal">
     <div class="modal-header">
       <h3 id="scanner-titulo">📷 Escanear código</h3>
-      <button class="modal-close" onclick="cerrarScanner()">✕</button>
+      <button type="button" class="modal-close" onclick="cerrarScanner()">✕</button>
     </div>
 
     <!-- Estado del escáner -->
@@ -2370,7 +2408,7 @@
         <input type="text" class="form-control" id="scanner-manual"
           placeholder="Ej: 7501234567890"
           onkeydown="if(event.key==='Enter') procesarCodigoEscaneado(this.value.trim())" />
-        <button class="btn btn-primary btn-sm" onclick="procesarCodigoEscaneado(document.getElementById('scanner-manual').value.trim())">
+        <button type="button" class="btn btn-primary btn-sm" onclick="procesarCodigoEscaneado(document.getElementById('scanner-manual').value.trim())">
           Buscar
         </button>
       </div>
@@ -4887,6 +4925,7 @@ function openCamScanner() {
 
 // Abrir escáner desde modal de producto (inventario)
 function abrirScannerInventario() {
+  if (!window.Html5Qrcode) { _loadHtml5QrCode(function(){ abrirScannerInventario(); }); return; }
   scannerModo = 'inventario';
   document.getElementById('scanner-titulo').textContent = '📷 Escanear código del producto';
   document.getElementById('scanner-manual').value = '';
@@ -5037,6 +5076,7 @@ async function compartirWhatsapp() {
   const ticket = document.getElementById('ticket-print');
   if (!ticket) { alert('Sin ticket disponible'); return; }
   try {
+    if (!window.html2canvas) { await new Promise(res => _loadHtml2Canvas(res)); }
     const canvas = await html2canvas(ticket, { scale: 2, backgroundColor: '#ffffff' });
     canvas.toBlob(blob => {
       const file = new File([blob], 'ticket-aleze.png', { type: 'image/png' });
@@ -6235,7 +6275,6 @@ function iniciarFirebase() {
         if (e.code === 'failed-precondition') console.warn('Persistencia: múltiples pestañas abiertas');
         else if (e.code === 'unimplemented') console.warn('Persistencia offline no disponible en este navegador');
       });
-    console.log('Firestore iniciado ✓');
     return true;
   } catch(e) {
     console.error('Firebase init error:', e);
@@ -6441,7 +6480,6 @@ window.onload = function() {
         const camposOp = ['ventas','clientes','fiados','mermas','movimientos',
                           'proveedores','promociones','caja','config','inventariosMensuales','historialVentas','pedidosOnline'];
         camposOp.forEach(k => { if (k in data && k in DB) DB[k] = data[k]; });
-        console.log('Operaciones cargadas desde Firestore ✓');
         if (data.config && data.config.passwords) Object.assign(PASSWORDS, data.config.passwords);
       } else {
         esPrimeraVez = true;
@@ -6453,7 +6491,6 @@ window.onload = function() {
         if (pd.categorias) DB.categorias = pd.categorias;
         if (pd.config)     DB.config     = { ...DB.config, ...pd.config };
         _fbProdCacheTs = Date.now();
-        console.log('Catálogo cargado desde Firestore ✓');
       } else if (esPrimeraVez) {
         // Primera vez — sembrar datos demo
         _semillaDemo(hoy);
@@ -7487,7 +7524,7 @@ function _renderTienda() {
 </style>
 
 <div class="tnd-header">
-  <div class="tnd-brand">🛒 ${nombre}</div>
+  <div class="tnd-brand"><img src="data:image/png;base64,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" alt="Aleze" style="width:28px;height:28px;border-radius:6px;vertical-align:middle;margin-right:6px"> ${nombre}</div>
   <div style="display:flex;gap:.75rem;align-items:center">
     <span style="font-size:.78rem;opacity:.8">${dir}</span>
     <button class="tnd-cart-btn" onclick="tndAbrirCarrito()">
@@ -8008,6 +8045,7 @@ function toggleExcelPanel() {
 
 // --- EXPORTAR ---
 function exportarExcelInventario() {
+  if (!window.XLSX) { _loadXLSX(function(){ exportarExcelInventario(); }); return; }
   if (currentRole !== 'admin') { alert('Solo el administrador puede exportar el inventario.'); return; }
 
   let prods = JSON.parse(JSON.stringify(DB.productos));
@@ -8165,6 +8203,7 @@ function parseIdSistema(val) {
 }
 
 function procesarArchivoExcel(file) {
+  if (!window.XLSX) { _loadXLSX(function(){ procesarArchivoExcel(file); }); return; }
   if (currentRole !== 'admin') { alert('Solo el administrador puede importar.'); return; }
   if (!file.name.match(/\.(xlsx|xls)$/i)) { alert('Por favor sube un archivo .xlsx o .xls'); return; }
 
