@@ -76,6 +76,14 @@ function _loadHtml5QrCode(cb) {
     document.addEventListener('DOMContentLoaded', function() {
       var el = document.getElementById('login-screen');
       if (el) el.classList.add('visible');
+      // Verificar bloqueo activo al mostrar la pantalla de login
+      var bloqueoTs = parseInt(localStorage.getItem('aleze_bloqueo') || '0');
+      if (bloqueoTs > Date.now()) {
+        // Bloqueo activo — mostrarlo después de que las funciones estén listas
+        setTimeout(function() {
+          if (typeof _mostrarBloqueo === 'function') _mostrarBloqueo(bloqueoTs);
+        }, 800);
+      }
     });
   }
 })();
@@ -115,6 +123,8 @@ function _loadHtml5QrCode(cb) {
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { overflow-x: hidden; }
 
   body {
     font-family: 'Segoe UI', system-ui, sans-serif;
@@ -3152,7 +3162,7 @@ function cobrarFiado() {
   };
   DB.fiados.push(fiado);
   if (!DB.historialVentas) DB.historialVentas = [];
-  DB.historialVentas.push({ ...fiado, origen: 'pos', estado: 'fiado', estadoStock: 'descontado' });
+DB.historialVentas.push({ ...fiado, origen: 'pos', estado: 'fiado', estadoStock: 'descontado' });
 
   cart.forEach(item => {
     const prod = DB.productos.find(p => p.id === item.prodId);
@@ -6533,14 +6543,10 @@ window.onload = function() {
       }
 
       fbPatchDB();
-      fbEscuchar();
-      checkAutoAbrirCaja();
+      fbEscuchar(); // activar listeners DESPUÉS de carga inicial
+      checkAutoAbrirCaja(); // auto-open caja if date changed
       checkRoute();
-      // Solo renderizar dashboard si ya hay sesión activa (caso de recarga con sesión guardada)
-      // En el flujo normal, doLogin() llama a renderDashboard() tras autenticarse
-      if (currentUser &&
-          !window.location.pathname.includes('/tienda') &&
-          !window.location.hash.includes('/tienda')) {
+      if (!window.location.pathname.includes('/tienda') && !window.location.hash.includes('/tienda')) {
         renderDashboard();
         mobUpdateBar();
       }
@@ -7424,10 +7430,13 @@ function _getPromoTienda(p) {
 }
 
 function _renderTienda() {
+  try {
   const tiendaEl = document.getElementById('tienda-publica');
-  const nombre = DB.config.nombre || 'Minimarket Aleze';
-  const dir = DB.config.direccion || '';
-  const waNum = DB.config.whatsappTienda || '980037284';
+  if (!tiendaEl) { console.warn('tienda-publica no encontrado'); return; }
+  const config   = DB.config || {};
+  const nombre   = config.nombre    || 'Minimarket Aleze';
+  const dir      = config.direccion || '';
+  const waNum    = config.whatsappTienda || '980037284';
 
   tiendaEl.innerHTML = `
 <style>
@@ -7591,6 +7600,11 @@ function _renderTienda() {
   // Inicializar catálogo
   tndRenderCats();
   tndFiltrar();
+  } catch(e) {
+    const tel = document.getElementById('tienda-publica');
+    if (tel) tel.innerHTML = '<div style="padding:2rem;text-align:center;font-family:sans-serif"><p style="font-size:1.2rem">🛒 ' + (DB.config&&DB.config.nombre||'Minimarket Aleze') + '</p><p style="color:#6B7280;margin-top:0.5rem">Cargando catálogo...</p><button onclick="_renderTienda()" style="margin-top:1rem;padding:.6rem 1.5rem;background:#7C3AED;color:white;border:none;border-radius:8px;cursor:pointer">🔄 Reintentar</button></div>';
+    console.warn('_renderTienda error:', e);
+  }
 }
 
 let _tndCatActiva = '';
@@ -8044,9 +8058,7 @@ function ejecutarReset() {
 function _initLocal(hoy) {
   _semillaDemo(hoy || today());
   checkRoute();
-  if (currentUser &&
-      !window.location.pathname.includes('/tienda') &&
-      !window.location.hash.includes('/tienda')) {
+  if (!window.location.pathname.includes('/tienda') && !window.location.hash.includes('/tienda')) {
     renderDashboard();
     mobUpdateBar();
   }
