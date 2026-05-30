@@ -3152,7 +3152,7 @@ function cobrarFiado() {
   };
   DB.fiados.push(fiado);
   if (!DB.historialVentas) DB.historialVentas = [];
-DB.historialVentas.push({ ...fiado, origen: 'pos', estado: 'fiado', estadoStock: 'descontado' });
+  DB.historialVentas.push({ ...fiado, origen: 'pos', estado: 'fiado', estadoStock: 'descontado' });
 
   cart.forEach(item => {
     const prod = DB.productos.find(p => p.id === item.prodId);
@@ -6533,10 +6533,14 @@ window.onload = function() {
       }
 
       fbPatchDB();
-      fbEscuchar(); // activar listeners DESPUÉS de carga inicial
-      checkAutoAbrirCaja(); // auto-open caja if date changed
+      fbEscuchar();
+      checkAutoAbrirCaja();
       checkRoute();
-      if (!window.location.pathname.includes('/tienda') && !window.location.hash.includes('/tienda')) {
+      // Solo renderizar dashboard si ya hay sesión activa (caso de recarga con sesión guardada)
+      // En el flujo normal, doLogin() llama a renderDashboard() tras autenticarse
+      if (currentUser &&
+          !window.location.pathname.includes('/tienda') &&
+          !window.location.hash.includes('/tienda')) {
         renderDashboard();
         mobUpdateBar();
       }
@@ -7611,7 +7615,6 @@ function tndSetCat(id) {
 function tndFiltrar() {
   const buscar = (document.getElementById('tnd-search')?.value||'').toLowerCase();
   const hoy = today();
-  const hoy = today();
   let prods = (DB.productos||[]).filter(p => {
     if (_tndCatActiva && p.cat != _tndCatActiva) return false;
     if (buscar && !(p.nombre||'').toLowerCase().includes(buscar)) return false;
@@ -8041,7 +8044,9 @@ function ejecutarReset() {
 function _initLocal(hoy) {
   _semillaDemo(hoy || today());
   checkRoute();
-  if (!window.location.pathname.includes('/tienda') && !window.location.hash.includes('/tienda')) {
+  if (currentUser &&
+      !window.location.pathname.includes('/tienda') &&
+      !window.location.hash.includes('/tienda')) {
     renderDashboard();
     mobUpdateBar();
   }
