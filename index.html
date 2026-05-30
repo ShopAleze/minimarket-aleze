@@ -90,6 +90,7 @@ function _loadHtml5QrCode(cb) {
 </script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <style>
   :root {
     --primary: #7C3AED;
@@ -2433,6 +2434,13 @@ function _loadHtml5QrCode(cb) {
 <script>
 // ===================== DATOS =====================
 const PASSWORDS = { 'Jose Carlos': '1234', 'Shessira': '1234', 'José Luis': '1234' };
+
+// Mapeo nombre Aleze → correo Firebase Auth (para reglas de seguridad Firestore)
+const FIREBASE_USERS = {
+  'Jose Carlos': 'shopaleze@gmail.com',
+  'Shessira':    'sharote1212@gmail.com',
+  'José Luis':   'joselezama.rom@gmail.com'
+};
 // Las contraseñas guardadas en Firestore se cargan en fbEscuchar/onload y sobreescriben estas
 let currentUser = null;
 let currentRole = null;
@@ -2581,43 +2589,65 @@ function _mostrarBloqueo(hasta) {
   }, 500);
 }
 
-function doLogin() {
-  // Verificar bloqueo activo
+async function doLogin() {
+  // 1. Bloqueo local por intentos fallidos
   const bloqueoTs = parseInt(localStorage.getItem('aleze_bloqueo') || '0');
-  if (bloqueoTs > Date.now()) {
-    _mostrarBloqueo(bloqueoTs);
-    return;
-  }
+  if (bloqueoTs > Date.now()) { _mostrarBloqueo(bloqueoTs); return; }
 
-  const sel = document.getElementById('login-user').value;
-  const pass = document.getElementById('login-pass').value;
-  if (!sel) { alert('Selecciona un usuario'); return; }
-  const [name, role] = sel.split('|');
-
-  if (PASSWORDS[name] !== pass) {
-    const ahoraBloqueado = _registrarIntento();
-    const errEl = document.getElementById('login-error');
-    if (ahoraBloqueado) {
-      _mostrarBloqueo(parseInt(localStorage.getItem('aleze_bloqueo')));
-    } else {
-      const restantes = _LOGIN_MAX_INTENTOS - parseInt(localStorage.getItem('aleze_intentos') || '0');
-      if (errEl) {
-        errEl.style.display = 'block';
-        errEl.style.color = 'var(--danger)';
-        errEl.textContent = `Contraseña incorrecta. ${restantes} intento(s) restante(s).`;
-      }
-    }
-    document.getElementById('login-pass').value = '';
-    return;
-  }
-
-  // Éxito — limpiar contadores y entrar
-  _limpiarBloqueo();
-  if (_loginIntervalo) { clearInterval(_loginIntervalo); _loginIntervalo = null; }
+  const sel   = document.getElementById('login-user').value;
+  const pass  = document.getElementById('login-pass').value;
   const errEl = document.getElementById('login-error');
-  if (errEl) errEl.style.display = 'none';
   const btnEl = document.querySelector('.btn-login');
-  if (btnEl) { btnEl.disabled = false; btnEl.style.opacity = ''; }
+  if (errEl) errEl.style.display = 'none';
+
+  if (!sel || !pass) {
+    if (errEl) { errEl.style.display='block'; errEl.style.color='var(--danger)'; errEl.textContent='Selecciona usuario e ingresa contraseña'; }
+    return;
+  }
+
+  const [name, role] = sel.split('|');
+  const email = FIREBASE_USERS[name];
+  if (!email) {
+    if (errEl) { errEl.style.display='block'; errEl.style.color='var(--danger)'; errEl.textContent='Usuario no configurado'; }
+    return;
+  }
+
+  // 2. Firebase Auth — única fuente de verdad (contraseñas nunca en el código)
+  if (btnEl) { btnEl.disabled = true; btnEl.textContent = '⏳ Verificando...'; }
+
+  try {
+    await fbAuth.signInWithEmailAndPassword(email, pass);
+    // Auth exitosa — limpiar contadores
+    _limpiarBloqueo();
+  } catch(fbErr) {
+    if (btnEl) { btnEl.disabled = false; btnEl.textContent = 'Ingresar'; }
+    document.getElementById('login-pass').value = '';
+
+    let msg = 'Error de acceso. Intenta de nuevo.';
+    if (fbErr.code === 'auth/wrong-password' || fbErr.code === 'auth/invalid-credential') {
+      const bloqueado = _registrarIntento();
+      if (bloqueado) {
+        _mostrarBloqueo(parseInt(localStorage.getItem('aleze_bloqueo')));
+        return;
+      }
+      const restantes = _LOGIN_MAX_INTENTOS - parseInt(localStorage.getItem('aleze_intentos') || '0');
+      msg = `Contraseña incorrecta. ${restantes} intento(s) restante(s).`;
+    } else if (fbErr.code === 'auth/too-many-requests') {
+      msg = '⚠️ Demasiados intentos. Espera unos minutos.';
+    } else if (fbErr.code === 'auth/network-request-failed') {
+      msg = '⚠️ Sin conexión a internet. Verifica tu red.';
+    } else if (fbErr.code === 'auth/user-not-found') {
+      msg = 'Usuario no encontrado en Firebase. Contacta al administrador.';
+    }
+
+    if (errEl) { errEl.style.display='block'; errEl.style.color='var(--danger)'; errEl.textContent=msg; }
+    return;
+  }
+
+  // 3. Acceso concedido — entrar al sistema
+  if (_loginIntervalo) { clearInterval(_loginIntervalo); _loginIntervalo = null; }
+  if (errEl) errEl.style.display = 'none';
+  if (btnEl) { btnEl.disabled = false; btnEl.textContent = 'Ingresar'; btnEl.style.opacity = ''; }
 
   currentUser = name;
   currentRole = role;
@@ -2633,11 +2663,18 @@ function doLogin() {
     renderDashboard();
   }
   updateAlertCount();
+
+  // 4. Listener pedidos_online en tiempo real
+  fbEscucharPedidosOnline();
 }
 
 function doLogout() {
   currentUser = null; currentRole = null;
   cart = [];
+  // Detener listener de pedidos_online
+  if (_pedidosOnlineUnsub) { _pedidosOnlineUnsub(); _pedidosOnlineUnsub = null; }
+  // Cerrar sesión Firebase en segundo plano
+  if (fbAuth) fbAuth.signOut().catch(() => {});
   document.getElementById('login-screen').classList.add('visible');
   document.getElementById('app').classList.remove('visible');
   document.getElementById('login-user').value = '';
@@ -4904,19 +4941,39 @@ function guardarNiveles() {
   alert('✅ Niveles de premio guardados');
 }
 
-function cambiarPassword() {
+async function cambiarPassword() {
   const user  = document.getElementById('cfg-user-sel').value;
   const nueva = document.getElementById('cfg-pass-nueva').value;
   const conf  = document.getElementById('cfg-pass-conf').value;
-  if (!nueva) { alert('Ingresa la nueva contraseña'); return; }
+  if (!nueva || nueva.length < 6) { alert('La contraseña debe tener al menos 6 caracteres'); return; }
   if (nueva !== conf) { alert('Las contraseñas no coinciden'); return; }
- PASSWORDS[user] = nueva;
-  if (!DB.config.passwords) DB.config.passwords = {};
-  DB.config.passwords[user] = nueva;
-  fbGuardar();
-  document.getElementById('cfg-pass-nueva').value = '';
-  document.getElementById('cfg-pass-conf').value = '';
-  alert('✅ Contraseña actualizada para ' + user);
+
+  // Solo el admin puede cambiar su propia contraseña (usuario autenticado actualmente)
+  if (!fbAuth || !fbAuth.currentUser) {
+    alert('⚠️ Debes estar autenticado para cambiar la contraseña'); return;
+  }
+
+  // Verificar que el admin esté cambiando su propia cuenta
+  const emailEsperado = FIREBASE_USERS[user];
+  if (fbAuth.currentUser.email !== emailEsperado) {
+    alert('⚠️ Solo puedes cambiar tu propia contraseña. Pide al usuario que inicie sesión.'); return;
+  }
+
+  try {
+    // Actualizar en Firebase Auth (fuente de verdad)
+    await fbAuth.currentUser.updatePassword(nueva);
+    document.getElementById('cfg-pass-nueva').value = '';
+    document.getElementById('cfg-pass-conf').value = '';
+    alert('✅ Contraseña actualizada en Firebase para ' + user);
+  } catch(e) {
+    if (e.code === 'auth/requires-recent-login') {
+      alert('⚠️ Por seguridad, cierra sesión y vuelve a ingresar para cambiar la contraseña.');
+    } else if (e.code === 'auth/weak-password') {
+      alert('⚠️ La contraseña es demasiado débil. Usa al menos 6 caracteres.');
+    } else {
+      alert('Error al actualizar: ' + e.code);
+    }
+  }
 }
 
 function guardarSheets() {
@@ -6301,13 +6358,16 @@ let fbApp = null;
 let fbFS = null;          // Firestore instance
 let _fbEscribiendo = false; // Flag anti-loop: true mientras este dispositivo escribe
 let _fbSaveTimer = null;
+let fbAuth = null; // Firebase Authentication
 let _fbSnapshotUnsub = null; // Para desuscribirse si fuera necesario
+let _pedidosOnlineUnsub = null; // Listener colección pedidos_online
 
 // ── Inicializar Firestore ──
 function iniciarFirebase() {
   try {
     fbApp = firebase.initializeApp(FIREBASE_CONFIG);
     fbFS  = firebase.firestore();
+    fbAuth = firebase.auth(); // Firebase Authentication para seguridad Firestore
     // Habilitar persistencia offline (cache local cuando no hay internet)
     fbFS.enablePersistence({ synchronizeTabs: true })
       .catch(e => {
@@ -6971,6 +7031,34 @@ function guardarActualizarVenta() {
 }
 
 // ===================== PEDIDOS ONLINE =====================
+// ── Listener en tiempo real de colección pedidos_online ──────────────────────
+// Se activa cuando el admin inicia sesión — mantiene DB.pedidosOnline sincronizado
+// sin necesidad de recargar la página cuando llegan nuevos pedidos
+function fbEscucharPedidosOnline() {
+  if (!fbFS) return;
+  // Limpiar listener previo si existe
+  if (_pedidosOnlineUnsub) { _pedidosOnlineUnsub(); _pedidosOnlineUnsub = null; }
+
+  _pedidosOnlineUnsub = fbFS.collection('pedidos_online')
+    .orderBy('fecha', 'desc')
+    .onSnapshot(snapshot => {
+      if (_fbEscribiendo) return;
+      // Actualizar DB.pedidosOnline con todos los documentos de la colección
+      DB.pedidosOnline = snapshot.docs.map(doc => doc.data());
+      // Refrescar UI si el admin está viendo pedidos
+      try { renderPedidosOnline(); } catch(e) {}
+      // Actualizar badge de alertas (pedidos pendientes)
+      try { updateAlertCount(); } catch(e) {}
+      // Refrescar dashboard si está visible
+      try {
+        const activePage = document.querySelector('.page.active');
+        if (activePage && activePage.id === 'page-dashboard') renderDashboard();
+      } catch(e) {}
+    }, err => {
+      console.warn('pedidos_online listener error:', err.code);
+    });
+}
+
 function renderPedidosOnline() {
   if (!DB.pedidosOnline) DB.pedidosOnline = [];
   const filtro = document.getElementById('po-filtro')?.value || '';
@@ -7272,11 +7360,27 @@ function guardarEdicionPedido() {
   p.editado    = true;
   p.fechaEdicion = today() + ' ' + nowTime();
 
+  // Actualizar documento en colección pedidos_online (Firestore)
+  if (fbFS) {
+    fbFS.collection('pedidos_online').doc(String(p.id)).update({
+      items:       p.items,
+      metodo:      p.metodo,
+      entrega:     p.entrega,
+      descuento:   p.descuento,
+      total:       p.total,
+      notaAdmin:   p.notaAdmin,
+      editado:     true,
+      estado:      p.estado,
+      fechaEdicion: p.fechaEdicion
+    }).catch(e => console.warn('pedidos_online edit error:', e.code));
+  }
+
+  // Guardar cambios operativos en aleze/db
   fbGuardar();
   setTimeout(() => { _fbEscribiendo = false; }, 2000);
   cerrarModal('modal-editar-pedido');
   renderPedidosOnline();
-  try { renderDashboard(); } catch(e){}
+  try { renderDashboard(); }       catch(e){}
   try { renderHistorialVentas(); } catch(e){}
   alert('✅ Pedido actualizado correctamente.');
 }
@@ -7357,16 +7461,31 @@ function confirmarEntregaPedido(id) {
     DB.caja.ingresos += p.total;
     DB.movimientos.push({ tipo:'ingreso', desc:`Pedido online entregado — ${p.clienteNombre||'cliente'}`, monto: p.total, hora: nowTime(), fecha: today() });
   }
+  // Actualizar estado en la colección pedidos_online (Firestore)
+  if (fbFS) {
+    fbFS.collection('pedidos_online').doc(String(p.id)).update({
+      estado: nuevoEstado,
+      cajero: currentUser || 'admin',
+      fechaEntrega: nuevoEstado === 'entregado' ? today() : null,
+      horaEntrega:  nuevoEstado === 'entregado' ? nowTime() : null
+    }).catch(e => console.warn('pedidos_online update error:', e.code));
+  }
+
+  // Guardar cambios operativos en aleze/db y aleze/db_productos
   fbGuardar();
   fbGuardarProductos();
   setTimeout(() => { _fbEscribiendo = false; }, 2000);
+
+  // Sincronización total — caja, inventario, historial, dashboard, reportes
   renderPedidosOnline();
-  try { renderInvTable(); } catch(e){}
+  try { renderInvTable(); }       catch(e){}
   try { renderHistorialVentas(); } catch(e){}
-  try { renderDashboard(); } catch(e){}
-  try { renderCaja(); } catch(e){}
-  try { generarReporte(); } catch(e){}
-  alert(nuevoEstado === 'entregado' ? '✅ Pedido entregado. Stock descontado e historial actualizado.' : '✅ Estado actualizado.');
+  try { renderDashboard(); }      catch(e){}
+  try { renderCaja(); }           catch(e){}
+  try { generarReporte(); }       catch(e){}
+  alert(nuevoEstado === 'entregado'
+    ? '✅ Pedido entregado. Stock, caja, historial y reportes actualizados.'
+    : '✅ Estado actualizado.');
 }
 
 // ===================== TIENDA PÚBLICA (/tienda) =====================
@@ -7872,9 +7991,23 @@ function tndEnviarPedido() {
     entrega: _tndEntrega,
     estado: 'pendiente'
   };
-  DB.pedidosOnline.push(pedido);
+  // Guardar pedido en colección independiente pedidos_online/{id}
+  // El cliente NO escribe en aleze/db — solo en pedidos_online
+  if (fbFS) {
+    fbFS.collection('pedidos_online').doc(String(pedido.id)).set(pedido)
+      .catch(e => {
+        // Fallback: guardar en DB local si Firestore falla
+        console.warn('pedidos_online write error:', e.code);
+        if (!DB.pedidosOnline) DB.pedidosOnline = [];
+        DB.pedidosOnline.push(pedido);
+      });
+  } else {
+    // Sin conexión a Firebase — guardar localmente
+    if (!DB.pedidosOnline) DB.pedidosOnline = [];
+    DB.pedidosOnline.push(pedido);
+  }
 
-  // Guardar historial de cliente si tiene tel
+  // Guardar historial de cliente en localStorage (solo local, para el cliente)
   if (_tiendaUser.tel) {
     const key = 'tnd_hist_' + _tiendaUser.tel;
     try {
@@ -7883,8 +8016,7 @@ function tndEnviarPedido() {
       localStorage.setItem(key, JSON.stringify(hist.slice(-20)));
     } catch(e) {}
   }
-
-  fbGuardar();
+  // NO llamar fbGuardar() — el cliente ya no escribe en aleze/db
 
   // Armar mensaje WhatsApp
   let msg = `🛒 *Nuevo pedido — ${DB.config.nombre||'Minimarket Aleze'}*\n\n`;
