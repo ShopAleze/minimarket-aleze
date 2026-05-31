@@ -720,6 +720,159 @@ function _loadHtml5QrCode(cb) {
     }
   }
 
+  /* ============================================================
+     FASE 5 — UX MOBILE: fixes globales para módulos no-POS
+     ============================================================ */
+
+  @media (max-width: 760px) {
+
+    /* ── 1. PREVENIR ZOOM EN IOS al tocar inputs ──────────────────
+       iOS hace zoom cuando font-size < 16px. Este fix es crítico.
+       Se aplica solo en móvil para no afectar el diseño desktop. */
+    input, select, textarea {
+      font-size: 16px !important;
+    }
+    .form-control {
+      font-size: 16px !important;
+      min-height: 44px; /* touch target mínimo iOS */
+    }
+
+    /* ── 2. SCROLL ÚNICO — eliminar scrolls anidados ──────────────
+       main ya tiene overflow-y:auto → las páginas no deben agregar otro */
+    .page {
+      overflow: visible !important;
+    }
+    /* Excepción: POS móvil mantiene su propio scroll interno */
+    #page-pos.active {
+      overflow: hidden !important;
+    }
+
+    /* ── 3. TABLAS RESPONSIVAS ────────────────────────────────────
+       Scroll horizontal solo en el contenedor, no en la página */
+    .table-wrap {
+      overflow-x: auto !important;
+      -webkit-overflow-scrolling: touch;
+      border-radius: 8px;
+      margin: 0 -0.1rem;
+    }
+    table {
+      min-width: 500px; /* evita colapso excesivo */
+      font-size: 0.78rem;
+    }
+    th, td {
+      padding: 0.45rem 0.5rem !important;
+      white-space: nowrap;
+    }
+    /* Permitir wrap solo en columnas de nombre/descripción */
+    td.col-nombre, td.col-desc {
+      white-space: normal;
+      min-width: 120px;
+      max-width: 180px;
+    }
+
+    /* ── 4. MODALES OPTIMIZADOS PARA MÓVIL ───────────────────────*/
+    .modal-overlay {
+      padding: 0.5rem !important;
+      align-items: flex-end !important; /* aparece desde abajo en móvil */
+    }
+    .modal {
+      width: 100% !important;
+      max-width: 100% !important;
+      max-height: 90vh !important;
+      overflow-y: auto !important;
+      border-radius: 16px 16px 0 0 !important; /* bottom sheet */
+      padding: 1.25rem 1rem 2rem !important;
+    }
+    .modal-header {
+      margin-bottom: 1rem;
+    }
+    .modal-header h3 {
+      font-size: 1rem;
+    }
+
+    /* ── 5. TOUCH TARGETS — botones más fáciles de tocar ─────────*/
+    .btn {
+      min-height: 40px;
+      padding: 0.5rem 0.85rem !important;
+    }
+    .btn-sm {
+      min-height: 36px;
+      padding: 0.4rem 0.65rem !important;
+    }
+
+    /* ── 6. FORMULARIOS EN MÓDULOS ───────────────────────────────*/
+    .form-grid {
+      grid-template-columns: 1fr !important; /* una columna en móvil */
+    }
+    .grid-2, .grid-3, .grid-4, .grid-5 {
+      grid-template-columns: 1fr !important;
+      gap: 0.65rem !important;
+    }
+
+    /* ── 7. CARDS Y PANELS ───────────────────────────────────────*/
+    .card {
+      padding: 0.85rem !important;
+    }
+    .stats-grid {
+      grid-template-columns: repeat(2, 1fr) !important;
+      gap: 0.5rem !important;
+    }
+    .stat-card {
+      padding: 0.75rem !important;
+    }
+    .stat-value { font-size: 1.2rem !important; }
+
+    /* ── 8. PANEL EXCEL (inventario) ─────────────────────────────*/
+    .excel-filters {
+      flex-direction: column !important;
+    }
+    .excel-filter-group {
+      width: 100%;
+    }
+    .excel-filter-group select,
+    .excel-filter-group input {
+      width: 100%;
+    }
+
+    /* ── 9. HEADER ALEZE — compacto ──────────────────────────────*/
+    .header-logo-wrap img {
+      width: 22px !important;
+      height: 22px !important;
+    }
+    #header-username {
+      max-width: 80px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* ── 10. MÓDULOS CON LISTAS — espaciado táctil ───────────────*/
+    .list-item, .client-row, .fiado-row {
+      padding: 0.75rem 0.5rem !important;
+    }
+
+    /* ── 11. SAFE AREA — iPhone con notch/home bar ───────────────*/
+    main {
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+    .mob-cart-bar {
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+      height: calc(62px + env(safe-area-inset-bottom, 0px));
+    }
+
+    /* ── 12. PÁGINA DE CATEGORÍAS / INVENTARIO — ajuste rápido ──*/
+    .cat-grid {
+      grid-template-columns: repeat(2, 1fr) !important;
+    }
+    .inv-filters {
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .inv-filters .form-control {
+      width: 100%;
+    }
+  }
+
   /* PROMO TAG */
   .promo-tag { background: var(--danger); color: white; font-size: 0.65rem; padding: 1px 5px; border-radius: 4px; }
 
