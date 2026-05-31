@@ -5011,6 +5011,11 @@ function setStatusScanner(msg, tipo) {
 
 // Abrir escáner desde POS
 function openCamScanner() {
+  // Cargar librería si aún no está disponible (lazy loading)
+  if (!window.Html5Qrcode) {
+    _loadHtml5QrCode(function() { openCamScanner(); });
+    return;
+  }
   scannerModo = 'pos';
   document.getElementById('scanner-titulo').textContent = '📷 Escanear producto';
   document.getElementById('scanner-manual').value = '';
@@ -5078,7 +5083,7 @@ function _iniciarHtml5Qr() {
         ).then(() => {
           setStatusScanner('📷 Cámara activa — apunta al código...', 'info');
         }).catch(() => {
-          setStatusScanner('❌ No se pudo acceder a la cámara — usa entrada manual', 'error');
+          setStatusScanner('❌ Permiso de cámara denegado — actívalo en ajustes del navegador o usa entrada manual', 'error');
         });
       }
     });
