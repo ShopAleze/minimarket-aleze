@@ -2783,28 +2783,55 @@ let DB = {
 };
 
 let cart = [];
-let editingProductId = null;
-let editingFiadoId = null;
-let chartVentas = null, chartMetodos = null, chartReporte = null;
-let posFilterCat = '';
-// scannerStream eliminado — html5-qrcode gestiona su propio stream
-  // ===================== LOGIN =====================
+
+// ===================== RESET DE ESTADO GLOBAL =====================
+// Se ejecuta SIEMPRE antes de login y en logout.
+// Garantiza que ninguna sesión anterior contamine la nueva.
 function resetAppState() {
   currentUser = null;
   currentRole = null;
   cart = [];
   _fbProdCacheTs = 0;
 
-  if (DB) {
-    Object.keys(DB).forEach(k => {
-      if (Array.isArray(DB[k])) DB[k] = [];
-      else if (typeof DB[k] === 'object') DB[k] = {};
-    });
-  }
+  // Limpiar DB sin romper los interceptores de fbPatchDB.
+  // Object.getOwnPropertyDescriptor detecta si ya hay setter activo.
+  const _resetField = (obj, key, emptyVal) => {
+    const desc = Object.getOwnPropertyDescriptor(obj, key);
+    if (desc && desc.set) {
+      // Setter activo: escribir directamente en el _val interno
+      // vía set para que el proxy quede en sync, pero con _fbEscribiendo=true
+      // para que el onSnapshot no haga eco.
+      const prev = _fbEscribiendo;
+      _fbEscribiendo = true;
+      obj[key] = emptyVal;
+      _fbEscribiendo = prev;
+    } else {
+      obj[key] = emptyVal;
+    }
+  };
 
+  // Campos operativos (arrays)
+  ['ventas','clientes','fiados','mermas','movimientos',
+   'proveedores','promociones','pedidosOnline'].forEach(k => _resetField(DB, k, []));
+
+  // Campos que son objetos
+  _resetField(DB, 'caja', { abierta:false, inicial:0, ingresos:0, egresos:0, turnoInicio:null, cajero:'', fecha:'' });
+  _resetField(DB, 'config', { nombre:'Minimarket Aleze', direccion:'', telefono:'', ticketMsg:'¡Gracias por su compra!', diasVenc:7, whatsappTienda:'', montoAperturaAuto:0 });
+
+  // Productos y categorías: NO se resetean — pertenecen al catálogo público
+  // y se recargan desde Firebase en doLogin.
+
+  // Ocultar nav de admin si quedó visible
   const adminNav = document.getElementById('admin-nav');
   if (adminNav) adminNav.style.display = '';
 }
+
+let editingProductId = null;
+let editingFiadoId = null;
+let chartVentas = null, chartMetodos = null, chartReporte = null;
+let posFilterCat = '';
+// scannerStream eliminado — html5-qrcode gestiona su propio stream
+
 // ===================== LOGIN =====================
 // ── Bloqueo por intentos fallidos ──────────────────────────────────────────
 // Logo embebido como constante — evita duplicar base64 en el DOM
@@ -2879,101 +2906,45 @@ function _mostrarBloqueo(hasta) {
 }
 
 async function doLogin() {
+  // ── PASO 0: Reset total de estado anterior (sesión previa, cambio de usuario) ──
   resetAppState();
-  const btnEl = document.getElementById('login-btn');
-  const selEl = document.getElementById('login-user');
-  const passEl = document.getElementById('login-pass');
+
+  // ── PASO 1: Bloqueo local por intentos fallidos ──
+  const bloqueoTs = parseInt(localStorage.getItem('aleze_bloqueo') || '0');
+  if (bloqueoTs > Date.now()) { _mostrarBloqueo(bloqueoTs); return; }
+
+  const sel   = document.getElementById('login-user').value;
+  const pass  = document.getElementById('login-pass').value;
   const errEl = document.getElementById('login-error');
-
-  const sel = selEl ? selEl.value : '';
-  const pass = passEl ? passEl.value : '';
-
+  const btnEl = document.querySelector('.btn-login');
   if (errEl) errEl.style.display = 'none';
 
   if (!sel || !pass) {
-    if (errEl) {
-      errEl.style.display = 'block';
-      errEl.textContent = 'Selecciona usuario e ingresa contraseña';
-    }
+    if (errEl) { errEl.style.display='block'; errEl.style.color='var(--danger)'; errEl.textContent='Selecciona usuario e ingresa contraseña'; }
     return;
   }
 
   const [name, role] = sel.split('|');
   const email = FIREBASE_USERS[name];
-
   if (!email) {
-    if (errEl) {
-      errEl.style.display = 'block';
-      errEl.textContent = 'Usuario no configurado';
-    }
+    if (errEl) { errEl.style.display='block'; errEl.style.color='var(--danger)'; errEl.textContent='Usuario no configurado'; }
     return;
   }
 
-  if (btnEl) {
-    btnEl.disabled = true;
-    btnEl.textContent = '⏳ Verificando...';
-  }
+  // ── PASO 2: Firebase Auth — única fuente de verdad ──
+  if (btnEl) { btnEl.disabled = true; btnEl.textContent = '⏳ Verificando...'; }
 
   try {
-    // 1. Autenticación en Firebase Auth como única fuente de verdad
     await fbAuth.signInWithEmailAndPassword(email, pass);
     _limpiarBloqueo();
-
-    console.log("LOGIN EXITOSO: Inicializando descarga limpia de la base de datos...");
-    const docGeneral = fbFS.collection('sistema').doc('db_general');
-    const docProductos = fbFS.collection('sistema').doc('db_productos');
-
-    // Usar Promise.all de manera limpia para garantizar la descarga paralela y obligatoria
-    console.log("Cargando datos Firebase...");
-   const [snapGen, snapProd] = await Promise.all([docGeneral.get(), docProductos.get()]);
-
-console.log("Datos cargados"); 
-    if (snapGen.exists) {
-      const data = snapGen.data();
-      const camposOp = ['ventas', 'clientes', 'fiados', 'mermas', 'movimientos', 'proveedores', 'promociones', 'caja', 'config', 'inventariosMensuales', 'historialVentas', 'pedidosOnline'];
-      camposOp.forEach(k => {
-        if (k in data && k in DB) DB[k] = data[k];
-      });
-      if (data.config && data.config.passwords) Object.assign(PASSWORDS, data.config.passwords);
-    }
-
-    if (snapProd.exists) {
-      const pd = snapProd.data();
-      if (pd.productos) DB.productos = pd.productos;
-      if (pd.categorias) DB.categorias = pd.categorias;
-      if (pd.config) DB.config = { ...DB.config, ...pd.config };
-      _fbProdCacheTs = Date.now(); // Fijar estampa de tiempo actual tras la descarga exitosa
-    }
-
-    // 4. Encapsular rol y usuario autenticado de forma limpia en variables globales exclusivas
-    currentUser = name;
-    currentRole = role;
-
-    // 5. Iniciar escuchador en tiempo real de pedidos online
-    fbEscucharPedidosOnline();
-
-    // 6. Pasar al renderizado de interfaz (Pintar la UI con datos cargados al 100%)
-if (role !== 'admin') {
-  document.getElementById('admin-nav').style.display = 'none';
-  navigate('pos');
-} else {
-  renderDashboard();
-}
-
-updateAlertCount();
-
-  } catch (fbErr) {
-    console.error("Error en proceso de login/descarga:", fbErr);
-    if (btnEl) {
-      btnEl.disabled = false;
-      btnEl.textContent = 'Ingresar';
-    }
-    if (passEl) passEl.value = '';
+  } catch(fbErr) {
+    if (btnEl) { btnEl.disabled = false; btnEl.textContent = 'Ingresar'; }
+    document.getElementById('login-pass').value = '';
 
     let msg = 'Error de acceso. Intenta de nuevo.';
     if (fbErr.code === 'auth/wrong-password' || fbErr.code === 'auth/invalid-credential') {
-      const deBloqueo = _registrarIntento();
-      if (deBloqueo) {
+      const bloqueado = _registrarIntento();
+      if (bloqueado) {
         _mostrarBloqueo(parseInt(localStorage.getItem('aleze_bloqueo')));
         return;
       }
@@ -2981,37 +2952,90 @@ updateAlertCount();
       msg = `Contraseña incorrecta. ${restantes} intento(s) restante(s).`;
     } else if (fbErr.code === 'auth/too-many-requests') {
       msg = '⚠️ Demasiados intentos. Espera unos minutos.';
+    } else if (fbErr.code === 'auth/network-request-failed') {
+      msg = '⚠️ Sin conexión a internet. Verifica tu red.';
+    } else if (fbErr.code === 'auth/user-not-found') {
+      msg = 'Usuario no encontrado en Firebase. Contacta al administrador.';
     }
 
-    if (errEl) {
-      errEl.style.display = 'block';
-      errEl.style.color = 'var(--danger)';
-      errEl.textContent = msg;
+    if (errEl) { errEl.style.display='block'; errEl.style.color='var(--danger)'; errEl.textContent=msg; }
+    return;
+  }
+
+  // ── PASO 3: Cargar datos desde Firebase ANTES de cualquier render ──
+  if (btnEl) { btnEl.textContent = '⏳ Cargando datos...'; }
+
+  if (fbFS) {
+    try {
+      const [snapOp, snapProd] = await Promise.all([
+        fbDocRef().get(),
+        fbProdDocRef().get()
+      ]);
+
+      if (snapOp.exists) {
+        const data = snapOp.data();
+        const camposOp = ['ventas','clientes','fiados','mermas','movimientos',
+                          'proveedores','promociones','caja','config',
+                          'inventariosMensuales','historialVentas','pedidosOnline'];
+        camposOp.forEach(k => { if (k in data && k in DB) DB[k] = data[k]; });
+        if (data.config && data.config.passwords) Object.assign(PASSWORDS, data.config.passwords);
+      }
+
+      if (snapProd.exists) {
+        const pd = snapProd.data();
+        if (pd.productos)  DB.productos  = pd.productos;
+        if (pd.categorias) DB.categorias = pd.categorias;
+        if (pd.config)     DB.config     = { ...DB.config, ...pd.config };
+        _fbProdCacheTs = Date.now();
+      }
+    } catch(e) {
+      console.warn('Error cargando datos en login, continuando con caché local:', e.message);
     }
   }
+
+  // ── PASO 4: Estado de sesión — ahora que los datos están listos ──
+  if (_loginIntervalo) { clearInterval(_loginIntervalo); _loginIntervalo = null; }
+  if (errEl) errEl.style.display = 'none';
+  if (btnEl) { btnEl.disabled = false; btnEl.textContent = 'Ingresar'; btnEl.style.opacity = ''; }
+
+  currentUser = name;
+  currentRole = role;
+
+  // ── PASO 5: Mostrar UI — solo después de tener datos ──
+  document.getElementById('login-screen').classList.remove('visible');
+  document.getElementById('app').classList.add('visible');
+  document.getElementById('header-username').textContent = name;
+  document.getElementById('header-avatar').textContent = name.substring(0,2).toUpperCase();
+  document.getElementById('header-role').textContent = role === 'admin' ? '(Admin)' : '(Cajero)';
+
+  if (role !== 'admin') {
+    document.getElementById('admin-nav').style.display = 'none';
+    navigate('pos');
+  } else {
+    renderDashboard();
+  }
+  updateAlertCount();
+
+  // ── PASO 6: Listener en tiempo real (DESPUÉS del render inicial) ──
+  fbEscucharPedidosOnline();
 }
+
 function doLogout() {
-  currentUser = null; 
-  currentRole = null;
-  cart = [];
+  // ── PASO 0: Reset total — ningún estado de sesión persiste ──
+  resetAppState();
 
-  // Limpiar estado de la tienda pública para forzar recarga completa en próximo acceso
-  _tiendaInicializada = false;
-
-  // Detener listener de pedidos_online
-  if (_pedidosOnlineUnsub) { 
-    _pedidosOnlineUnsub(); 
-    _pedidosOnlineUnsub = null; 
-  }
+  // Detener listeners en tiempo real
+  if (_pedidosOnlineUnsub) { _pedidosOnlineUnsub(); _pedidosOnlineUnsub = null; }
+  if (_fbSnapshotUnsub)    { _fbSnapshotUnsub();    _fbSnapshotUnsub    = null; }
 
   // Cerrar sesión Firebase en segundo plano
   if (fbAuth) fbAuth.signOut().catch(() => {});
 
+  // Volver a pantalla de login
   document.getElementById('login-screen').classList.add('visible');
   document.getElementById('app').classList.remove('visible');
   document.getElementById('login-user').value = '';
   document.getElementById('login-pass').value = '';
-
   const errEl = document.getElementById('login-error');
   if (errEl) errEl.style.display = 'none';
 
@@ -3152,7 +3176,8 @@ function cerrarModal(id) { document.getElementById(id).classList.remove('open');
 
 // ===================== DASHBOARD =====================
 function renderDashboard() {
-  // Inyectar logo en header si aún no tiene src
+  // Guard: no renderizar si el usuario no está autenticado o los datos no cargaron
+  if (!currentUser || !DB.productos || DB.productos.length === 0) return;
   const hLogoImg = document.getElementById('header-logo-img');
   if (hLogoImg && !hLogoImg.src) hLogoImg.src = _LOGO_B64;
   const hoy = today();
@@ -3277,7 +3302,12 @@ function renderPosCategorias() {
 function setPosFilter(id) { posFilterCat = id; renderPosCategorias(); renderPosGrid(); }
 
 function renderPosGrid(search = '') {
-  const s = search || document.getElementById('pos-search').value.toLowerCase();
+  // Guard: no renderizar si los productos no cargaron
+  if (!DB.productos || DB.productos.length === 0) {
+    const grid = document.getElementById('pos-grid');
+    if (grid) grid.innerHTML = '<p style="color:var(--gray-400);font-size:0.85rem;padding:1rem">Cargando productos...</p>';
+    return;
+  }
   let prods = DB.productos.filter(p => p.stock > 0);
   if (posFilterCat) prods = prods.filter(p => p.cat == posFilterCat);
   if (s) prods = prods.filter(p => p.nombre.toLowerCase().includes(s) || p.codigo.includes(s));
@@ -5408,28 +5438,28 @@ function _hideScannerOverlay() {
   if (modal) modal.style.cssText = '';
 }
 
-async function openCamScanner() {
+function openCamScanner() {
   if (!window.Html5Qrcode) { _loadHtml5QrCode(function(){ openCamScanner(); }); return; }
   scannerModo = 'pos';
   document.getElementById('scanner-titulo').textContent = '📷 Escanear producto';
   document.getElementById('scanner-manual').value = '';
   document.getElementById('scanner-resultado').style.display = 'none';
   _showScannerOverlay();
-  await _iniciarHtml5Qr();
+  _iniciarHtml5Qr();
 }
 
 // Abrir escáner desde modal de producto (inventario)
-async function abrirScannerInventario() {
+function abrirScannerInventario() {
   if (!window.Html5Qrcode) { _loadHtml5QrCode(function(){ abrirScannerInventario(); }); return; }
   scannerModo = 'inventario';
   _showScannerOverlay(); // independiente del sistema de modales
   document.getElementById('scanner-titulo').textContent = '📷 Escanear código del producto';
   document.getElementById('scanner-manual').value = '';
   document.getElementById('scanner-resultado').style.display = 'none';
-  await _iniciarHtml5Qr(); // _showScannerOverlay ya fue llamado antes
+  _iniciarHtml5Qr(); // _showScannerOverlay ya fue llamado antes
 }
 
-async function _iniciarHtml5Qr() {
+function _iniciarHtml5Qr() {
   _scannerCooldown = false;
   setStatusScanner('🔄 Iniciando cámara...', 'info');
 
@@ -5438,70 +5468,59 @@ async function _iniciarHtml5Qr() {
     return;
   }
 
-  // Detener instancia previa y esperar liberación completa de la cámara
-  await _detenerHtml5Qr();
+  // Detener instancia previa si existiera
+  _detenerHtml5Qr().then(() => {
+    const config = {
+      fps: 12,
+      qrbox: { width: 250, height: 180 },
+      aspectRatio: 1.4,
+      formatsToSupport: [
+        Html5QrcodeSupportedFormats.EAN_13,
+        Html5QrcodeSupportedFormats.EAN_8,
+        Html5QrcodeSupportedFormats.CODE_128,
+        Html5QrcodeSupportedFormats.CODE_39,
+        Html5QrcodeSupportedFormats.UPC_A,
+        Html5QrcodeSupportedFormats.UPC_E,
+        Html5QrcodeSupportedFormats.QR_CODE,
+        Html5QrcodeSupportedFormats.DATA_MATRIX
+      ]
+    };
 
-  // Guard adicional: garantizar que no haya instancia residual
-  if (html5QrScanner) { await _detenerHtml5Qr(); }
+    html5QrScanner = new Html5Qrcode('html5-qrcode-reader', { verbose: false });
 
-  const config = {
-    fps: 12,
-    qrbox: { width: 250, height: 180 },
-    aspectRatio: 1.4,
-    formatsToSupport: [
-      Html5QrcodeSupportedFormats.EAN_13,
-      Html5QrcodeSupportedFormats.EAN_8,
-      Html5QrcodeSupportedFormats.CODE_128,
-      Html5QrcodeSupportedFormats.CODE_39,
-      Html5QrcodeSupportedFormats.UPC_A,
-      Html5QrcodeSupportedFormats.UPC_E,
-      Html5QrcodeSupportedFormats.QR_CODE,
-      Html5QrcodeSupportedFormats.DATA_MATRIX
-    ]
-  };
-
-  const reader = document.getElementById('html5-qrcode-reader');
-  if (reader) { reader.innerHTML = ''; }
-  html5QrScanner = new Html5Qrcode('html5-qrcode-reader', { verbose: false });
-
-  // Preferir cámara trasera automáticamente
-  try {
-    await html5QrScanner.start(
+    // Preferir cámara trasera automáticamente
+    html5QrScanner.start(
       { facingMode: 'environment' },
       config,
       (decodedText) => { manejarCodigoDetectado(decodedText); },
       () => {} // errores de frame ignorados (normales entre lecturas)
-    );
-    setStatusScanner('📷 Apunta al código del producto...', 'info');
-  } catch (err) {
-    // Si environment falla, intentar con cámara frontal
-    try {
-      await html5QrScanner.start(
-        { facingMode: 'user' },
-        config,
-        (decodedText) => { manejarCodigoDetectado(decodedText); },
-        () => {}
-      );
-      setStatusScanner('📷 Cámara activa — apunta al código...', 'info');
-    } catch (err2) {
-      setStatusScanner('❌ Permiso de cámara denegado — actívalo en ajustes del navegador o usa entrada manual', 'error');
-    }
-  }
+    ).then(() => {
+      setStatusScanner('📷 Apunta al código del producto...', 'info');
+    }).catch(err => {
+      // Si environment falla, intentar con cualquier cámara disponible
+      if (html5QrScanner) {
+        html5QrScanner.start(
+          { facingMode: 'user' },
+          config,
+          (decodedText) => { manejarCodigoDetectado(decodedText); },
+          () => {}
+        ).then(() => {
+          setStatusScanner('📷 Cámara activa — apunta al código...', 'info');
+        }).catch(() => {
+          setStatusScanner('❌ Permiso de cámara denegado — actívalo en ajustes del navegador o usa entrada manual', 'error');
+        });
+      }
+    });
+  });
 }
 
-async function _detenerHtml5Qr() {
-  if (!html5QrScanner) return;
-  try {
-    await html5QrScanner.stop();
-  } catch (e) {
-    console.warn("stop() falló:", e);
-  }
-  try {
-    await html5QrScanner.clear();
-  } catch (e) {
-    console.warn("clear() falló:", e);
-  }
-  html5QrScanner = null;
+function _detenerHtml5Qr() {
+  if (!html5QrScanner) return Promise.resolve();
+  return html5QrScanner.stop().catch(() => {}).finally(() => {
+    // Limpiar el contenedor para re-uso limpio
+    try { html5QrScanner.clear(); } catch(e) {}
+    html5QrScanner = null;
+  });
 }
 
 function manejarCodigoDetectado(codigo) {
@@ -5566,8 +5585,8 @@ function procesarCodigoEscaneado(codigo) {
   manejarCodigoDetectado(codigo);
 }
 
-async function cerrarScanner() {
-  await _detenerHtml5Qr();
+function cerrarScanner() {
+  _detenerHtml5Qr().catch(() => {});
   document.getElementById('scanner-resultado').style.display = 'none';
   _hideScannerOverlay(); // NO usa cerrarModal — completamente independiente
 }
@@ -6927,25 +6946,26 @@ function fbPatchDB() {
 }
 
 // ===================== INIT =====================
-window.onload = function() {
+window.onload = async function() {
   const hoy = today();
   const fbOk = iniciarFirebase();
 
   if (fbOk) {
-    // Carga inicial: 3 lecturas al arrancar (db + db_productos + db_ext)
-    // Después solo onSnapshot reacciona a cambios — sin lecturas adicionales
-    const promOp   = fbDocRef().get();
-    const promProd = fbProdDocRef().get();
-    const promExt  = fbFS.collection('aleze').doc('db_ext').get();
+    try {
+      // Carga inicial: 3 lecturas simultáneas — render solo cuando todas llegan
+      const [snapOp, snapProd, snapExt] = await Promise.all([
+        fbDocRef().get(),
+        fbProdDocRef().get(),
+        fbFS.collection('aleze').doc('db_ext').get()
+      ]);
 
-    Promise.all([promOp, promProd, promExt]).then(([snapOp, snapProd, snapExt]) => {
       let esPrimeraVez = false;
 
       if (snapOp.exists) {
         const data = snapOp.data();
-        // Cargar solo campos operativos del doc principal
         const camposOp = ['ventas','clientes','fiados','mermas','movimientos',
-                          'proveedores','promociones','caja','config','inventariosMensuales','historialVentas','pedidosOnline'];
+                          'proveedores','promociones','caja','config',
+                          'inventariosMensuales','historialVentas','pedidosOnline'];
         camposOp.forEach(k => { if (k in data && k in DB) DB[k] = data[k]; });
         if (data.config && data.config.passwords) Object.assign(PASSWORDS, data.config.passwords);
       } else {
@@ -6959,7 +6979,6 @@ window.onload = function() {
         if (pd.config)     DB.config     = { ...DB.config, ...pd.config };
         _fbProdCacheTs = Date.now();
       } else if (esPrimeraVez) {
-        // Primera vez — sembrar datos demo
         _semillaDemo(hoy);
         fbGuardar();
         fbGuardarProductos();
@@ -6971,17 +6990,17 @@ window.onload = function() {
       }
 
       fbPatchDB();
-      fbEscuchar(); // activar listeners DESPUÉS de carga inicial
-      checkAutoAbrirCaja(); // auto-open caja if date changed
+      fbEscuchar();
+      checkAutoAbrirCaja();
       checkRoute();
       if (!window.location.pathname.includes('/tienda') && !window.location.hash.includes('/tienda')) {
         renderDashboard();
         mobUpdateBar();
       }
-    }).catch(e => {
+    } catch(e) {
       console.warn('Firestore no disponible, modo local:', e.message);
       _initLocal(hoy);
-    });
+    }
   } else {
     _initLocal(hoy);
   }
@@ -7910,10 +7929,7 @@ function tndLoadUser() {
   } catch(e) {}
 }
 
-// Guard: evita re-inicializar la tienda si ya fue montada (previene eventos duplicados)
-let _tiendaInicializada = false;
-
-async function initTienda(){
+function initTienda() {
   // Ocultar login y app del sistema
   document.getElementById('login-screen').classList.remove('visible');
   const appEl = document.getElementById('app');
@@ -7928,52 +7944,35 @@ async function initTienda(){
   }
   tiendaEl.style.display = 'block';
 
-  // Si la tienda ya fue inicializada y el DOM está montado, solo re-filtrar sin recrear
-  if (_tiendaInicializada && document.getElementById('tnd-grid')) {
-    tndRenderCats();
-    tndFiltrar();
-    return;
-  }
-
-  // Cargar catálogo desde db_productos con caché de 5 minutos
-  // Si ya están en memoria y el caché es reciente → render directo (0 lecturas)
-  // Si el caché expiró o no hay datos → 1 lectura a db_productos
-  const CACHE_MS = 5 * 60 * 1000; // 5 minutos
-  const cacheValido = _fbProdCacheTs && (Date.now() - _fbProdCacheTs) < CACHE_MS;
-
   // Helper interno: inicializar datos persistidos y renderizar
   function _initTiendaConDatos() {
-    tndGetClienteId(); // asegurar ID único del cliente
-    tndLoadUser();     // pre-cargar nombre/tel de visita anterior
-    tndLoadCart();     // restaurar carrito (valida stock y precio actual)
+    if (!DB.productos || DB.productos.length === 0) {
+      // Productos aún no disponibles — mostrar mensaje en lugar de pantalla en blanco
+      tiendaEl.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:60vh;color:#6B7280;font-size:1rem">Cargando catálogo...</div>';
+      return;
+    }
+    tndGetClienteId();
+    tndLoadUser();
+    tndLoadCart();
     tndUpdateCartBadge();
     _renderTienda();
-  _tiendaInicializada = true;
   }
 
-if (DB.productos && DB.productos.length > 0) {
-  _initTiendaConDatos();
-} else if (fbFS) {
-  try {
-    const snap = await fbProdDocRef().get();
-
-    if (snap.exists) {
-      const pd = snap.data();
-      if (pd.productos)  DB.productos  = pd.productos;
-      if (pd.categorias) DB.categorias = pd.categorias;
-      if (pd.config)     DB.config     = { ...DB.config, ...pd.config };
-      _fbProdCacheTs = Date.now();
-    }
-
-    _initTiendaConDatos();
-
-  } catch (e) {
-    console.error("Error cargando productos:", e);
+  // Siempre cargar desde Firebase — sin condición de caché para garantizar datos frescos
+  if (fbFS) {
+    fbProdDocRef().get().then(snap => {
+      if (snap.exists) {
+        const pd = snap.data();
+        if (pd.productos)  DB.productos  = pd.productos;
+        if (pd.categorias) DB.categorias = pd.categorias;
+        if (pd.config)     DB.config     = { ...DB.config, ...pd.config };
+        _fbProdCacheTs = Date.now();
+      }
+      _initTiendaConDatos();
+    }).catch(() => _initTiendaConDatos());
+  } else {
     _initTiendaConDatos();
   }
-} else {
-  _initTiendaConDatos();
-}
 }
 
 function _getStockBadge(p) {
@@ -7992,7 +7991,6 @@ function _getPromoTienda(p) {
 function _renderTienda() {
   try {
   const tiendaEl = document.getElementById('tienda-publica');
-    if (tiendaEl) tiendaEl.innerHTML = '';
   if (!tiendaEl) { console.warn('tienda-publica no encontrado'); return; }
   const config   = DB.config || {};
   const nombre   = config.nombre    || 'Minimarket Aleze';
@@ -8199,8 +8197,6 @@ function tndFiltrar() {
 
   const grid = document.getElementById('tnd-grid');
   if (!grid) return;
-  // Limpiar contenedor antes de renderizar — previene acumulación de nodos huérfanos
-  grid.innerHTML = '';
   grid.innerHTML = prods.map(p => {
     const agotado = p.stock <= 0;
     const cat = (DB.categorias||[]).find(c => c.id === p.cat);
@@ -8214,8 +8210,7 @@ function tndFiltrar() {
     const precioCat = p.costo ? Math.ceil(p.costo * (1 + ((DB.categorias||[]).find(c=>c.id===p.cat)?.margen||0)/100) * 10) / 10 : null;
     const sugerido = precioCat && precioCat !== p.precio ? precioCat : null;
 
-    // data-prodid permite feedback visual exacto sin comparar strings de onclick
-    return `<div class="tnd-prod-card ${agotado?'agotado':''}" data-prodid="${p.id}" onclick="${agotado?'':('tndAgregarCarrito('+p.id+')')}">
+    return `<div class="tnd-prod-card ${agotado?'agotado':''}" onclick="${agotado?'':('tndAgregarCarrito('+p.id+')')}">
       <div class="tnd-prod-badge">${badge}</div>
       ${promo ? `<div class="tnd-prod-promo">🔥 ${promo.nombre||'Promo'}</div>` : ''}
       <div class="tnd-prod-icon">${icon}</div>
@@ -8244,12 +8239,14 @@ function tndAgregarCarrito(prodId) {
   }
   tndSaveCart(); // persistir en localStorage
   tndUpdateCartBadge();
-  // Mini feedback visual — selector exacto por data-prodid (un solo elemento)
-  const card = document.querySelector(`.tnd-prod-card[data-prodid="${prodId}"]`);
-  if (card) {
-    card.style.borderColor = '#10B981';
-    setTimeout(() => { card.style.borderColor = ''; }, 500);
-  }
+  // Mini feedback
+  const cards = document.querySelectorAll('.tnd-prod-card');
+  cards.forEach(card => {
+    if (card.onclick && card.getAttribute('onclick')?.includes(''+prodId)) {
+      card.style.borderColor = '#10B981';
+      setTimeout(() => { card.style.borderColor = ''; }, 500);
+    }
+  });
 }
 
 function tndUpdateCartBadge() {
