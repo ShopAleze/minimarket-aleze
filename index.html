@@ -5347,28 +5347,28 @@ function _hideScannerOverlay() {
   if (modal) modal.style.cssText = '';
 }
 
-function openCamScanner() {
+async function openCamScanner() {
   if (!window.Html5Qrcode) { _loadHtml5QrCode(function(){ openCamScanner(); }); return; }
   scannerModo = 'pos';
   document.getElementById('scanner-titulo').textContent = '📷 Escanear producto';
   document.getElementById('scanner-manual').value = '';
   document.getElementById('scanner-resultado').style.display = 'none';
   _showScannerOverlay();
-  _iniciarHtml5Qr();
+  await _iniciarHtml5Qr();
 }
 
 // Abrir escáner desde modal de producto (inventario)
-function abrirScannerInventario() {
+async function abrirScannerInventario() {
   if (!window.Html5Qrcode) { _loadHtml5QrCode(function(){ abrirScannerInventario(); }); return; }
   scannerModo = 'inventario';
   _showScannerOverlay(); // independiente del sistema de modales
   document.getElementById('scanner-titulo').textContent = '📷 Escanear código del producto';
   document.getElementById('scanner-manual').value = '';
   document.getElementById('scanner-resultado').style.display = 'none';
-  _iniciarHtml5Qr(); // _showScannerOverlay ya fue llamado antes
+  await _iniciarHtml5Qr(); // _showScannerOverlay ya fue llamado antes
 }
 
-function _iniciarHtml5Qr() {
+async function _iniciarHtml5Qr() {
   _scannerCooldown = false;
   setStatusScanner('🔄 Iniciando cámara...', 'info');
 
@@ -5377,59 +5377,70 @@ function _iniciarHtml5Qr() {
     return;
   }
 
-  // Detener instancia previa si existiera
-  _detenerHtml5Qr().then(() => {
-    const config = {
-      fps: 12,
-      qrbox: { width: 250, height: 180 },
-      aspectRatio: 1.4,
-      formatsToSupport: [
-        Html5QrcodeSupportedFormats.EAN_13,
-        Html5QrcodeSupportedFormats.EAN_8,
-        Html5QrcodeSupportedFormats.CODE_128,
-        Html5QrcodeSupportedFormats.CODE_39,
-        Html5QrcodeSupportedFormats.UPC_A,
-        Html5QrcodeSupportedFormats.UPC_E,
-        Html5QrcodeSupportedFormats.QR_CODE,
-        Html5QrcodeSupportedFormats.DATA_MATRIX
-      ]
-    };
+  // Detener instancia previa y esperar liberación completa de la cámara
+  await _detenerHtml5Qr();
 
-    html5QrScanner = new Html5Qrcode('html5-qrcode-reader', { verbose: false });
+  // Guard adicional: garantizar que no haya instancia residual
+  if (html5QrScanner) { await _detenerHtml5Qr(); }
 
-    // Preferir cámara trasera automáticamente
-    html5QrScanner.start(
+  const config = {
+    fps: 12,
+    qrbox: { width: 250, height: 180 },
+    aspectRatio: 1.4,
+    formatsToSupport: [
+      Html5QrcodeSupportedFormats.EAN_13,
+      Html5QrcodeSupportedFormats.EAN_8,
+      Html5QrcodeSupportedFormats.CODE_128,
+      Html5QrcodeSupportedFormats.CODE_39,
+      Html5QrcodeSupportedFormats.UPC_A,
+      Html5QrcodeSupportedFormats.UPC_E,
+      Html5QrcodeSupportedFormats.QR_CODE,
+      Html5QrcodeSupportedFormats.DATA_MATRIX
+    ]
+  };
+
+  const reader = document.getElementById('html5-qrcode-reader');
+  if (reader) { reader.innerHTML = ''; }
+  html5QrScanner = new Html5Qrcode('html5-qrcode-reader', { verbose: false });
+
+  // Preferir cámara trasera automáticamente
+  try {
+    await html5QrScanner.start(
       { facingMode: 'environment' },
       config,
       (decodedText) => { manejarCodigoDetectado(decodedText); },
       () => {} // errores de frame ignorados (normales entre lecturas)
-    ).then(() => {
-      setStatusScanner('📷 Apunta al código del producto...', 'info');
-    }).catch(err => {
-      // Si environment falla, intentar con cualquier cámara disponible
-      if (html5QrScanner) {
-        html5QrScanner.start(
-          { facingMode: 'user' },
-          config,
-          (decodedText) => { manejarCodigoDetectado(decodedText); },
-          () => {}
-        ).then(() => {
-          setStatusScanner('📷 Cámara activa — apunta al código...', 'info');
-        }).catch(() => {
-          setStatusScanner('❌ Permiso de cámara denegado — actívalo en ajustes del navegador o usa entrada manual', 'error');
-        });
-      }
-    });
-  });
+    );
+    setStatusScanner('📷 Apunta al código del producto...', 'info');
+  } catch (err) {
+    // Si environment falla, intentar con cámara frontal
+    try {
+      await html5QrScanner.start(
+        { facingMode: 'user' },
+        config,
+        (decodedText) => { manejarCodigoDetectado(decodedText); },
+        () => {}
+      );
+      setStatusScanner('📷 Cámara activa — apunta al código...', 'info');
+    } catch (err2) {
+      setStatusScanner('❌ Permiso de cámara denegado — actívalo en ajustes del navegador o usa entrada manual', 'error');
+    }
+  }
 }
 
-function _detenerHtml5Qr() {
-  if (!html5QrScanner) return Promise.resolve();
-  return html5QrScanner.stop().catch(() => {}).finally(() => {
-    // Limpiar el contenedor para re-uso limpio
-    try { html5QrScanner.clear(); } catch(e) {}
-    html5QrScanner = null;
-  });
+async function _detenerHtml5Qr() {
+  if (!html5QrScanner) return;
+  try {
+    await html5QrScanner.stop();
+  } catch (e) {
+    console.warn("stop() falló:", e);
+  }
+  try {
+    await html5QrScanner.clear();
+  } catch (e) {
+    console.warn("clear() falló:", e);
+  }
+  html5QrScanner = null;
 }
 
 function manejarCodigoDetectado(codigo) {
@@ -5494,8 +5505,8 @@ function procesarCodigoEscaneado(codigo) {
   manejarCodigoDetectado(codigo);
 }
 
-function cerrarScanner() {
-  _detenerHtml5Qr().catch(() => {});
+async function cerrarScanner() {
+  await _detenerHtml5Qr();
   document.getElementById('scanner-resultado').style.display = 'none';
   _hideScannerOverlay(); // NO usa cerrarModal — completamente independiente
 }
