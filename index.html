@@ -2920,13 +2920,6 @@ async function doLogin() {
     _limpiarBloqueo();
 
     console.log("LOGIN EXITOSO: Inicializando descarga limpia de la base de datos...");
-  
-
-    // 3. Descarga síncrona/bloqueante total de los datos desde Firebase antes de dar paso a la UI
-    if (!fbFS) {
-  console.error("Firestore no inicializado");
-  return;
-}
     const docGeneral = fbFS.collection('sistema').doc('db_general');
     const docProductos = fbFS.collection('sistema').doc('db_productos');
 
@@ -7955,7 +7948,7 @@ function initTienda() {
     tndLoadCart();     // restaurar carrito (valida stock y precio actual)
     tndUpdateCartBadge();
     _renderTienda();
-    _tiendaInicializada = true;
+   _tiendaInicializada = false;
   }
 
   if (cacheValido && DB.productos && DB.productos.length > 0) {
@@ -7992,6 +7985,7 @@ function _getPromoTienda(p) {
 function _renderTienda() {
   try {
   const tiendaEl = document.getElementById('tienda-publica');
+    if (tiendaEl) tiendaEl.innerHTML = '';
   if (!tiendaEl) { console.warn('tienda-publica no encontrado'); return; }
   const config   = DB.config || {};
   const nombre   = config.nombre    || 'Minimarket Aleze';
