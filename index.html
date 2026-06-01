@@ -89,6 +89,7 @@ function _loadHtml5QrCode(cb) {
 })();
 </script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-check-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <style>
@@ -6753,9 +6754,30 @@ let _fbSnapshotUnsub = null; // Para desuscribirse si fuera necesario
 let _pedidosOnlineUnsub = null; // Listener colección pedidos_online
 
 // ── Inicializar Firestore ──
+// RECAPTCHA_SITE_KEY: reemplaza con tu clave de reCAPTCHA v3 desde Google reCAPTCHA Admin
+// Si aún no tienes clave, usa 'debug' temporalmente solo en localhost
+const RECAPTCHA_SITE_KEY = '6LcQDC8rAAAAAPqexhb5yTrNFBN2VEJSbGCCFVlV'; // ← REEMPLAZAR con tu clave real
+
 function iniciarFirebase() {
   try {
     fbApp = firebase.initializeApp(FIREBASE_CONFIG);
+
+    // ── App Check (reCAPTCHA v3) ─────────────────────────────────────────────
+    // Debe activarse DESPUÉS de initializeApp y ANTES de firestore()
+    // tokenAutoRefreshEnabled:true garantiza renovación automática en PWA
+    try {
+      const appCheck = firebase.appCheck();
+      appCheck.activate(
+        new firebase.appCheck.ReCaptchaV3Provider(RECAPTCHA_SITE_KEY),
+        true // tokenAutoRefreshEnabled
+      );
+    } catch(acErr) {
+      // App Check falla en localhost sin clave o en navegadores sin soporte
+      // No bloquea el flujo — Firestore sigue funcionando hasta activar enforce en consola
+      console.warn('App Check no activado:', acErr.message);
+    }
+    // ────────────────────────────────────────────────────────────────────────
+
     fbFS  = firebase.firestore();
     fbAuth = firebase.auth(); // Firebase Authentication para seguridad Firestore
     // Habilitar persistencia offline (cache local cuando no hay internet)
@@ -8307,14 +8329,14 @@ function tndRenderPanel() {
   if (_tndStep === 'datos') {
     titulo.textContent = '👤 Tus datos';
     body.innerHTML = `
-      <p style="font-size:.82rem;color:#6b7280;margin-bottom:1rem">Para hacer tu pedido, solo necesitamos tu nombre. También puedes guardar tu historial de compras.</p>
+      <p style="font-size:.82rem;color:#6b7280;margin-bottom:1rem">Necesitamos tus datos para confirmar tu pedido por WhatsApp.</p>
       <div class="tnd-form-group">
         <label>Nombre *</label>
         <input type="text" id="tnd-inp-nombre" placeholder="¿Cómo te llamamos?" value="${_tiendaUser?.nombre||''}" />
       </div>
       <div class="tnd-form-group">
-        <label>WhatsApp (opcional)</label>
-        <input type="text" id="tnd-inp-tel" placeholder="Ej: 987654321" value="${_tiendaUser?.tel||''}" />
+        <label>WhatsApp * <span style="font-size:.72rem;font-weight:400;color:#9ca3af">(para confirmar tu pedido)</span></label>
+        <input type="tel" id="tnd-inp-tel" placeholder="Ej: 987654321" value="${_tiendaUser?.tel||''}" inputmode="numeric" />
       </div>
       <div class="tnd-form-group">
         <label>Método de entrega *</label>
@@ -8401,8 +8423,9 @@ function tndVolverCart() {
 
 function tndIrPago() {
   const nombre = document.getElementById('tnd-inp-nombre')?.value.trim();
-  if (!nombre) { alert('Por favor ingresa tu nombre'); return; }
+  if (!nombre || nombre.length < 3) { alert('Por favor ingresa tu nombre (mínimo 3 caracteres)'); return; }
   const tel = document.getElementById('tnd-inp-tel')?.value.trim()||'';
+  if (!tel || tel.length < 7) { alert('Por favor ingresa tu número de WhatsApp (mínimo 7 dígitos)\nEsto nos permite confirmarte el pedido.'); return; }
   _tiendaUser = {
     nombre,
     tel,
@@ -8418,45 +8441,81 @@ function tndVolverDatos() {
   tndRenderPanel();
 }
 
+// ── Flag anti-doble-envío — se resetea tras éxito o error ───────────────────
+let _tndEnviando = false;
+
 function tndEnviarPedido() {
-  if (!_tiendaUser?.nombre) { alert('Falta tu nombre'); return; }
+  // ── Guardia anti-doble-clic ──────────────────────────────────────────────
+  if (_tndEnviando) return;
+
+  // ── Validaciones previas al envío ────────────────────────────────────────
+  if (!_tiendaUser?.nombre || _tiendaUser.nombre.length < 3) {
+    alert('Falta tu nombre (mínimo 3 caracteres)'); return;
+  }
+  const telLimpio = (_tiendaUser?.tel||'').replace(/\s/g,'');
+  if (!telLimpio || telLimpio.length < 7) {
+    alert('Falta tu número de WhatsApp (mínimo 7 dígitos)'); return;
+  }
+  if (_tiendaCart.length === 0) {
+    alert('Tu carrito está vacío'); return;
+  }
   const subtotal = _tiendaCart.reduce((s,i) => s+i.precio*i.cant, 0);
+  if (!subtotal || subtotal <= 0) {
+    alert('El total del pedido no es válido'); return;
+  }
+
+  // ── Bloquear botón inmediatamente ────────────────────────────────────────
+  _tndEnviando = true;
+  const btnEnviar = document.querySelector('.tnd-btn-accent');
+  if (btnEnviar) { btnEnviar.disabled = true; btnEnviar.textContent = '⏳ Enviando...'; }
+
   const waNum = DB.config.whatsappTienda || '980037284';
   const fecha = today();
-  const hora = nowTime();
+  const hora  = nowTime();
 
-  // Guardar pedido en DB
+  // ── Construir pedido con TODOS los campos requeridos por pedidoValido() ──
+  // Incluye: clienteNombre, telefono, items, total, fecha, origen
   if (!DB.pedidosOnline) DB.pedidosOnline = [];
   const clienteId = tndGetClienteId();
   const pedido = {
-    id: getId(), fecha, hora,
-    clienteId, // ID único del dispositivo/navegador
-    clienteNombre: _tiendaUser.nombre,
-    clienteTel: _tiendaUser.tel,
-    clienteDir: _tiendaUser.dir,
-    items: _tiendaCart.map(i=>({...i})),
-    total: subtotal,
-    metodo: _tndMetodo,
-    entrega: _tndEntrega,
-    estado: 'pendiente'
+    id:            getId(),
+    fecha,                          // string "YYYY-MM-DD" — requerido por reglas
+    hora,
+    clienteId,
+    clienteNombre: _tiendaUser.nombre,           // string >2 chars — validado arriba
+    clienteTel:    _tiendaUser.tel,
+    telefono:      telLimpio,                    // ← NUEVO — requerido por pedidoValido()
+    clienteDir:    _tiendaUser.dir || '',
+    items:         _tiendaCart.map(i=>({...i})), // lista >0 — validado arriba
+    total:         subtotal,                     // number >0 — validado arriba
+    metodo:        _tndMetodo,
+    entrega:       _tndEntrega,
+    estado:        'pendiente',
+    origen:        'web'                         // ← NUEVO — requerido por pedidoValido()
   };
-  // Guardar pedido en colección independiente pedidos_online/{id}
+
+  // ── Guardar en colección pedidos_online/{id} ─────────────────────────────
   // El cliente NO escribe en aleze/db — solo en pedidos_online
   if (fbFS) {
     fbFS.collection('pedidos_online').doc(String(pedido.id)).set(pedido)
+      .then(() => {
+        _tndEnviando = false; // liberar tras éxito
+      })
       .catch(e => {
-        // Fallback: guardar en DB local si Firestore falla
+        _tndEnviando = false; // liberar tras error
         console.warn('pedidos_online write error:', e.code);
+        // Fallback: guardar en DB local si Firestore rechaza
         if (!DB.pedidosOnline) DB.pedidosOnline = [];
         DB.pedidosOnline.push(pedido);
       });
   } else {
     // Sin conexión a Firebase — guardar localmente
+    _tndEnviando = false;
     if (!DB.pedidosOnline) DB.pedidosOnline = [];
     DB.pedidosOnline.push(pedido);
   }
 
-  // Guardar historial de cliente en localStorage (solo local, para el cliente)
+  // ── Guardar historial local del cliente (solo localStorage) ─────────────
   if (_tiendaUser.tel) {
     const key = 'tnd_hist_' + _tiendaUser.tel;
     try {
@@ -8467,7 +8526,7 @@ function tndEnviarPedido() {
   }
   // NO llamar fbGuardar() — el cliente ya no escribe en aleze/db
 
-  // Armar mensaje WhatsApp
+  // ── Armar mensaje WhatsApp ───────────────────────────────────────────────
   let msg = `🛒 *Nuevo pedido — ${DB.config.nombre||'Minimarket Aleze'}*\n\n`;
   msg += `👤 *Cliente:* ${_tiendaUser.nombre}\n`;
   if (_tiendaUser.tel) msg += `📱 *WhatsApp:* ${_tiendaUser.tel}\n`;
@@ -8484,7 +8543,7 @@ function tndEnviarPedido() {
   const url = `https://wa.me/51${waNum}?text=${encodeURIComponent(msg)}`;
   window.open(url, '_blank');
 
-  // Limpiar carrito — en memoria y en localStorage
+  // ── Limpiar carrito — en memoria y en localStorage ───────────────────────
   _tiendaCart = [];
   try { localStorage.removeItem('aleze_tnd_cart'); } catch(e) {}
   tndUpdateCartBadge();
