@@ -125,14 +125,15 @@ function _loadHtml5QrCode(cb) {
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
-  html { overflow-x: hidden; }
+  html { height: 100dvh; overflow: hidden; overscroll-behavior: none; }
 
   body {
     font-family: 'Segoe UI', system-ui, sans-serif;
     background: var(--gray-100);
     color: var(--gray-800);
-    height: 100vh;
+    height: 100dvh;
     overflow: hidden;
+    overscroll-behavior: none;
     display: flex;
     flex-direction: column;
   }
@@ -188,7 +189,7 @@ function _loadHtml5QrCode(cb) {
   .btn-login:hover { opacity: 0.9; }
 
   /* LAYOUT */
-  #app { display: none; height: 100vh; flex-direction: column; }
+  #app { display: none; height: 100dvh; flex-direction: column; }
   #app.visible { display: flex; }
 
   header {
@@ -254,11 +255,15 @@ function _loadHtml5QrCode(cb) {
   main {
     flex: 1;
     overflow-y: auto;
+    overflow-x: hidden;
     padding: 1.25rem;
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
   }
 
-  .page { display: none; }
-  .page.active { display: block; }
+  /* Páginas: sin overflow propio — main es el único scroll */
+  .page { display: none; overflow: visible; }
+  .page.active { display: block; overflow: visible; }
 
   .page-title {
     font-size: 1.3rem; font-weight: 700;
@@ -382,7 +387,7 @@ function _loadHtml5QrCode(cb) {
     border-radius: 14px;
     width: 90%;
     max-width: 520px;
-    max-height: 90vh;
+    max-height: 90dvh;
     overflow-y: auto;
     padding: 1.5rem;
     box-shadow: var(--shadow-md);
@@ -401,9 +406,69 @@ function _loadHtml5QrCode(cb) {
   }
 
   /* POS SPECIFIC */
-  .pos-wrap { display: grid; grid-template-columns: 1fr 380px; gap: 1rem; height: calc(100vh - var(--header-h) - 2.5rem); }
+  .pos-wrap-old { display: grid; gap: 1rem; height: calc(100dvh - var(--header-h) - 2.5rem); }
   .pos-products { overflow-y: auto; min-width: 0; }
-  .pos-cart { background: white; border-radius: var(--radius); box-shadow: var(--shadow); display: flex; flex-direction: column; overflow: hidden; height: 100%; }
+  /* ── FASE 3.2: Cart Drawer derecho ──────────────────────────────────────── */
+  /* pos-wrap ahora es una sola columna — máximo espacio para productos */
+  .pos-wrap {
+    display: flex;
+    flex-direction: column;
+    height: calc(100dvh - var(--header-h) - 2.5rem);
+  }
+  /* Barra superior desktop: búsqueda + escanear + botón carrito */
+  .pos-desktop-bar {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    margin-bottom: 0.6rem;
+    flex-shrink: 0;
+  }
+  .pos-desktop-bar .pos-search { flex: 1; margin: 0; }
+  /* Badge del botón carrito desktop */
+  #pos-cart-badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    background: var(--danger); color: white;
+    font-size: 0.7rem; font-weight: 700;
+    min-width: 18px; height: 18px;
+    border-radius: 9px; padding: 0 4px;
+    margin-left: 4px;
+    transition: transform 0.15s;
+  }
+  #pos-cart-badge.pulse {
+    animation: badgePulse 0.3s ease;
+  }
+  @keyframes badgePulse {
+    0%   { transform: scale(1); }
+    50%  { transform: scale(1.45); }
+    100% { transform: scale(1); }
+  }
+  /* El carrito es ahora un drawer fijo desde la derecha */
+  .pos-cart {
+    position: fixed;
+    top: var(--header-h);
+    right: 0;
+    width: 380px;
+    height: calc(100dvh - var(--header-h));
+    background: white;
+    box-shadow: -4px 0 24px rgba(0,0,0,0.18);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    z-index: 300;
+    transform: translateX(110%);
+    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: var(--radius) 0 0 var(--radius);
+  }
+  .pos-cart.drawer-open { transform: translateX(0); }
+  /* Overlay oscuro detrás del drawer */
+  .pos-cart-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.35);
+    z-index: 299;
+    display: none;
+    cursor: pointer;
+  }
+  .pos-cart-overlay.visible { display: block; }
   .pos-search { margin-bottom: 1rem; position: relative; }
   .pos-search input { width: 100%; padding: 0.7rem 1rem 0.7rem 2.5rem; border: 1.5px solid var(--gray-200); border-radius: 10px; font-size: 0.9rem; outline: none; }
   .pos-search input:focus { border-color: var(--primary); }
@@ -417,7 +482,7 @@ function _loadHtml5QrCode(cb) {
   .product-card .p-icon { font-size: 2rem; margin-bottom: 0.5rem; }
   .cart-header { padding: 0.75rem 1rem; border-bottom: 1px solid var(--gray-100); flex-shrink: 0; }
   .cart-header h3 { font-weight: 700; font-size: 1rem; color: var(--gray-900); }
-  .cart-items { flex: 1; overflow-y: auto; padding: 0.5rem 0.75rem; min-height: 0; }
+  .cart-items { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 0.5rem 0.75rem; min-height: 0; -webkit-overflow-scrolling: touch; }
   .cart-item { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem; border-radius: 8px; margin-bottom: 0.5rem; background: var(--gray-50); }
   .cart-item-name { flex: 1; font-size: 0.82rem; font-weight: 600; color: var(--gray-800); }
   .cart-item-qty { display: flex; align-items: center; gap: 0.25rem; }
@@ -462,8 +527,8 @@ function _loadHtml5QrCode(cb) {
   }
 
   /* ===== CART DRAWER (bottom sheet mobile) ===== */
-  .mob-cart-drawer-overlay {
-    display: none;
+  .mob-cart-drawer-overlay { display: none !important; }
+  .mob-cart-drawer-overlay-noop {
     position: fixed; inset: 0;
     background: rgba(0,0,0,0.5);
     z-index: 490;
@@ -471,13 +536,13 @@ function _loadHtml5QrCode(cb) {
   }
   .mob-cart-drawer-overlay.open { display: block; }
 
-  .mob-cart-drawer {
-    position: fixed;
+  .mob-cart-drawer { display: none !important; /* Unificado en pos-cart-panel */ }
+  .mob-cart-drawer-noop {
     bottom: 0; left: 0; right: 0;
     background: white;
     border-radius: 20px 20px 0 0;
     z-index: 500;
-    max-height: 88vh;
+    max-height: 88dvh;
     display: flex;
     flex-direction: column;
     transform: translateY(100%);
@@ -511,7 +576,7 @@ function _loadHtml5QrCode(cb) {
     display: flex; align-items: center; justify-content: center;
   }
   .mob-cart-drawer-body {
-    flex: 1; overflow-y: auto;
+    flex: 1; /* sistema oculto — drawer unificado en pos-cart */
     padding: 0.5rem 1rem;
     min-height: 0;
   }
@@ -535,7 +600,7 @@ function _loadHtml5QrCode(cb) {
       position: fixed !important;
       top: var(--header-h);
       left: 0;
-      height: calc(100vh - var(--header-h));
+      height: calc(100dvh - var(--header-h));
       width: 230px !important;
       z-index: 300;
       transform: translateX(-100%);
@@ -556,7 +621,7 @@ function _loadHtml5QrCode(cb) {
     /* page-pos oculto cuando no está activo — fix especificidad */
     #page-pos { display: none !important; }
     #page-pos.active {
-      height: calc(100vh - var(--header-h) - 62px);
+      height: calc(100dvh - var(--header-h) - 62px);
       padding: 0;
       overflow: hidden;
       display: flex !important;
@@ -778,7 +843,7 @@ function _loadHtml5QrCode(cb) {
     .modal {
       width: 100% !important;
       max-width: 100% !important;
-      max-height: 90vh !important;
+      max-height: 90dvh !important;
       overflow-y: auto !important;
       border-radius: 16px 16px 0 0 !important; /* bottom sheet */
       padding: 1.25rem 1rem 2rem !important;
@@ -813,6 +878,15 @@ function _loadHtml5QrCode(cb) {
     .card {
       padding: 0.85rem !important;
     }
+    /* pos-cart drawer: full width en móvil */
+    .pos-cart {
+      width: 92vw !important;
+      max-width: 100% !important;
+      border-radius: var(--radius) 0 0 var(--radius) !important;
+    }
+    /* Desktop bar: oculta en móvil — usa mob-pos-topbar */
+    .pos-desktop-bar { display: none !important; }
+
     .stats-grid {
       grid-template-columns: repeat(2, 1fr) !important;
       gap: 0.5rem !important;
@@ -871,6 +945,42 @@ function _loadHtml5QrCode(cb) {
     .inv-filters .form-control {
       width: 100%;
     }
+  }
+
+  /* ── FASE 3.3: Escáner fijo y centrado — nunca se mueve ────────────────── */
+  /* Aplica a TODAS las pantallas — la posición es always fixed */
+  #modal-scanner {
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 !important;
+  }
+  #modal-scanner .modal {
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    width: 88vw !important;
+    max-width: 520px !important;
+    min-height: 420px !important;
+    height: auto !important;
+    max-height: 80dvh !important;
+    border-radius: 16px !important;
+    padding: 1rem !important;
+    overflow: hidden !important;
+    margin: 0 !important;
+    /* Prevenir que el contenido interno cause reflows */
+    will-change: transform;
+  }
+  /* El visor QR ocupa el espacio disponible sin cambiar tamaño */
+  #html5-qrcode-reader {
+    width: 100% !important;
+    min-height: 260px !important;
+    overflow: hidden !important;
+  }
+  #html5-qrcode-reader video {
+    width: 100% !important;
+    height: auto !important;
+    object-fit: cover !important;
   }
 
   /* PROMO TAG */
@@ -1305,11 +1415,21 @@ function _loadHtml5QrCode(cb) {
              DESKTOP layout (>760px)
              ══════════════════════════════════ -->
         <div class="pos-tabs" style="display:none"><!-- legacy tabs hidden --></div>
+        <!-- Overlay del drawer — click fuera cierra el carrito -->
+        <div class="pos-cart-overlay" id="pos-cart-overlay" onclick="cerrarCartDrawer()"></div>
+
         <div class="pos-wrap">
           <div class="pos-products" id="pos-products-panel">
-            <div class="pos-search">
-              <span class="pos-search-icon">🔍</span>
-              <input type="text" id="pos-search" placeholder="Buscar producto o código de barras..." oninput="filterPosProducts()" />
+            <!-- Barra desktop: búsqueda + escanear + botón carrito -->
+            <div class="pos-desktop-bar">
+              <div class="pos-search">
+                <span class="pos-search-icon">🔍</span>
+                <input type="text" id="pos-search" placeholder="Buscar producto o código..." oninput="filterPosProducts()" />
+              </div>
+              <button type="button" class="btn btn-outline btn-sm" onclick="openCamScanner()">📷 Escanear</button>
+              <button type="button" class="btn btn-primary btn-sm" id="pos-cart-btn" onclick="abrirCartDrawer()">
+                🛒 Carrito <span id="pos-cart-badge">0</span>
+              </button>
             </div>
             <div style="margin-bottom:0.75rem;display:flex;gap:0.5rem;flex-wrap:wrap" id="pos-categorias"></div>
             <div class="product-grid" id="pos-grid"></div>
@@ -1319,8 +1439,8 @@ function _loadHtml5QrCode(cb) {
               <div class="flex-between">
                 <h3>🛒 Carrito de venta</h3>
                 <div style="display:flex;gap:0.5rem">
-                  <button type="button" class="btn btn-outline btn-sm" onclick="openCamScanner()">📷 Escanear</button>
                   <button type="button" class="btn btn-outline btn-sm" onclick="clearCart()" title="Vaciar carrito">🗑️ Vaciar</button>
+                  <button type="button" class="btn btn-outline btn-sm" onclick="cerrarCartDrawer()" title="Cerrar">✕</button>
                 </div>
               </div>
               <div style="margin-top:0.5rem;display:flex;gap:.4rem">
@@ -2537,7 +2657,7 @@ function _loadHtml5QrCode(cb) {
       <div style="flex:1"></div>
       <button type="button" class="btn btn-primary btn-sm" id="btn-aplicar-excel" onclick="aplicarCambiosExcel()" disabled>💾 Aplicar cambios aceptados</button>
     </div>
-    <div id="excel-review-list" style="max-height:52vh;overflow-y:auto;padding-right:0.25rem">
+    <div id="excel-review-list" style="max-height:52dvh;overflow-y:auto;padding-right:0.25rem">
       <!-- items generados por JS -->
     </div>
     <div style="display:flex;justify-content:flex-end;gap:0.5rem;margin-top:1rem;border-top:1px solid var(--gray-100);padding-top:0.75rem">
@@ -2840,6 +2960,30 @@ function doLogout() {
 }
 
 // ===================== NAVIGATION =====================
+// ── FASE 3.2: Cart Drawer Desktop ───────────────────────────────────────────
+function abrirCartDrawer() {
+  document.getElementById('pos-cart-panel').classList.add('drawer-open');
+  document.getElementById('pos-cart-overlay').classList.add('visible');
+}
+
+function cerrarCartDrawer() {
+  document.getElementById('pos-cart-panel').classList.remove('drawer-open');
+  document.getElementById('pos-cart-overlay').classList.remove('visible');
+}
+
+// Actualiza el badge del botón 🛒 desktop y lanza animación pulse
+function updatePosCartBadge() {
+  const badge = document.getElementById('pos-cart-badge');
+  if (!badge) return;
+  const total = cart.reduce((s, i) => s + i.cant, 0);
+  badge.textContent = total;
+  if (total > 0) {
+    badge.classList.remove('pulse');
+    void badge.offsetWidth; // forzar reflow para reiniciar animación
+    badge.classList.add('pulse');
+  }
+}
+
 function navigate(page) {
   checkAutoAbrirCaja();
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -2879,11 +3023,7 @@ function navigate(page) {
     if (drawer) drawer.classList.remove('open');
     if (overlay) overlay.classList.remove('open');
   }
-  // Adjust main padding-bottom so content isn't hidden behind bar
-  const mainEl = document.getElementById('main-content');
-  if (mainEl) {
-    mainEl.style.paddingBottom = (page === 'pos' && isMobile()) ? '62px' : '';
-  }
+  // Layout resuelto por CSS (dvh + height fijo) — sin paddingBottom dinámico
 }
 
 // ===================== UTILS =====================
@@ -3268,6 +3408,7 @@ function calcTotal() {
     }
   }
   document.getElementById('cart-total').textContent = sol(total);
+  try { updatePosCartBadge(); } catch(e) {} // actualizar badge desktop
 }
 
 function updatePosClientes() {
@@ -5162,18 +5303,60 @@ function setStatusScanner(msg, tipo) {
   el.textContent = msg;
 }
 
-// Abrir escáner desde POS
-function openCamScanner() {
-  // Cargar librería si aún no está disponible (lazy loading)
-  if (!window.Html5Qrcode) {
-    _loadHtml5QrCode(function() { openCamScanner(); });
-    return;
+// ── Scanner: completamente independiente del sistema de modales ─────────────
+function _showScannerOverlay() {
+  const overlay = document.getElementById('modal-scanner');
+  if (!overlay) return;
+  // Inline styles sobreescriben CUALQUIER CSS global (mayor especificidad)
+  overlay.style.cssText = [
+    'display:flex',
+    'align-items:center',
+    'justify-content:center',
+    'padding:0',
+    'position:fixed',
+    'inset:0',
+    'z-index:9999',
+    'background:rgba(0,0,0,0.82)'
+  ].join(';');
+  const modal = overlay.querySelector('.modal');
+  if (modal) {
+    modal.style.cssText = [
+      'position:relative',
+      'width:88vw',
+      'max-width:520px',
+      'height:75dvh',
+      'max-height:600px',
+      'border-radius:16px',
+      'padding:1rem',
+      'overflow:hidden',
+      'margin:0',
+      'transform:none',
+      'top:auto',
+      'left:auto',
+      'background:white',
+      'display:flex',
+      'flex-direction:column'
+    ].join(';');
   }
+  overlay.classList.add('open');
+}
+
+function _hideScannerOverlay() {
+  const overlay = document.getElementById('modal-scanner');
+  if (!overlay) return;
+  overlay.classList.remove('open');
+  overlay.style.cssText = '';
+  const modal = overlay.querySelector('.modal');
+  if (modal) modal.style.cssText = '';
+}
+
+function openCamScanner() {
+  if (!window.Html5Qrcode) { _loadHtml5QrCode(function(){ openCamScanner(); }); return; }
   scannerModo = 'pos';
   document.getElementById('scanner-titulo').textContent = '📷 Escanear producto';
   document.getElementById('scanner-manual').value = '';
   document.getElementById('scanner-resultado').style.display = 'none';
-  abrirModal('modal-scanner');
+  _showScannerOverlay();
   _iniciarHtml5Qr();
 }
 
@@ -5181,11 +5364,11 @@ function openCamScanner() {
 function abrirScannerInventario() {
   if (!window.Html5Qrcode) { _loadHtml5QrCode(function(){ abrirScannerInventario(); }); return; }
   scannerModo = 'inventario';
+  _showScannerOverlay(); // independiente del sistema de modales
   document.getElementById('scanner-titulo').textContent = '📷 Escanear código del producto';
   document.getElementById('scanner-manual').value = '';
   document.getElementById('scanner-resultado').style.display = 'none';
-  abrirModal('modal-scanner');
-  _iniciarHtml5Qr();
+  _iniciarHtml5Qr(); // _showScannerOverlay ya fue llamado antes
 }
 
 function _iniciarHtml5Qr() {
@@ -5317,7 +5500,7 @@ function procesarCodigoEscaneado(codigo) {
 function cerrarScanner() {
   _detenerHtml5Qr().catch(() => {});
   document.getElementById('scanner-resultado').style.display = 'none';
-  cerrarModal('modal-scanner');
+  _hideScannerOverlay(); // NO usa cerrarModal — completamente independiente
 }
 
 // Mantener compatibilidad con llamadas antiguas
@@ -6131,7 +6314,7 @@ function updateCartTabCount() {
 }
 
 // ===================== MOBILE POS =====================
-let mobCart = []; // mobile cart mirrors desktop cart
+let cart = []; // mobile cart mirrors desktop cart
 
 function isMobile() { return window.innerWidth <= 760; }
 
@@ -6234,62 +6417,41 @@ function mobAddToCart(prodId) {
   // 2-product combos: use regular price — discount shown in total
   const esCombo2 = promo && promo.prod2;
   const precio = (!esCombo2 && promo) ? promo.precioPromo : prod.precio;
-  const existing = mobCart.find(i => i.prodId === prodId);
+  const existing = cart.find(i => i.prodId === prodId);
   if (existing) {
     if (existing.cant >= prod.stock) { alert('Stock insuficiente'); return; }
     existing.cant++;
   } else {
-    mobCart.push({ prodId, nombre: prod.nombre, precio, cant: prod.tipo === 'granel' ? 0.5 : 1, tipo: prod.tipo, unidad: prod.unidad });
+    cart.push({ prodId, nombre: prod.nombre, precio, cant: prod.tipo === 'granel' ? 0.5 : 1, tipo: prod.tipo, unidad: prod.unidad });
   }
   mobRenderCart();
   mobCalcTotal();
   mobUpdateBar();
-  // Auto-open drawer on first item
-  if (mobCart.length === 1) {
-    const drawer = document.getElementById('mob-cart-drawer');
-    const overlay = document.getElementById('mob-cart-drawer-overlay');
-    if (drawer && !drawer.classList.contains('open')) {
-      drawer.classList.add('open');
-      overlay.classList.add('open');
-    }
-  }
+  // Badge update — drawer NO se abre automáticamente (opción B)
+  try { updatePosCartBadge(); } catch(e) {}
 }
 
 function mobRenderCart() {
-  const wrap = document.getElementById('mob-cart-drawer-items');
-  if (!wrap) return;
-  if (mobCart.length === 0) {
-    wrap.innerHTML = '<p style="text-align:center;color:var(--gray-400);font-size:0.9rem;padding:2.5rem 0">Carrito vacío — agrega productos</p>';
-    return;
-  }
-  wrap.innerHTML = mobCart.map((item, i) => `
-    <div class="cart-item">
-      <div class="cart-item-name">${item.nombre}</div>
-      <div class="cart-item-qty">
-        <button class="qty-btn" onclick="mobChangeQty(${i},-1)">−</button>
-        <span class="qty-val">${item.tipo==='granel' ? item.cant.toFixed(2) : item.cant}</span>
-        <button class="qty-btn" onclick="mobChangeQty(${i},1)">+</button>
-      </div>
-      <div class="cart-item-price">${sol(item.precio * item.cant)}</div>
-      <button class="qty-btn" onclick="mobRemoveItem(${i})" style="background:var(--danger-light);color:var(--danger)">✕</button>
-    </div>`).join('');
+  // Delegado al renderCart unificado — única fuente de verdad UI
+  renderCart();
+  try { updatePosCartBadge(); } catch(e) {}
 }
 
 function mobChangeQty(i, delta) {
-  const prod = DB.productos.find(p => p.id === mobCart[i].prodId);
-  const step = mobCart[i].tipo === 'granel' ? 0.25 : 1;
-  mobCart[i].cant = Math.max(step, Math.min(prod ? prod.stock : 999, mobCart[i].cant + delta * step));
+  const prod = DB.productos.find(p => p.id === cart[i].prodId);
+  const step = cart[i].tipo === 'granel' ? 0.25 : 1;
+  cart[i].cant = Math.max(step, Math.min(prod ? prod.stock : 999, cart[i].cant + delta * step));
   mobRenderCart(); mobCalcTotal(); mobUpdateBar();
 }
 
 function mobRemoveItem(i) {
-  mobCart.splice(i, 1);
+  cart.splice(i, 1);
   mobRenderCart(); mobCalcTotal(); mobUpdateBar();
 }
 
 function mobClearCart() {
-  if (mobCart.length && !confirm('¿Vaciar el carrito?')) return;
-  mobCart = [];
+  if (cart.length && !confirm('¿Vaciar el carrito?')) return;
+  cart = [];
   mobRenderCart(); mobCalcTotal(); mobUpdateBar();
   const search = document.getElementById('mob-pos-search');
   if (search) search.value = '';
@@ -6298,30 +6460,14 @@ function mobClearCart() {
 }
 
 function mobCalcTotal() {
-  const sub = mobCart.reduce((s, i) => s + i.precio * i.cant, 0);
-  const desc = parseFloat(document.getElementById('mob-pos-descuento')?.value) || 0;
-  const combo = calcComboDescuento(mobCart);
-  const total = Math.max(0, sub - desc - combo.total);
-  const el = document.getElementById('mob-cart-total');
-  if (el) el.textContent = sol(total);
-  // Show combo lines in mobile drawer
-  const mobComboEl = document.getElementById('mob-cart-combo-desc');
-  if (mobComboEl) {
-    if (combo.total > 0) {
-      mobComboEl.style.display = '';
-      mobComboEl.innerHTML = combo.lineas.map(l =>
-        `<div style="display:flex;justify-content:space-between;font-size:.78rem;background:var(--accent-light);border-radius:6px;padding:.22rem .45rem;margin-bottom:.2rem">
-          <span style="color:var(--accent-dark)">🎁 ${l.nombre}${l.sets>1?' ×'+l.sets:''}</span>
-          <span style="font-weight:700;color:var(--accent-dark)">-${sol(l.descuento)}</span>
-        </div>`).join('');
-    } else { mobComboEl.style.display = 'none'; }
-  }
+  // Delegado al calcTotal unificado
+  calcTotal();
   mobUpdateBar();
 }
 
 function mobUpdateBar() {
-  const count = mobCart.reduce((s, i) => s + i.cant, 0);
-  const sub = mobCart.reduce((s, i) => s + i.precio * i.cant, 0);
+  const count = cart.reduce((s, i) => s + i.cant, 0);
+  const sub = cart.reduce((s, i) => s + i.precio * i.cant, 0);
   const desc = parseFloat(document.getElementById('mob-pos-descuento')?.value) || 0;
   const total = Math.max(0, sub - desc);
   const badge = document.getElementById('mob-cart-badge');
@@ -6338,30 +6484,26 @@ function mobUpdateBar() {
 }
 
 function toggleMobCart() {
-  const drawer = document.getElementById('mob-cart-drawer');
-  const overlay = document.getElementById('mob-cart-drawer-overlay');
-  if (!drawer) return;
-  const isOpen = drawer.classList.contains('open');
-  if (isOpen) {
-    drawer.classList.remove('open');
-    overlay.classList.remove('open');
+  // Unificado: usa el drawer principal pos-cart-panel
+  const panel = document.getElementById('pos-cart-panel');
+  if (!panel) return;
+  if (panel.classList.contains('drawer-open')) {
+    cerrarCartDrawer();
   } else {
-    mobRenderCart();
-    mobCalcTotal();
-    drawer.classList.add('open');
-    overlay.classList.add('open');
+    renderCart(); calcTotal();
+    abrirCartDrawer();
   }
 }
 
 function mobCobrarFiado() {
-  if (mobCart.length === 0) { alert('El carrito está vacío'); return; }
+  if (cart.length === 0) { alert('El carrito está vacío'); return; }
   const clienteId = parseInt(document.getElementById('mob-pos-cliente')?.value) || 0;
   if (!clienteId) { alert('Selecciona un cliente para registrar el fiado'); return; }
-  const sub = mobCart.reduce((s, i) => s + i.precio * i.cant, 0);
+  const sub = cart.reduce((s, i) => s + i.precio * i.cant, 0);
   const desc = parseFloat(document.getElementById('mob-pos-descuento')?.value) || 0;
-  const comboInfo = calcComboDescuento(mobCart);
+  const comboInfo = calcComboDescuento(cart);
   const total = Math.max(0, sub - desc - comboInfo.total);
-  const itemsConPrecioReal = aplicarPreciosProporcionales(mobCart, comboInfo);
+  const itemsConPrecioReal = aplicarPreciosProporcionales(cart, comboInfo);
 
   const fiado = {
     id: getId(), clienteId,
@@ -6374,7 +6516,7 @@ DB.fiados.push(fiado);
   DB.historialVentas.push({ ...fiado, origen: 'pos', estado: 'fiado', estadoStock: 'descontado' });
 
   // Descontar stock
-  mobCart.forEach(item => {
+  cart.forEach(item => {
     const prod = DB.productos.find(p => p.id === item.prodId);
     if (prod) prod.stock = Math.max(0, prod.stock - item.cant);
   });
@@ -6391,7 +6533,7 @@ if (cli) { cli.deuda = (cli.deuda||0) + total; cli.compras = (cli.compras||0) + 
   try { renderDashboard(); } catch(e){}
   alert('Fiado registrado para ' + getClienteNombre(clienteId) + ': ' + sol(total));
 
-  mobCart = [];
+  cart = [];
   mobRenderCart(); mobCalcTotal(); mobUpdateBar();
   const descEl = document.getElementById('mob-pos-descuento');
   if (descEl) descEl.value = '';
@@ -6399,17 +6541,17 @@ if (cli) { cli.deuda = (cli.deuda||0) + total; cli.compras = (cli.compras||0) + 
 }
 
 function mobProcesarVenta() {
-  if (mobCart.length === 0) { alert('El carrito está vacío'); return; }
-  const sub = mobCart.reduce((s, i) => s + i.precio * i.cant, 0);
+  if (cart.length === 0) { alert('El carrito está vacío'); return; }
+  const sub = cart.reduce((s, i) => s + i.precio * i.cant, 0);
   const desc = parseFloat(document.getElementById('mob-pos-descuento')?.value) || 0;
-  const comboInfo = calcComboDescuento(mobCart);
+  const comboInfo = calcComboDescuento(cart);
   const comboDesc = comboInfo.total;
   const total = Math.max(0, sub - desc - comboDesc);
   const metodo = document.getElementById('mob-pos-metodo-pago')?.value || 'Efectivo';
   const clienteId = parseInt(document.getElementById('mob-pos-cliente')?.value) || null;
 
   // Build items with proportional combo prices for accurate reporting
-  const itemsConPrecioReal = aplicarPreciosProporcionales(mobCart, comboInfo);
+  const itemsConPrecioReal = aplicarPreciosProporcionales(cart, comboInfo);
 
   const venta = {
     id: getId(), fecha: today(), hora: nowTime(), cajero: currentUser,
@@ -6418,7 +6560,7 @@ function mobProcesarVenta() {
     total, metodo, clienteId
   };
   // Descontar stock
-  mobCart.forEach(item => {
+  cart.forEach(item => {
     const prod = DB.productos.find(p => p.id === item.prodId);
     if (prod) {
       prod.stock = Math.max(0, prod.stock - item.cant);
@@ -6448,7 +6590,7 @@ function mobProcesarVenta() {
   try { renderCaja(); } catch(e){}
   try { generarReporte(); } catch(e){}
   toggleMobCart();
-  mobCart = [];
+  cart = [];
   mobRenderCart(); mobCalcTotal(); mobUpdateBar();
   const descEl2 = document.getElementById('mob-pos-descuento');
   if (descEl2) descEl2.value = '';
@@ -6463,7 +6605,7 @@ function mobProcesarVenta() {
 
 function syncMobToDesktop() {
   // copy mob cart to desktop cart for shared operations
-  cart = mobCart.map(i => ({...i}));
+  cart = cart.map(i => ({...i}));
   renderCart(); calcTotal();
   document.getElementById('pos-metodo-pago').value = document.getElementById('mob-pos-metodo-pago')?.value || 'Efectivo';
   const cliId = document.getElementById('mob-pos-cliente')?.value || '';
@@ -6480,8 +6622,7 @@ function renderMobPos() {
   // Show bar only on POS
   const mobBar = document.getElementById('mob-cart-bar');
   if (mobBar) mobBar.style.display = 'flex';
-  const mainEl = document.getElementById('main-content');
-  if (mainEl) mainEl.style.paddingBottom = '62px';
+  // paddingBottom eliminado — layout controlado por CSS
 }
 
 // ===================== ADVERTENCIA AL RECARGAR =====================
@@ -7649,7 +7790,56 @@ function confirmarEntregaPedido(id) {
 // ===================== TIENDA PÚBLICA (/tienda) =====================
 // La tienda se carga en una capa separada cuando la ruta es /tienda
 let _tiendaCart = [];
-let _tiendaUser = null; // {nombre, historial:[]}
+let _tiendaUser = null; // {nombre, tel, dir}
+
+// ── Carrito persistente — localStorage ───────────────────────────────────────
+// El clienteId es único por dispositivo/navegador (no requiere login)
+function tndGetClienteId() {
+  let id = localStorage.getItem('aleze_tnd_cid');
+  if (!id) {
+    id = 'c_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
+    localStorage.setItem('aleze_tnd_cid', id);
+  }
+  return id;
+}
+
+// Guarda el carrito actual en localStorage
+function tndSaveCart() {
+  try {
+    localStorage.setItem('aleze_tnd_cart', JSON.stringify(_tiendaCart));
+  } catch(e) {}
+}
+
+// Restaura el carrito desde localStorage — valida stock y precio actual
+function tndLoadCart() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('aleze_tnd_cart') || '[]');
+    _tiendaCart = saved
+      .map(item => {
+        const prod = (DB.productos || []).find(p => p.id === item.prodId);
+        if (!prod || prod.stock <= 0) return null; // producto sin stock
+        if (prod.venc && prod.venc < today()) return null; // producto vencido
+        return { ...item, precio: prod.precio, nombre: prod.nombre }; // precio actualizado
+      })
+      .filter(Boolean);
+    tndSaveCart(); // limpia entradas inválidas
+  } catch(e) { _tiendaCart = []; }
+}
+
+// Guarda datos del cliente para pre-rellenar en próxima visita
+function tndSaveUser(nombre, tel) {
+  try {
+    localStorage.setItem('aleze_tnd_user', JSON.stringify({ nombre, tel }));
+  } catch(e) {}
+}
+
+// Carga datos guardados del cliente
+function tndLoadUser() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('aleze_tnd_user') || 'null');
+    if (saved) _tiendaUser = saved;
+  } catch(e) {}
+}
 
 function initTienda() {
   // Ocultar login y app del sistema
@@ -7672,11 +7862,18 @@ function initTienda() {
   const CACHE_MS = 5 * 60 * 1000; // 5 minutos
   const cacheValido = _fbProdCacheTs && (Date.now() - _fbProdCacheTs) < CACHE_MS;
 
-  if (cacheValido && DB.productos && DB.productos.length > 0) {
-    // Caché vigente — render inmediato sin leer Firestore
+  // Helper interno: inicializar datos persistidos y renderizar
+  function _initTiendaConDatos() {
+    tndGetClienteId(); // asegurar ID único del cliente
+    tndLoadUser();     // pre-cargar nombre/tel de visita anterior
+    tndLoadCart();     // restaurar carrito (valida stock y precio actual)
+    tndUpdateCartBadge();
     _renderTienda();
+  }
+
+  if (cacheValido && DB.productos && DB.productos.length > 0) {
+    _initTiendaConDatos();
   } else if (fbFS) {
-    // Caché expirado o primera visita — 1 lectura a db_productos
     fbProdDocRef().get().then(snap => {
       if (snap.exists) {
         const pd = snap.data();
@@ -7685,11 +7882,10 @@ function initTienda() {
         if (pd.config)     DB.config     = { ...DB.config, ...pd.config };
         _fbProdCacheTs = Date.now();
       }
-      _renderTienda();
-    }).catch(() => _renderTienda()); // fallback a datos en memoria si falla
+      _initTiendaConDatos();
+    }).catch(() => _initTiendaConDatos());
   } else {
-    // Sin Firestore — usar datos locales
-    _renderTienda();
+    _initTiendaConDatos();
   }
 }
 
@@ -7955,6 +8151,7 @@ function tndAgregarCarrito(prodId) {
   } else {
     _tiendaCart.push({ prodId, nombre: p.nombre, precio, cant: 1, icon: cat?.emoji||'📦', tipo: p.tipo });
   }
+  tndSaveCart(); // persistir en localStorage
   tndUpdateCartBadge();
   // Mini feedback
   const cards = document.querySelectorAll('.tnd-prod-card');
@@ -8097,6 +8294,7 @@ function tndCartCant(prodId, delta) {
   if (idx < 0) return;
   _tiendaCart[idx].cant += delta;
   if (_tiendaCart[idx].cant <= 0) _tiendaCart.splice(idx, 1);
+  tndSaveCart(); // persistir cambio de cantidad
   tndUpdateCartBadge();
   tndRenderPanel();
 }
@@ -8115,11 +8313,13 @@ function tndVolverCart() {
 function tndIrPago() {
   const nombre = document.getElementById('tnd-inp-nombre')?.value.trim();
   if (!nombre) { alert('Por favor ingresa tu nombre'); return; }
+  const tel = document.getElementById('tnd-inp-tel')?.value.trim()||'';
   _tiendaUser = {
     nombre,
-    tel: document.getElementById('tnd-inp-tel')?.value.trim()||'',
+    tel,
     dir: document.getElementById('tnd-inp-dir')?.value.trim()||''
   };
+  tndSaveUser(nombre, tel); // recordar para próxima visita
   _tndStep = 'pago';
   tndRenderPanel();
 }
@@ -8138,8 +8338,10 @@ function tndEnviarPedido() {
 
   // Guardar pedido en DB
   if (!DB.pedidosOnline) DB.pedidosOnline = [];
+  const clienteId = tndGetClienteId();
   const pedido = {
     id: getId(), fecha, hora,
+    clienteId, // ID único del dispositivo/navegador
     clienteNombre: _tiendaUser.nombre,
     clienteTel: _tiendaUser.tel,
     clienteDir: _tiendaUser.dir,
@@ -8193,8 +8395,9 @@ function tndEnviarPedido() {
   const url = `https://wa.me/51${waNum}?text=${encodeURIComponent(msg)}`;
   window.open(url, '_blank');
 
-  // Mostrar confirmación
+  // Limpiar carrito — en memoria y en localStorage
   _tiendaCart = [];
+  try { localStorage.removeItem('aleze_tnd_cart'); } catch(e) {}
   tndUpdateCartBadge();
   tndFiltrar();
   document.getElementById('tnd-panel-titulo').textContent = '✅ ¡Pedido enviado!';
