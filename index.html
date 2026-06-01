@@ -7913,7 +7913,7 @@ function tndLoadUser() {
 // Guard: evita re-inicializar la tienda si ya fue montada (previene eventos duplicados)
 let _tiendaInicializada = false;
 
-function initTienda() {
+async function initTienda(){
   // Ocultar login y app del sistema
   document.getElementById('login-screen').classList.remove('visible');
   const appEl = document.getElementById('app');
@@ -7948,25 +7948,32 @@ function initTienda() {
     tndLoadCart();     // restaurar carrito (valida stock y precio actual)
     tndUpdateCartBadge();
     _renderTienda();
-   _tiendaInicializada = false;
+  _tiendaInicializada = true;
   }
 
-  if (cacheValido && DB.productos && DB.productos.length > 0) {
+if (DB.productos && DB.productos.length > 0) {
+  _initTiendaConDatos();
+} else if (fbFS) {
+  try {
+    const snap = await fbProdDocRef().get();
+
+    if (snap.exists) {
+      const pd = snap.data();
+      if (pd.productos)  DB.productos  = pd.productos;
+      if (pd.categorias) DB.categorias = pd.categorias;
+      if (pd.config)     DB.config     = { ...DB.config, ...pd.config };
+      _fbProdCacheTs = Date.now();
+    }
+
     _initTiendaConDatos();
-  } else if (fbFS) {
-    fbProdDocRef().get().then(snap => {
-      if (snap.exists) {
-        const pd = snap.data();
-        if (pd.productos)  DB.productos  = pd.productos;
-        if (pd.categorias) DB.categorias = pd.categorias;
-        if (pd.config)     DB.config     = { ...DB.config, ...pd.config };
-        _fbProdCacheTs = Date.now();
-      }
-      _initTiendaConDatos();
-    }).catch(() => _initTiendaConDatos());
-  } else {
+
+  } catch (e) {
+    console.error("Error cargando productos:", e);
     _initTiendaConDatos();
   }
+} else {
+  _initTiendaConDatos();
+}
 }
 
 function _getStockBadge(p) {
