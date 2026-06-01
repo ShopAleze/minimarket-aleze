@@ -2809,12 +2809,6 @@ function resetAppState() {
   const adminNav = document.getElementById('admin-nav');
   if (adminNav) adminNav.style.display = '';
 }
-// ===================== LOGIN =====================
-
-
-  // 🔥 Limpiar elementos visuales sensibles de la UI administrativa
-  const adminNav = document.getElementById('admin-nav');
-  if (adminNav) adminNav.style.display = 'none'; // Se oculta por seguridad por defecto
 }
 // ===================== LOGIN =====================
 // ── Bloqueo por intentos fallidos ──────────────────────────────────────────
@@ -2890,6 +2884,7 @@ function _mostrarBloqueo(hasta) {
 }
 
 async function doLogin() {
+  resetAppState();
   const btnEl = document.getElementById('login-btn');
   const selEl = document.getElementById('login-user');
   const passEl = document.getElementById('login-pass');
@@ -2930,9 +2925,7 @@ async function doLogin() {
     _limpiarBloqueo();
 
     console.log("LOGIN EXITOSO: Inicializando descarga limpia de la base de datos...");
-    
-    // 2. Forzar limpieza absoluta de la memoria local previa de la App antes de pintar la UI
-    resetAppState();
+  
 
     // 3. Descarga síncrona/bloqueante total de los datos desde Firebase antes de dar paso a la UI
     const docGeneral = fbFS.collection('sistema').doc('db_general');
@@ -2966,7 +2959,14 @@ async function doLogin() {
     fbEscucharPedidosOnline();
 
     // 6. Pasar al renderizado de interfaz (Pintar la UI con datos cargados al 100%)
-    _postLoginRender();
+if (role !== 'admin') {
+  document.getElementById('admin-nav').style.display = 'none';
+  navigate('pos');
+} else {
+  renderDashboard();
+}
+
+updateAlertCount();
 
   } catch (fbErr) {
     console.error("Error en proceso de login/descarga:", fbErr);
