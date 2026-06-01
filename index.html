@@ -2929,13 +2929,48 @@ async function doLogin() {
   document.getElementById('header-username').textContent = name;
   document.getElementById('header-avatar').textContent = name.substring(0,2).toUpperCase();
   document.getElementById('header-role').textContent = role === 'admin' ? '(Admin)' : '(Cajero)';
-  if (role !== 'admin') {
-    document.getElementById('admin-nav').style.display = 'none';
-    navigate('pos');
-  } else {
-    renderDashboard();
+
+  // Render controlado: solo ejecutar después de que los datos estén cargados.
+  // Si la carga inicial de Firebase aún no completó (_fbProdCacheTs === 0),
+  // esperar la carga antes de renderizar para evitar UI incompleta.
+  function _postLoginRender() {
+    if (role !== 'admin') {
+      document.getElementById('admin-nav').style.display = 'none';
+      navigate('pos');
+    } else {
+      renderDashboard();
+    }
+    updateAlertCount();
   }
-  updateAlertCount();
+
+  if (_fbProdCacheTs > 0 || !fbFS) {
+    // Datos ya disponibles en memoria → render inmediato
+    _postLoginRender();
+  } else {
+    // Datos aún cargando → esperar carga completa antes de renderizar
+    const promOp   = fbDocRef().get();
+    const promProd = fbProdDocRef().get();
+    Promise.all([promOp, promProd]).then(([snapOp, snapProd]) => {
+      if (snapOp.exists) {
+        const data = snapOp.data();
+        const camposOp = ['ventas','clientes','fiados','mermas','movimientos',
+                          'proveedores','promociones','caja','config','inventariosMensuales','historialVentas','pedidosOnline'];
+        camposOp.forEach(k => { if (k in data && k in DB) DB[k] = data[k]; });
+        if (data.config && data.config.passwords) Object.assign(PASSWORDS, data.config.passwords);
+      }
+      if (snapProd.exists) {
+        const pd = snapProd.data();
+        if (pd.productos)  DB.productos  = pd.productos;
+        if (pd.categorias) DB.categorias = pd.categorias;
+        if (pd.config)     DB.config     = { ...DB.config, ...pd.config };
+        _fbProdCacheTs = Date.now();
+      }
+      _postLoginRender();
+    }).catch(() => {
+      // Si falla la carga, renderizar con los datos que haya en memoria
+      _postLoginRender();
+    });
+  }
 
   // 4. Listener pedidos_online en tiempo real
   fbEscucharPedidosOnline();
@@ -2944,6 +2979,8 @@ async function doLogin() {
 function doLogout() {
   currentUser = null; currentRole = null;
   cart = [];
+  // Limpiar estado de la tienda pública para forzar recarga completa en próximo acceso
+  _tiendaInicializada = false;
   // Detener listener de pedidos_online
   if (_pedidosOnlineUnsub) { _pedidosOnlineUnsub(); _pedidosOnlineUnsub = null; }
   // Cerrar sesión Firebase en segundo plano
@@ -7849,6 +7886,9 @@ function tndLoadUser() {
   } catch(e) {}
 }
 
+// Guard: evita re-inicializar la tienda si ya fue montada (previene eventos duplicados)
+let _tiendaInicializada = false;
+
 function initTienda() {
   // Ocultar login y app del sistema
   document.getElementById('login-screen').classList.remove('visible');
@@ -7864,6 +7904,13 @@ function initTienda() {
   }
   tiendaEl.style.display = 'block';
 
+  // Si la tienda ya fue inicializada y el DOM está montado, solo re-filtrar sin recrear
+  if (_tiendaInicializada && document.getElementById('tnd-grid')) {
+    tndRenderCats();
+    tndFiltrar();
+    return;
+  }
+
   // Cargar catálogo desde db_productos con caché de 5 minutos
   // Si ya están en memoria y el caché es reciente → render directo (0 lecturas)
   // Si el caché expiró o no hay datos → 1 lectura a db_productos
@@ -7877,6 +7924,7 @@ function initTienda() {
     tndLoadCart();     // restaurar carrito (valida stock y precio actual)
     tndUpdateCartBadge();
     _renderTienda();
+    _tiendaInicializada = true;
   }
 
   if (cacheValido && DB.productos && DB.productos.length > 0) {
@@ -8119,6 +8167,8 @@ function tndFiltrar() {
 
   const grid = document.getElementById('tnd-grid');
   if (!grid) return;
+  // Limpiar contenedor antes de renderizar — previene acumulación de nodos huérfanos
+  grid.innerHTML = '';
   grid.innerHTML = prods.map(p => {
     const agotado = p.stock <= 0;
     const cat = (DB.categorias||[]).find(c => c.id === p.cat);
@@ -8132,7 +8182,8 @@ function tndFiltrar() {
     const precioCat = p.costo ? Math.ceil(p.costo * (1 + ((DB.categorias||[]).find(c=>c.id===p.cat)?.margen||0)/100) * 10) / 10 : null;
     const sugerido = precioCat && precioCat !== p.precio ? precioCat : null;
 
-    return `<div class="tnd-prod-card ${agotado?'agotado':''}" onclick="${agotado?'':('tndAgregarCarrito('+p.id+')')}">
+    // data-prodid permite feedback visual exacto sin comparar strings de onclick
+    return `<div class="tnd-prod-card ${agotado?'agotado':''}" data-prodid="${p.id}" onclick="${agotado?'':('tndAgregarCarrito('+p.id+')')}">
       <div class="tnd-prod-badge">${badge}</div>
       ${promo ? `<div class="tnd-prod-promo">🔥 ${promo.nombre||'Promo'}</div>` : ''}
       <div class="tnd-prod-icon">${icon}</div>
@@ -8161,14 +8212,12 @@ function tndAgregarCarrito(prodId) {
   }
   tndSaveCart(); // persistir en localStorage
   tndUpdateCartBadge();
-  // Mini feedback
-  const cards = document.querySelectorAll('.tnd-prod-card');
-  cards.forEach(card => {
-    if (card.onclick && card.getAttribute('onclick')?.includes(''+prodId)) {
-      card.style.borderColor = '#10B981';
-      setTimeout(() => { card.style.borderColor = ''; }, 500);
-    }
-  });
+  // Mini feedback visual — selector exacto por data-prodid (un solo elemento)
+  const card = document.querySelector(`.tnd-prod-card[data-prodid="${prodId}"]`);
+  if (card) {
+    card.style.borderColor = '#10B981';
+    setTimeout(() => { card.style.borderColor = ''; }, 500);
+  }
 }
 
 function tndUpdateCartBadge() {
