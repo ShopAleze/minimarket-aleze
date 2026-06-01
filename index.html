@@ -2790,14 +2790,11 @@ let posFilterCat = '';
 // scannerStream eliminado — html5-qrcode gestiona su propio stream
   // ===================== LOGIN =====================
 function resetAppState() {
-  console.log("RESET ESTADO COMPLETO");
   currentUser = null;
   currentRole = null;
   cart = [];
-  // 🔥 CRÍTICO
   _fbProdCacheTs = 0;
 
-  // 🔥 CRÍTICO: limpiar DB sin romper referencia
   if (DB) {
     Object.keys(DB).forEach(k => {
       if (Array.isArray(DB[k])) DB[k] = [];
@@ -2805,10 +2802,8 @@ function resetAppState() {
     });
   }
 
-// 🔥 limpiar UI sensible
-const adminNav = document.getElementById('admin-nav');
-if (adminNav) adminNav.style.display = '';
-}
+  const adminNav = document.getElementById('admin-nav');
+  if (adminNav) adminNav.style.display = '';
 }
 // ===================== LOGIN =====================
 // ── Bloqueo por intentos fallidos ──────────────────────────────────────────
@@ -2928,12 +2923,18 @@ async function doLogin() {
   
 
     // 3. Descarga síncrona/bloqueante total de los datos desde Firebase antes de dar paso a la UI
+    if (!fbFS) {
+  console.error("Firestore no inicializado");
+  return;
+}
     const docGeneral = fbFS.collection('sistema').doc('db_general');
     const docProductos = fbFS.collection('sistema').doc('db_productos');
 
     // Usar Promise.all de manera limpia para garantizar la descarga paralela y obligatoria
-    const [snapGen, snapProd] = await Promise.all([docGeneral.get(), docProductos.get()]);
+    console.log("Cargando datos Firebase...");
+   const [snapGen, snapProd] = await Promise.all([docGeneral.get(), docProductos.get()]);
 
+console.log("Datos cargados"); 
     if (snapGen.exists) {
       const data = snapGen.data();
       const camposOp = ['ventas', 'clientes', 'fiados', 'mermas', 'movimientos', 'proveedores', 'promociones', 'caja', 'config', 'inventariosMensuales', 'historialVentas', 'pedidosOnline'];
