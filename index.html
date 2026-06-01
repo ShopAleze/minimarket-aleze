@@ -3016,12 +3016,9 @@ function navigate(page) {
   if (mobBar) {
     mobBar.style.display = (page === 'pos' && isMobile()) ? 'flex' : 'none';
   }
-  // Also hide drawer when navigating away from POS
+  // Cerrar drawer unificado al salir del POS
   if (page !== 'pos') {
-    const drawer = document.getElementById('mob-cart-drawer');
-    const overlay = document.getElementById('mob-cart-drawer-overlay');
-    if (drawer) drawer.classList.remove('open');
-    if (overlay) overlay.classList.remove('open');
+    try { cerrarCartDrawer(); } catch(e) {}
   }
   // Layout resuelto por CSS (dvh + height fijo) — sin paddingBottom dinámico
 }
@@ -6314,7 +6311,7 @@ function updateCartTabCount() {
 }
 
 // ===================== MOBILE POS =====================
-let cart = []; // mobile cart mirrors desktop cart
+// cart[] ya declarado globalmente — sistema unificado
 
 function isMobile() { return window.innerWidth <= 760; }
 
