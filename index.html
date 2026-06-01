@@ -2788,7 +2788,29 @@ let editingFiadoId = null;
 let chartVentas = null, chartMetodos = null, chartReporte = null;
 let posFilterCat = '';
 // scannerStream eliminado — html5-qrcode gestiona su propio stream
+// ===================== LOGIN =====================
+function resetAppState() {
+  console.log("RESET ESTADO COMPLETO");
 
+  currentUser = null;
+  currentRole = null;
+  cart = [];
+
+  // 🔥 CRÍTICO: Reiniciar marcas de tiempo de caché
+  _fbProdCacheTs = 0;
+
+  // 🔥 CRÍTICO: Limpiar DB global sin romper su referencia en memoria
+  if (DB) {
+    Object.keys(DB).forEach(k => {
+      if (Array.isArray(DB[k])) DB[k] = [];
+      else if (typeof DB[k] === 'object') DB[k] = {};
+    });
+  }
+
+  // 🔥 Limpiar elementos visuales sensibles de la UI administrativa
+  const adminNav = document.getElementById('admin-nav');
+  if (adminNav) adminNav.style.display = 'none'; // Se oculta por seguridad por defecto
+}
 // ===================== LOGIN =====================
 // ── Bloqueo por intentos fallidos ──────────────────────────────────────────
 // Logo embebido como constante — evita duplicar base64 en el DOM
@@ -2863,43 +2885,96 @@ function _mostrarBloqueo(hasta) {
 }
 
 async function doLogin() {
-  // 1. Bloqueo local por intentos fallidos
-  const bloqueoTs = parseInt(localStorage.getItem('aleze_bloqueo') || '0');
-  if (bloqueoTs > Date.now()) { _mostrarBloqueo(bloqueoTs); return; }
-
-  const sel   = document.getElementById('login-user').value;
-  const pass  = document.getElementById('login-pass').value;
+  const btnEl = document.getElementById('login-btn');
+  const selEl = document.getElementById('login-user');
+  const passEl = document.getElementById('login-pass');
   const errEl = document.getElementById('login-error');
-  const btnEl = document.querySelector('.btn-login');
+
+  const sel = selEl ? selEl.value : '';
+  const pass = passEl ? passEl.value : '';
+
   if (errEl) errEl.style.display = 'none';
 
   if (!sel || !pass) {
-    if (errEl) { errEl.style.display='block'; errEl.style.color='var(--danger)'; errEl.textContent='Selecciona usuario e ingresa contraseña'; }
+    if (errEl) {
+      errEl.style.display = 'block';
+      errEl.textContent = 'Selecciona usuario e ingresa contraseña';
+    }
     return;
   }
 
   const [name, role] = sel.split('|');
   const email = FIREBASE_USERS[name];
+
   if (!email) {
-    if (errEl) { errEl.style.display='block'; errEl.style.color='var(--danger)'; errEl.textContent='Usuario no configurado'; }
+    if (errEl) {
+      errEl.style.display = 'block';
+      errEl.textContent = 'Usuario no configurado';
+    }
     return;
   }
 
-  // 2. Firebase Auth — única fuente de verdad (contraseñas nunca en el código)
-  if (btnEl) { btnEl.disabled = true; btnEl.textContent = '⏳ Verificando...'; }
+  if (btnEl) {
+    btnEl.disabled = true;
+    btnEl.textContent = '⏳ Verificando...';
+  }
 
   try {
+    // 1. Autenticación en Firebase Auth como única fuente de verdad
     await fbAuth.signInWithEmailAndPassword(email, pass);
-    // Auth exitosa — limpiar contadores
     _limpiarBloqueo();
-  } catch(fbErr) {
-    if (btnEl) { btnEl.disabled = false; btnEl.textContent = 'Ingresar'; }
-    document.getElementById('login-pass').value = '';
+
+    console.log("LOGIN EXITOSO: Inicializando descarga limpia de la base de datos...");
+    
+    // 2. Forzar limpieza absoluta de la memoria local previa de la App antes de pintar la UI
+    resetAppState();
+
+    // 3. Descarga síncrona/bloqueante total de los datos desde Firebase antes de dar paso a la UI
+    const docGeneral = fbFS.collection('sistema').doc('db_general');
+    const docProductos = fbFS.collection('sistema').doc('db_productos');
+
+    // Usar Promise.all de manera limpia para garantizar la descarga paralela y obligatoria
+    const [snapGen, snapProd] = await Promise.all([docGeneral.get(), docProductos.get()]);
+
+    if (snapGen.exists) {
+      const data = snapGen.data();
+      const camposOp = ['ventas', 'clientes', 'fiados', 'mermas', 'movimientos', 'proveedores', 'promociones', 'caja', 'config', 'inventariosMensuales', 'historialVentas', 'pedidosOnline'];
+      camposOp.forEach(k => {
+        if (k in data && k in DB) DB[k] = data[k];
+      });
+      if (data.config && data.config.passwords) Object.assign(PASSWORDS, data.config.passwords);
+    }
+
+    if (snapProd.exists) {
+      const pd = snapProd.data();
+      if (pd.productos) DB.productos = pd.productos;
+      if (pd.categorias) DB.categorias = pd.categorias;
+      if (pd.config) DB.config = { ...DB.config, ...pd.config };
+      _fbProdCacheTs = Date.now(); // Fijar estampa de tiempo actual tras la descarga exitosa
+    }
+
+    // 4. Encapsular rol y usuario autenticado de forma limpia en variables globales exclusivas
+    currentUser = name;
+    currentRole = role;
+
+    // 5. Iniciar escuchador en tiempo real de pedidos online
+    fbEscucharPedidosOnline();
+
+    // 6. Pasar al renderizado de interfaz (Pintar la UI con datos cargados al 100%)
+    _postLoginRender();
+
+  } catch (fbErr) {
+    console.error("Error en proceso de login/descarga:", fbErr);
+    if (btnEl) {
+      btnEl.disabled = false;
+      btnEl.textContent = 'Ingresar';
+    }
+    if (passEl) passEl.value = '';
 
     let msg = 'Error de acceso. Intenta de nuevo.';
     if (fbErr.code === 'auth/wrong-password' || fbErr.code === 'auth/invalid-credential') {
-      const bloqueado = _registrarIntento();
-      if (bloqueado) {
+      const deBloqueo = _registrarIntento();
+      if (deBloqueo) {
         _mostrarBloqueo(parseInt(localStorage.getItem('aleze_bloqueo')));
         return;
       }
@@ -2907,90 +2982,40 @@ async function doLogin() {
       msg = `Contraseña incorrecta. ${restantes} intento(s) restante(s).`;
     } else if (fbErr.code === 'auth/too-many-requests') {
       msg = '⚠️ Demasiados intentos. Espera unos minutos.';
-    } else if (fbErr.code === 'auth/network-request-failed') {
-      msg = '⚠️ Sin conexión a internet. Verifica tu red.';
-    } else if (fbErr.code === 'auth/user-not-found') {
-      msg = 'Usuario no encontrado en Firebase. Contacta al administrador.';
     }
 
-    if (errEl) { errEl.style.display='block'; errEl.style.color='var(--danger)'; errEl.textContent=msg; }
-    return;
-  }
-
-  // 3. Acceso concedido — entrar al sistema
-  if (_loginIntervalo) { clearInterval(_loginIntervalo); _loginIntervalo = null; }
-  if (errEl) errEl.style.display = 'none';
-  if (btnEl) { btnEl.disabled = false; btnEl.textContent = 'Ingresar'; btnEl.style.opacity = ''; }
-
-  currentUser = name;
-  currentRole = role;
-  document.getElementById('login-screen').classList.remove('visible');
-  document.getElementById('app').classList.add('visible');
-  document.getElementById('header-username').textContent = name;
-  document.getElementById('header-avatar').textContent = name.substring(0,2).toUpperCase();
-  document.getElementById('header-role').textContent = role === 'admin' ? '(Admin)' : '(Cajero)';
-
-  // Render controlado: solo ejecutar después de que los datos estén cargados.
-  // Si la carga inicial de Firebase aún no completó (_fbProdCacheTs === 0),
-  // esperar la carga antes de renderizar para evitar UI incompleta.
-  function _postLoginRender() {
-    if (role !== 'admin') {
-      document.getElementById('admin-nav').style.display = 'none';
-      navigate('pos');
-    } else {
-      renderDashboard();
+    if (errEl) {
+      errEl.style.display = 'block';
+      errEl.style.color = 'var(--danger)';
+      errEl.textContent = msg;
     }
-    updateAlertCount();
   }
-
-  if (_fbProdCacheTs > 0 || !fbFS) {
-    // Datos ya disponibles en memoria → render inmediato
-    _postLoginRender();
-  } else {
-    // Datos aún cargando → esperar carga completa antes de renderizar
-    const promOp   = fbDocRef().get();
-    const promProd = fbProdDocRef().get();
-    Promise.all([promOp, promProd]).then(([snapOp, snapProd]) => {
-      if (snapOp.exists) {
-        const data = snapOp.data();
-        const camposOp = ['ventas','clientes','fiados','mermas','movimientos',
-                          'proveedores','promociones','caja','config','inventariosMensuales','historialVentas','pedidosOnline'];
-        camposOp.forEach(k => { if (k in data && k in DB) DB[k] = data[k]; });
-        if (data.config && data.config.passwords) Object.assign(PASSWORDS, data.config.passwords);
-      }
-      if (snapProd.exists) {
-        const pd = snapProd.data();
-        if (pd.productos)  DB.productos  = pd.productos;
-        if (pd.categorias) DB.categorias = pd.categorias;
-        if (pd.config)     DB.config     = { ...DB.config, ...pd.config };
-        _fbProdCacheTs = Date.now();
-      }
-      _postLoginRender();
-    }).catch(() => {
-      // Si falla la carga, renderizar con los datos que haya en memoria
-      _postLoginRender();
-    });
-  }
-
-  // 4. Listener pedidos_online en tiempo real
-  fbEscucharPedidosOnline();
 }
-
 function doLogout() {
-  currentUser = null; currentRole = null;
+  currentUser = null; 
+  currentRole = null;
   cart = [];
+
   // Limpiar estado de la tienda pública para forzar recarga completa en próximo acceso
   _tiendaInicializada = false;
+
   // Detener listener de pedidos_online
-  if (_pedidosOnlineUnsub) { _pedidosOnlineUnsub(); _pedidosOnlineUnsub = null; }
+  if (_pedidosOnlineUnsub) { 
+    _pedidosOnlineUnsub(); 
+    _pedidosOnlineUnsub = null; 
+  }
+
   // Cerrar sesión Firebase en segundo plano
   if (fbAuth) fbAuth.signOut().catch(() => {});
+
   document.getElementById('login-screen').classList.add('visible');
   document.getElementById('app').classList.remove('visible');
   document.getElementById('login-user').value = '';
   document.getElementById('login-pass').value = '';
+
   const errEl = document.getElementById('login-error');
   if (errEl) errEl.style.display = 'none';
+
   // Restaurar bloqueo si sigue activo
   const bloqueoTs = parseInt(localStorage.getItem('aleze_bloqueo') || '0');
   if (bloqueoTs > Date.now()) _mostrarBloqueo(bloqueoTs);
