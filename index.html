@@ -2788,7 +2788,7 @@ let editingFiadoId = null;
 let chartVentas = null, chartMetodos = null, chartReporte = null;
 let posFilterCat = '';
 // scannerStream eliminado — html5-qrcode gestiona su propio stream
-// ===================== LOGIN =====================
+  // ===================== LOGIN =====================
 function resetAppState() {
   console.log("RESET ESTADO COMPLETO");
 
@@ -2796,16 +2796,23 @@ function resetAppState() {
   currentRole = null;
   cart = [];
 
-  // 🔥 CRÍTICO: Reiniciar marcas de tiempo de caché
+  // 🔥 CRÍTICO
   _fbProdCacheTs = 0;
 
-  // 🔥 CRÍTICO: Limpiar DB global sin romper su referencia en memoria
+  // 🔥 CRÍTICO: limpiar DB sin romper referencia
   if (DB) {
     Object.keys(DB).forEach(k => {
       if (Array.isArray(DB[k])) DB[k] = [];
       else if (typeof DB[k] === 'object') DB[k] = {};
     });
   }
+
+  // 🔥 limpiar UI sensible
+  const adminNav = document.getElementById('admin-nav');
+  if (adminNav) adminNav.style.display = '';
+}
+// ===================== LOGIN =====================
+
 
   // 🔥 Limpiar elementos visuales sensibles de la UI administrativa
   const adminNav = document.getElementById('admin-nav');
