@@ -6756,25 +6756,27 @@ let _pedidosOnlineUnsub = null; // Listener colección pedidos_online
 // ── Inicializar Firestore ──
 // RECAPTCHA_SITE_KEY: reemplaza con tu clave de reCAPTCHA v3 desde Google reCAPTCHA Admin
 // Si aún no tienes clave, usa 'debug' temporalmente solo en localhost
-const RECAPTCHA_SITE_KEY = '6Lcd8QctAAAAAIiLY3GPfFFP7U6K9ff4gON8TsE3'; // ← REEMPLAZAR con tu clave real
+const RECAPTCHA_SITE_KEY = '6LcQDC8rAAAAAPqexhb5yTrNFBN2VEJSbGCCFVlV'; // ← REEMPLAZAR con tu clave real
 
 function iniciarFirebase() {
   try {
     fbApp = firebase.initializeApp(FIREBASE_CONFIG);
 
-    // ── App Check (reCAPTCHA v3) ─────────────────────────────────────────────
-    // Debe activarse DESPUÉS de initializeApp y ANTES de firestore()
-    // tokenAutoRefreshEnabled:true garantiza renovación automática en PWA
+    // ── App Check (reCAPTCHA v3) — SDK Compat syntax ────────────────────────
+    // firebase-app-check-compat.js expone firebase.appCheck() directamente
+    // El provider se pasa como objeto {siteKey} — NO como clase constructora
     try {
-      const appCheck = firebase.appCheck();
-      appCheck.activate(
-        new firebase.appCheck.ReCaptchaV3Provider(RECAPTCHA_SITE_KEY),
-        true // tokenAutoRefreshEnabled
+      firebase.appCheck().activate(
+        {
+          siteKey: RECAPTCHA_SITE_KEY,
+          // 'recaptcha-v3' es el tipo de provider para el SDK compat
+          type: 'recaptcha-v3'
+        },
+        true // tokenAutoRefreshEnabled — esencial para PWA y sesiones largas
       );
+      console.log('[AppCheck] activado correctamente');
     } catch(acErr) {
-      // App Check falla en localhost sin clave o en navegadores sin soporte
-      // No bloquea el flujo — Firestore sigue funcionando hasta activar enforce en consola
-      console.warn('App Check no activado:', acErr.message);
+      console.warn('[AppCheck] no activado — la app sigue funcionando:', acErr.message);
     }
     // ────────────────────────────────────────────────────────────────────────
 
