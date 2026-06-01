@@ -2793,33 +2793,41 @@ function resetAppState() {
   cart = [];
   _fbProdCacheTs = 0;
 
-  // Limpiar DB sin romper los interceptores de fbPatchDB.
-  // Object.getOwnPropertyDescriptor detecta si ya hay setter activo.
-  const _resetField = (obj, key, emptyVal) => {
-    const desc = Object.getOwnPropertyDescriptor(obj, key);
-    if (desc && desc.set) {
-      // Setter activo: escribir directamente en el _val interno
-      // vía set para que el proxy quede en sync, pero con _fbEscribiendo=true
-      // para que el onSnapshot no haga eco.
-      const prev = _fbEscribiendo;
-      _fbEscribiendo = true;
-      obj[key] = emptyVal;
-      _fbEscribiendo = prev;
+  // Limpiar campos operativos en memoria SIN disparar fbGuardar a Firebase.
+  // fbPatchDB instala setters con configurable:true — redefinimos el campo
+  // con Object.defineProperty apuntando directamente al nuevo _val vacío,
+  // para no activar el setter original que llamaría fbGuardar().
+  const _vaciarCampo = (key, emptyVal) => {
+    const desc = Object.getOwnPropertyDescriptor(DB, key);
+    if (desc && typeof desc.set === 'function') {
+      // Setter activo: re-definir con el mismo patrón pero nuevo _val
+      let _val = emptyVal;
+      Object.defineProperty(DB, key, {
+        get() { return _val; },
+        set(v) { _val = v; key === 'productos' || key === 'categorias' ? fbGuardarProductos() : fbGuardar(); },
+        configurable: true,
+        enumerable: true
+      });
     } else {
-      obj[key] = emptyVal;
+      DB[key] = emptyVal;
     }
   };
 
-  // Campos operativos (arrays)
-  ['ventas','clientes','fiados','mermas','movimientos',
-   'proveedores','promociones','pedidosOnline'].forEach(k => _resetField(DB, k, []));
+  // Solo campos operativos — productos/categorías NO se tocan
+  _vaciarCampo('ventas', []);
+  _vaciarCampo('clientes', []);
+  _vaciarCampo('fiados', []);
+  _vaciarCampo('mermas', []);
+  _vaciarCampo('movimientos', []);
+  _vaciarCampo('proveedores', []);
+  _vaciarCampo('promociones', []);
+  _vaciarCampo('pedidosOnline', []);
+  _vaciarCampo('inventariosMensuales', []);
+  _vaciarCampo('historialVentas', []);
 
-  // Campos que son objetos
-  _resetField(DB, 'caja', { abierta:false, inicial:0, ingresos:0, egresos:0, turnoInicio:null, cajero:'', fecha:'' });
-  _resetField(DB, 'config', { nombre:'Minimarket Aleze', direccion:'', telefono:'', ticketMsg:'¡Gracias por su compra!', diasVenc:7, whatsappTienda:'', montoAperturaAuto:0 });
-
-  // Productos y categorías: NO se resetean — pertenecen al catálogo público
-  // y se recargan desde Firebase en doLogin.
+  // caja y config: asignación directa (no están en el patch de setters)
+  DB.caja = { abierta: false, inicial: 0, ingresos: 0, egresos: 0, turnoInicio: null, cajero: '', fecha: '' };
+  // config NO se resetea — se preserva el valor cargado desde Firebase
 
   // Ocultar nav de admin si quedó visible
   const adminNav = document.getElementById('admin-nav');
@@ -3176,8 +3184,8 @@ function cerrarModal(id) { document.getElementById(id).classList.remove('open');
 
 // ===================== DASHBOARD =====================
 function renderDashboard() {
-  // Guard: no renderizar si el usuario no está autenticado o los datos no cargaron
-  if (!currentUser || !DB.productos || DB.productos.length === 0) return;
+  // Guard: solo renderizar si hay sesión activa
+  if (!currentUser) return;
   const hLogoImg = document.getElementById('header-logo-img');
   if (hLogoImg && !hLogoImg.src) hLogoImg.src = _LOGO_B64;
   const hoy = today();
@@ -3302,15 +3310,10 @@ function renderPosCategorias() {
 function setPosFilter(id) { posFilterCat = id; renderPosCategorias(); renderPosGrid(); }
 
 function renderPosGrid(search = '') {
-  // Guard: no renderizar si los productos no cargaron
-  if (!DB.productos || DB.productos.length === 0) {
-    const grid = document.getElementById('pos-grid');
-    if (grid) grid.innerHTML = '<p style="color:var(--gray-400);font-size:0.85rem;padding:1rem">Cargando productos...</p>';
-    return;
-  }
+  // Guard: no renderizar sin sesión activa
+  if (!currentUser) return;
+  const s = search || document.getElementById('pos-search').value.toLowerCase();
   let prods = DB.productos.filter(p => p.stock > 0);
-  if (posFilterCat) prods = prods.filter(p => p.cat == posFilterCat);
-  if (s) prods = prods.filter(p => p.nombre.toLowerCase().includes(s) || p.codigo.includes(s));
 
   const promoActivas = DB.promociones.filter(p => p.activa && p.hasta >= today());
 
