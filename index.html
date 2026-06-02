@@ -455,7 +455,7 @@ function _loadHtml5QrCode(cb) {
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    z-index: 300;
+    z-index: 400;
     transform: translateX(110%);
     transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
     border-radius: var(--radius) 0 0 var(--radius);
@@ -468,7 +468,7 @@ function _loadHtml5QrCode(cb) {
   .pos-cart-overlay {
     position: fixed; inset: 0;
     background: rgba(0,0,0,0.35);
-    z-index: 299;
+    z-index: 399;
     display: none;
     cursor: pointer;
   }
@@ -528,68 +528,6 @@ function _loadHtml5QrCode(cb) {
   /* ===== BOTTOM CART BAR (mobile POS) ===== */
   .mob-cart-bar {
     display: none;
-  }
-
-  /* ===== CART DRAWER (bottom sheet mobile) ===== */
-  .mob-cart-drawer-overlay { display: none !important; }
-  .mob-cart-drawer-overlay-noop {
-    position: fixed; inset: 0;
-    background: rgba(0,0,0,0.5);
-    z-index: 490;
-    backdrop-filter: blur(2px);
-  }
-  .mob-cart-drawer-overlay.open { display: block; }
-
-  .mob-cart-drawer { display: none !important; /* Unificado en pos-cart-panel */ }
-  .mob-cart-drawer-noop {
-    bottom: 0; left: 0; right: 0;
-    background: white;
-    border-radius: 20px 20px 0 0;
-    z-index: 500;
-    max-height: 88dvh;
-    display: flex;
-    flex-direction: column;
-    transform: translateY(100%);
-    transition: transform 0.32s cubic-bezier(0.4,0,0.2,1);
-    box-shadow: 0 -8px 32px rgba(0,0,0,0.18);
-  }
-  .mob-cart-drawer.open {
-    transform: translateY(0);
-  }
-  .mob-cart-drawer-handle {
-    width: 40px; height: 4px;
-    background: var(--gray-300);
-    border-radius: 2px;
-    margin: 10px auto 0;
-    flex-shrink: 0;
-  }
-  .mob-cart-drawer-header {
-    padding: 0.75rem 1rem 0.6rem;
-    border-bottom: 1px solid var(--gray-100);
-    flex-shrink: 0;
-  }
-  .mob-cart-drawer-title {
-    display: flex; align-items: center; justify-content: space-between;
-    margin-bottom: 0.5rem;
-  }
-  .mob-cart-drawer-title h3 { font-size: 1rem; font-weight: 700; color: var(--gray-900); }
-  .mob-cart-drawer-close {
-    background: var(--gray-100); border: none;
-    width: 30px; height: 30px; border-radius: 50%;
-    font-size: 1rem; cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-  }
-  .mob-cart-drawer-body {
-    flex: 1; /* sistema oculto — drawer unificado en pos-cart */
-    padding: 0.5rem 1rem;
-    min-height: 0;
-  }
-  .mob-cart-drawer-footer {
-    padding: 0.75rem 1rem;
-    border-top: 1px solid var(--gray-100);
-    flex-shrink: 0;
-    background: white;
-    padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
   }
 
   @media (max-width: 760px) {
@@ -3108,11 +3046,14 @@ function navigate(page) {
   if (page === 'pedidos-online') renderPedidosOnline();
   // Close mobile sidebar on navigation
   closeMobSidebar();
-  // Show mob-cart-bar only on POS page (mobile)
+  // Mostrar barra inferior SOLO en POS y SOLO en móvil
   const mobBar = document.getElementById('mob-cart-bar');
   if (mobBar) {
     mobBar.style.display = (page === 'pos' && isMobile()) ? 'flex' : 'none';
   }
+  // Asegurar que el overlay del drawer no quede visible al cambiar de página
+  const cartOverlay = document.getElementById('pos-cart-overlay');
+  if (cartOverlay) cartOverlay.classList.remove('visible');
   // Cerrar drawer unificado al salir del POS
   if (page !== 'pos') {
     try { cerrarCartDrawer(); } catch(e) {}
@@ -6438,15 +6379,17 @@ function mobOnClienteChange() {
   } else {
     infoEl.style.display = 'none';
   }
-  // also update drawer
-  const dCliInfo = document.getElementById('mob-drawer-cli-info');
-  const dNombre = document.getElementById('mob-drawer-cli-nombre');
-  const dConsumo = document.getElementById('mob-drawer-cli-consumo');
-  if (cli && dCliInfo) {
-    dCliInfo.style.display = 'block';
-    dNombre.textContent = cli.alias || cli.nombre;
-    dConsumo.textContent = ' — Total: S/' + (cli.total || 0).toFixed(2);
-  } else if (dCliInfo) { dCliInfo.style.display = 'none'; }
+  // también reflejar en el panel unificado pos-cart-panel
+  const posCliInfo = document.getElementById('pos-cli-info');
+  const posCliNombre = document.getElementById('pos-cli-nombre');
+  const posCliConsumo = document.getElementById('pos-cli-consumo');
+  const posSel = document.getElementById('pos-cliente');
+  if (posSel) posSel.value = mobSel.value;
+  if (cli && posCliInfo) {
+    posCliInfo.style.display = 'block';
+    if (posCliNombre) posCliNombre.textContent = cli.alias || cli.nombre;
+    if (posCliConsumo) posCliConsumo.textContent = ' — Total: S/' + (cli.total || 0).toFixed(2);
+  } else if (posCliInfo) { posCliInfo.style.display = 'none'; }
 }
 
 function mobFilterPos() {
@@ -6563,9 +6506,7 @@ function mobCalcTotal() {
 function mobUpdateBar() {
   const count = cart.reduce((s, i) => s + i.cant, 0);
   const sub = cart.reduce((s, i) => s + i.precio * i.cant, 0);
-  const desc = parseFloat(document.getElementById('mob-pos-descuento')?.value) || 0;
-  const total = Math.max(0, sub - desc);
-  const badge = document.getElementById('mob-cart-badge');
+  const desc = parseFloat(document.getElementById('pos-descuento')?.value) || 0;
   const label = document.getElementById('mob-cart-bar-label');
   const totalEl = document.getElementById('mob-cart-bar-total');
   const cta = document.getElementById('mob-cart-bar-cta');
@@ -6595,7 +6536,7 @@ function mobCobrarFiado() {
   const clienteId = parseInt(document.getElementById('mob-pos-cliente')?.value) || 0;
   if (!clienteId) { alert('Selecciona un cliente para registrar el fiado'); return; }
   const sub = cart.reduce((s, i) => s + i.precio * i.cant, 0);
-  const desc = parseFloat(document.getElementById('mob-pos-descuento')?.value) || 0;
+  const desc = parseFloat(document.getElementById('pos-descuento')?.value) || 0;
   const comboInfo = calcComboDescuento(cart);
   const total = Math.max(0, sub - desc - comboInfo.total);
   const itemsConPrecioReal = aplicarPreciosProporcionales(cart, comboInfo);
@@ -6630,7 +6571,7 @@ if (cli) { cli.deuda = (cli.deuda||0) + total; cli.compras = (cli.compras||0) + 
 
   cart = [];
   mobRenderCart(); mobCalcTotal(); mobUpdateBar();
-  const descEl = document.getElementById('mob-pos-descuento');
+  const descEl = document.getElementById('pos-descuento');
   if (descEl) descEl.value = '';
   renderMobPosGrid(); toggleMobCart(); updateAlertCount();
 }
@@ -6638,11 +6579,11 @@ if (cli) { cli.deuda = (cli.deuda||0) + total; cli.compras = (cli.compras||0) + 
 function mobProcesarVenta() {
   if (cart.length === 0) { alert('El carrito está vacío'); return; }
   const sub = cart.reduce((s, i) => s + i.precio * i.cant, 0);
-  const desc = parseFloat(document.getElementById('mob-pos-descuento')?.value) || 0;
+  const desc = parseFloat(document.getElementById('pos-descuento')?.value) || 0;
   const comboInfo = calcComboDescuento(cart);
   const comboDesc = comboInfo.total;
   const total = Math.max(0, sub - desc - comboDesc);
-  const metodo = document.getElementById('mob-pos-metodo-pago')?.value || 'Efectivo';
+  const metodo = document.getElementById('pos-metodo-pago')?.value || 'Efectivo';
   const clienteId = parseInt(document.getElementById('mob-pos-cliente')?.value) || null;
 
   // Build items with proportional combo prices for accurate reporting
@@ -6687,7 +6628,7 @@ function mobProcesarVenta() {
   toggleMobCart();
   cart = [];
   mobRenderCart(); mobCalcTotal(); mobUpdateBar();
-  const descEl2 = document.getElementById('mob-pos-descuento');
+  const descEl2 = document.getElementById('pos-descuento');
   if (descEl2) descEl2.value = '';
   renderMobPosGrid();
   updateAlertCount();
@@ -6702,7 +6643,6 @@ function syncMobToDesktop() {
   // copy mob cart to desktop cart for shared operations
   cart = cart.map(i => ({...i}));
   renderCart(); calcTotal();
-  document.getElementById('pos-metodo-pago').value = document.getElementById('mob-pos-metodo-pago')?.value || 'Efectivo';
   const cliId = document.getElementById('mob-pos-cliente')?.value || '';
   document.getElementById('pos-cliente').value = cliId;
 }
@@ -7958,6 +7898,9 @@ function initTienda() {
   document.getElementById('login-screen').classList.remove('visible');
   const appEl = document.getElementById('app');
   if (appEl) appEl.style.display = 'none';
+  // Ocultar barra inferior del POS — no pertenece a la tienda pública
+  const mobBar = document.getElementById('mob-cart-bar');
+  if (mobBar) mobBar.style.display = 'none';
 
   // Mostrar tienda
   let tiendaEl = document.getElementById('tienda-publica');
@@ -9263,53 +9206,6 @@ function confirmarCategoriasNuevasExcel() {
   <span class="mob-cart-bar-cta mob-cart-bar-empty" id="mob-cart-bar-cta">Ver carrito</span>
 </div>
 
-<!-- ══════════════════════════════════
-     DRAWER DEL CARRITO (bottom sheet)
-     ══════════════════════════════════ -->
-<div class="mob-cart-drawer-overlay" id="mob-cart-drawer-overlay" onclick="toggleMobCart()"></div>
-<div class="mob-cart-drawer" id="mob-cart-drawer">
-  <div class="mob-cart-drawer-handle"></div>
-  <div class="mob-cart-drawer-header">
-    <div class="mob-cart-drawer-title">
-<h3>🛒 Carrito de venta</h3>
-<button class="mob-cart-drawer-close" onclick="toggleMobCart()">✕</button>
-    </div>
-    <!-- Cliente info en drawer -->
-    <div id="mob-drawer-cli-info" style="display:none;background:var(--primary-light);border-radius:8px;padding:.35rem .65rem;margin-bottom:.4rem;font-size:.75rem">
-<span id="mob-drawer-cli-nombre" style="font-weight:700;color:var(--primary)"></span>
-<span id="mob-drawer-cli-consumo" style="color:var(--gray-600)"></span>
-    </div>
-    <div id="mob-drawer-premio-alert" class="premio-alert">🎁 <span id="mob-drawer-premio-txt"></span></div>
-  </div>
-  <div class="mob-cart-drawer-body" id="mob-cart-drawer-items">
-    <!-- items rendered by JS -->
-  </div>
-  <div class="mob-cart-drawer-footer">
-    <div style="margin-bottom:0.5rem">
-<input type="number" class="form-control" id="mob-pos-descuento" placeholder="Descuento manual (S/)" style="font-size:0.88rem;padding:0.5rem" oninput="mobCalcTotal()" />
-    </div>
-    <div id="mob-cart-combo-desc" style="display:none;margin-bottom:.4rem"></div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.6rem">
-<span style="font-size:0.9rem;color:var(--gray-600)">TOTAL</span>
-<span style="font-size:1.35rem;font-weight:800;color:var(--gray-900)" id="mob-cart-total">S/ 0.00</span>
-    </div>
-    <select id="mob-pos-metodo-pago" class="form-control" style="margin-bottom:0.55rem;font-size:0.88rem">
-<option value="Efectivo">💵 Efectivo</option>
-<option value="Yape">💜 Yape</option>
-<option value="Plin">💚 Plin</option>
-<option value="QR">📱 QR</option>
-<option value="Link de pago">🔗 Link de pago</option>
-<option value="Tarjeta POS">💳 Tarjeta POS</option>
-<option value="Tarjeta POS Móvil">📲 Tarjeta POS Móvil</option>
-<option value="Transferencia">🏦 Transferencia</option>
-    </select>
-    <div style="display:grid;grid-template-columns:auto 1fr 1fr;gap:0.45rem">
-<button class="btn btn-outline" style="padding:0.65rem 0.6rem;font-size:0.85rem;color:var(--danger);border-color:var(--danger-light)" onclick="mobClearCart()" title="Vaciar carrito">🗑️</button>
-<button class="btn btn-outline" style="padding:0.65rem;font-size:0.9rem" onclick="mobCobrarFiado()">📋 Fiado</button>
-<button class="btn btn-accent" style="padding:0.65rem;font-size:0.95rem;font-weight:700" onclick="mobProcesarVenta()">✅ Cobrar</button>
-    </div>
-  </div>
-</div>
 
 
 </body>
