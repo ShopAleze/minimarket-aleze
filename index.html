@@ -1376,7 +1376,10 @@ function _loadHtml5QrCode(cb) {
             <div style="margin-bottom:0.75rem;display:flex;gap:0.5rem;flex-wrap:wrap" id="pos-categorias"></div>
             <div class="product-grid" id="pos-grid"></div>
           </div>
-          <div class="pos-cart" id="pos-cart-panel">
+        </div>
+
+        <!-- pos-cart-panel fuera de pos-wrap para que position:fixed funcione en móvil -->
+        <div class="pos-cart" id="pos-cart-panel">
             <div class="cart-header">
               <div class="flex-between">
                 <h3>🛒 Carrito de venta</h3>
@@ -1423,7 +1426,6 @@ function _loadHtml5QrCode(cb) {
               </div>
             </div>
           </div>
-        </div>
 
         <!-- ══════════════════════════════════
              MOBILE layout (≤760px)
@@ -2962,6 +2964,9 @@ async function doLogin() {
     document.getElementById('admin-nav').style.display = 'none';
     navigate('pos');
   } else {
+    // Ocultar barra de carrito — admin entra al Dashboard, no al POS
+    const mobBarAdmin = document.getElementById('mob-cart-bar');
+    if (mobBarAdmin) mobBarAdmin.style.display = 'none';
     renderDashboard();
   }
   updateAlertCount();
