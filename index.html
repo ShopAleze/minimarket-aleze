@@ -461,6 +461,9 @@ function _loadHtml5QrCode(cb) {
     border-radius: var(--radius) 0 0 var(--radius);
   }
   .pos-cart.drawer-open { transform: translateX(0); }
+  @media (max-width: 600px) {
+    .pos-cart { width: 100vw; border-radius: 0; }
+  }
   /* Overlay oscuro detrás del drawer */
   .pos-cart-overlay {
     position: fixed; inset: 0;
