@@ -733,7 +733,7 @@ function _loadHtml5QrCode(cb) {
       bottom: 0; left: 0; right: 0;
       height: 62px;
       background: var(--primary);
-      z-index: 400;
+      z-index: 350;
       align-items: center;
       padding: 0 1rem;
       gap: 0.75rem;
@@ -884,9 +884,10 @@ function _loadHtml5QrCode(cb) {
     }
     /* pos-cart drawer: full width en móvil */
     .pos-cart {
-      width: 92vw !important;
-      max-width: 100% !important;
-      border-radius: var(--radius) 0 0 var(--radius) !important;
+      width: 100vw !important;
+      max-width: 100vw !important;
+      border-radius: 0 !important;
+      z-index: 500 !important;
     }
     /* Desktop bar: oculta en móvil — usa mob-pos-topbar */
     .pos-desktop-bar { display: none !important; }
