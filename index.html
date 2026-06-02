@@ -6665,9 +6665,9 @@ function renderMobPos() {
   updateMobPosClientes();
   mobRenderCart();
   mobUpdateBar();
-  // Show bar only on POS
+ // Barra inferior oculta — el carrito se abre desde el botón superior
   const mobBar = document.getElementById('mob-cart-bar');
-  if (mobBar) mobBar.style.display = 'flex';
+  if (mobBar) mobBar.style.display = 'none';
   // paddingBottom eliminado — layout controlado por CSS
 }
 
