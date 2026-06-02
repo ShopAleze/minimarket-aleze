@@ -6766,10 +6766,8 @@ function iniciarFirebase() {
     // firebase-app-check-compat.js expone firebase.appCheck() directamente
     // El provider se pasa como objeto {siteKey} — NO como clase constructora
     try {
-     firebase.appCheck().activate(
-        RECAPTCHA_SITE_KEY,
-        true
-      );
+     const appCheckInstance = firebase.appCheck(fbApp);
+appCheckInstance.activate(RECAPTCHA_SITE_KEY, true);
       console.log('[AppCheck] activado correctamente');
     } catch(acErr) {
       console.warn('[AppCheck] no activado — la app sigue funcionando:', acErr.message);
