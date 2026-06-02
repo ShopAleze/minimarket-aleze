@@ -1439,6 +1439,9 @@ function _loadHtml5QrCode(cb) {
               <input type="text" id="mob-pos-search" placeholder="Buscar producto o código..." oninput="mobFilterPos()" />
             </div>
             <button type="button" class="mob-scan-btn" onclick="openCamScanner()">📷 Escanear</button>
+            <button type="button" class="mob-scan-btn" style="background:rgba(124,58,237,0.15);color:var(--primary);border:1.5px solid var(--primary);position:relative;" onclick="toggleMobCart()">
+  🛒<span id="mob-pos-cart-badge-btn" style="display:none;background:#EF4444;color:white;border-radius:10px;font-size:.65rem;font-weight:700;padding:1px 5px;min-width:18px;position:absolute;top:-6px;right:-6px;">0</span>
+</button>
           </div>
           <div class="mob-pos-topbar-row2">
             <select id="mob-pos-cliente" class="form-control" onchange="mobOnClienteChange()">
@@ -6512,10 +6515,13 @@ function mobUpdateBar() {
   const count = cart.reduce((s, i) => s + i.cant, 0);
   const sub = cart.reduce((s, i) => s + i.precio * i.cant, 0);
   const desc = parseFloat(document.getElementById('pos-descuento')?.value) || 0;
+  const total = Math.max(0, sub - desc);
+  const badge = document.getElementById('mob-cart-badge');
   const label = document.getElementById('mob-cart-bar-label');
   const totalEl = document.getElementById('mob-cart-bar-total');
   const cta = document.getElementById('mob-cart-bar-cta');
   if (badge) { badge.textContent = count; badge.style.display = count > 0 ? 'block' : 'none'; }
+  const btnBadge = document.getElementById('mob-pos-cart-badge-btn'); if (btnBadge) { btnBadge.textContent = count; btnBadge.style.display = count > 0 ? 'inline' : 'none'; }
   if (label) label.textContent = count > 0 ? `${count} producto${count>1?'s':''} en carrito` : 'Carrito vacío';
   if (totalEl) totalEl.textContent = sol(total);
   if (cta) {
