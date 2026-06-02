@@ -9104,7 +9104,20 @@ function confirmarCategoriasNuevasExcel() {
 }
 </script>
 
-
+<!-- ── PWA: Registro del Service Worker ── -->
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('/minimarket-aleze/sw.js', {
+      scope: '/minimarket-aleze/'
+    }).then(function(reg) {
+      console.log('[PWA] Service Worker registrado:', reg.scope);
+    }).catch(function(err) {
+      console.warn('[PWA] Error registrando SW:', err);
+    });
+  });
+}
+</script>
 
 </body>
 </html>
