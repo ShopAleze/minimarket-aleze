@@ -1164,7 +1164,7 @@ function _loadHtml5QrCode(cb) {
     <div class="login-logo">🛒</div>
     <h1>Minimarket Aleze</h1>
     <p>Jr. Tigrillo Mz. Ll4 Lt. 5 – SJL</p>
-    <select id="login-user" class="form-control" style="margin-bottom:0.75rem;display:none">
+    <select id="login-user" class="form-control" style="margin-bottom:0.75rem">
       <option value="">Seleccionar usuario...</option>
       <option value="Jose Carlos|admin">Jose Carlos (Administrador)</option>
       <option value="Shessira|cajero">Shessira (Cajera)</option>
@@ -1173,9 +1173,8 @@ function _loadHtml5QrCode(cb) {
     <input type="password" id="login-pass" autocomplete="current-password" class="form-control" placeholder="Contraseña" onkeydown="if(event.key==='Enter')doLogin()" />
     <div id="login-error" style="color:var(--danger);font-size:0.8rem;margin-bottom:0.5rem;display:none">Contraseña incorrecta</div>
     <button type="button" class="btn-login" onclick="doLogin()">Ingresar</button>
-    <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid #e5e7eb;display:flex;justify-content:space-between;align-items:center">
+    <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid #e5e7eb">
       <a href="#/tienda" onclick="initTienda();return false;" style="color:var(--primary);font-size:.85rem;font-weight:600;text-decoration:none">🛍️ Compra aquí →</a>
-      <a href="#" onclick="toggleLoginUser();return false;" id="login-staff-toggle" style="color:var(--gray-400);font-size:.75rem;text-decoration:none">👤 Staff</a>
     </div>
   </div>
 </div>
@@ -2846,18 +2845,6 @@ function _mostrarBloqueo(hasta) {
       if (rb) rb.remove();
     }
   }, 500);
-}
-
-function toggleLoginUser() {
-  const sel = document.getElementById('login-user');
-  const toggle = document.getElementById('login-staff-toggle');
-  if (sel.style.display === 'none') {
-    sel.style.display = 'block';
-    toggle.textContent = '✕ Cerrar';
-  } else {
-    sel.style.display = 'none';
-    toggle.textContent = '👤 Staff';
-  }
 }
 
 async function doLogin() {
