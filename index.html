@@ -7211,11 +7211,6 @@ function guardarActualizarVenta() {
     vDB.estado        = 'anulado';
     vDB.total         = 0;
     vDB.fechaAnulacion = today() + ' ' + nowTime();
-
-    // Sync DB.ventas so dashboard totals are accurate
-    const vi2 = DB.ventas.findIndex(x => String(x.id) === String(_hvEditId));
-    if (vi2 >= 0) { DB.ventas[vi2].total = 0; DB.ventas[vi2].estado = 'anulado'; }
-
     // Si la caja estaba cerrada registrar igualmente el movimiento
     if (!DB.caja.abierta) {
       DB.movimientos.push({
@@ -7289,10 +7284,6 @@ function guardarActualizarVenta() {
   const nuevoTotal = Math.max(0, vDB.total - montoReembolso);
   vDB.total  = nuevoTotal;
   vDB.estado = nuevoTotal === 0 ? 'anulado' : 'parcial';
-
-  // Sync DB.ventas so dashboard is accurate
-  const vi3 = DB.ventas.findIndex(x => String(x.id) === String(_hvEditId));
-  if (vi3 >= 0) { DB.ventas[vi3].total = nuevoTotal; DB.ventas[vi3].estado = vDB.estado; }
 
   // Registrar egreso en caja (siempre, aunque esté cerrada)
   if (DB.caja.abierta) {
