@@ -6583,16 +6583,12 @@ function mobProcesarVenta() {
   try { renderCaja(); } catch(e){}
   try { generarReporte(); } catch(e){}
   toggleMobCart();
-  cart = [];
+   cart = [];
   mobRenderCart(); mobCalcTotal(); mobUpdateBar();
   const descEl2 = document.getElementById('pos-descuento');
   if (descEl2) descEl2.value = '';
   renderMobPosGrid();
   updateAlertCount();
-  // Show ticket in desktop modal reusing existing logic
-  cart = [];
-  renderCart();
-  calcTotal();
   mostrarTicket(venta);
 }
 
