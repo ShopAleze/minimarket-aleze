@@ -6655,7 +6655,8 @@ let fbApp = null;
 let fbFS = null;          // Firestore instance
 let _fbEscribiendo = false; // Flag anti-loop: true mientras este dispositivo escribe
 let _fbSaveTimer = null;
-let _fbLastWriteTs = 0; // timestamp del último fbGuardar() — protege ventana debounce
+let _fbLastWriteTs = 0;     // timestamp del último fbGuardar() — protege ventana debounce
+let _fbLastWriteProdTs = 0; // timestamp del último fbGuardarProductos()
 let fbAuth = null; // Firebase Authentication
 let _fbSnapshotUnsub = null; // Para desuscribirse si fuera necesario
 let _pedidosOnlineUnsub = null; // Listener colección pedidos_online
@@ -6739,6 +6740,7 @@ function fbGuardar() {
 // Se llama únicamente cuando el admin edita inventario/categorias
 function fbGuardarProductos() {
   if (!fbFS) return;
+  _fbLastWriteProdTs = Date.now();
   clearTimeout(_fbSaveTimerProd);
   _fbSaveTimerProd = setTimeout(() => {
     _fbEscribiendo = true;
@@ -6798,7 +6800,7 @@ function fbEscuchar() {
   fbProdDocRef().onSnapshot(snapshot => {
  if (_fbEscribiendo) return;
     if (snapshot.metadata && snapshot.metadata.hasPendingWrites) return;
-    if (Date.now() - _fbLastWriteTs < 2000) return;
+    if (Date.now() - _fbLastWriteProdTs < 2000) return;
     if (!snapshot.exists) return;
     const data = snapshot.data();
     if (!data) return;
