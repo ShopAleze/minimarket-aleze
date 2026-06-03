@@ -3461,8 +3461,8 @@ function procesarVenta() {
   };
   DB.ventas.push(venta);
 
-  if (!DB.historialVentas) DB.historialVentas = [];
-  DB.historialVentas.push({ ...venta, origen: 'pos', estado: 'completado', estadoStock: 'descontado' });
+ if (!DB.historialVentas) DB.historialVentas = [];
+  DB.historialVentas.push({ ...venta, origen:'pos', estado:'completado', estadoStock:'descontado' });
 
   // Actualizar stock
  cart.forEach(item => {
