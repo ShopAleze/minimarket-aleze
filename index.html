@@ -4981,7 +4981,7 @@ function reporteVentas(desde, hasta) {
   const labels = Object.keys(porDia).sort();
   const data = labels.map(d => porDia[d]);
   const total = ventas.reduce((s,v) => s+v.total, 0);
-  const costoTotal = ventas.reduce((s,v) => s+v.items.reduce((ss,i) => { const p=DB.productos.find(x=>x.id===i.prodId); return ss+(p?p.costo*i.cant:0); },0), 0);
+  const costoTotal = ventas.reduce((s,v) => s+(v.items||[]).reduce((ss,i) => { const p=DB.productos.find(x=>x.id===i.prodId); return ss+(p?p.costo*i.cant:0); },0), 0);
   const ganancia = total - costoTotal;
   const prom = ventas.length > 0 ? total/ventas.length : 0;
 
@@ -4992,7 +4992,7 @@ function reporteVentas(desde, hasta) {
       { label: 'Ventas S/', data, borderColor: '#7C3AED', backgroundColor: 'rgba(124,58,237,0.1)', fill: true, tension: 0.4 },
       { label: 'Ganancia S/', data: labels.map(d => {
         const vs = ventas.filter(v=>v.fecha===d);
-        const c = vs.reduce((s,v)=>s+v.items.reduce((ss,i)=>{const p=DB.productos.find(x=>x.id===i.prodId);return ss+(p?p.costo*i.cant:0);},0),0);
+        const c = vs.reduce((s,v)=>s+(v.items||[]).reduce((ss,i)=>{const p=DB.productos.find(x=>x.id===i.prodId);return ss+(p?p.costo*i.cant:0);},0),0);
         return vs.reduce((s,v)=>s+v.total,0) - c;
       }), borderColor: '#10B981', backgroundColor: 'rgba(16,185,129,0.08)', fill: true, tension: 0.4 }
     ]},
@@ -5010,7 +5010,7 @@ function reporteVentas(desde, hasta) {
     <table><thead><tr><th>Fecha</th><th>Transacc.</th><th>Total S/</th><th>Costo S/</th><th>Ganancia S/</th></tr></thead>
     <tbody>${labels.map(d => {
       const vs = ventas.filter(v=>v.fecha===d);
-      const c = vs.reduce((s,v)=>s+v.items.reduce((ss,i)=>{const p=DB.productos.find(x=>x.id===i.prodId);return ss+(p?p.costo*i.cant:0);},0),0);
+      const c = vs.reduce((s,v)=>s+(v.items||[]).reduce((ss,i)=>{const p=DB.productos.find(x=>x.id===i.prodId);return ss+(p?p.costo*i.cant:0);},0),0);
       const g = porDia[d]-c;
       return `<tr><td>${formatDate(d)}</td><td>${vs.length}</td><td>${sol(porDia[d])}</td><td style="color:var(--danger)">${sol(c)}</td><td style="color:var(--accent);font-weight:700">${sol(g)}</td></tr>`;
     }).join('')}
@@ -5022,7 +5022,7 @@ function reporteVentas(desde, hasta) {
 function reporteProductos(desde, hasta) {
   const ventas = [...(DB.ventas || []), ...(DB.historialVentas || []).filter(h => h.origen === 'pago_fiado')].filter(v => v.fecha >= desde && v.fecha <= hasta);
   const prods = {};
-  ventas.forEach(v => v.items.forEach(i => {
+  ventas.forEach(v => (v.items||[]).forEach(i => {
     if (!prods[i.nombre]) prods[i.nombre] = { cant: 0, total: 0, costo: 0 };
     prods[i.nombre].cant += i.cant;
     prods[i.nombre].total += i.precio * i.cant;
@@ -5051,7 +5051,7 @@ function reporteRentabilidad(desde, hasta) {
   const ventas = [...(DB.ventas || []), ...(DB.historialVentas || []).filter(h => h.origen === 'pago_fiado')].filter(v => v.fecha >= desde && v.fecha <= hasta);
   // Por producto
   const porProd = {};
-  ventas.forEach(v => v.items.forEach(i => {
+  ventas.forEach(v => (v.items||[]).forEach(i => {
     const p = DB.productos.find(x=>x.id===i.prodId); if(!p) return;
     if (!porProd[p.id]) porProd[p.id] = { nombre: p.nombre, costo: p.costo, precio: p.precio, cantVendida: 0, ingresos: 0, costoTotal: 0 };
     porProd[p.id].cantVendida += i.cant;
