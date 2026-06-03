@@ -3365,7 +3365,8 @@ function ensureCajaAbierta() {
   if (DB.caja.abierta && DB.caja.fecha === fechaHoy) return; // already open today
   if (DB.caja.abierta && DB.caja.fecha && DB.caja.fecha !== fechaHoy) {
     const saldoAnt = (DB.caja.inicial||0) + (DB.caja.ingresos||0) - (DB.caja.egresos||0);
-    DB.movimientos.push({ tipo:'cierre-auto', desc:'Cierre automático — '+DB.caja.fecha+' Saldo: '+sol(saldoAnt), monto:saldoAnt, hora:'23:59', fecha:DB.caja.fecha });
+   DB.movimientos.push({ tipo:'cierre-auto', desc:'Cierre automático — '+DB.caja.fecha+' Saldo: '+sol(saldoAnt), monto:saldoAnt, hora:'23:59', fecha:DB.caja.fecha });
+    try { fbGuardar(); } catch(e) {}
   }
   DB.caja = { abierta:true, inicial:montoAuto, ingresos:0, egresos:0, turnoInicio:nowTime(), cajero:currentUser||'Sistema', fecha:fechaHoy, apertura:'auto' };
   if (!DB.movimientos) DB.movimientos = [];
