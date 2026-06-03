@@ -1167,8 +1167,8 @@ function _loadHtml5QrCode(cb) {
     <select id="login-user" class="form-control" style="margin-bottom:0.75rem">
       <option value="">Seleccionar usuario...</option>
       <option value="Jose Carlos|admin">Aleze Admin</option>
-<option value="Shessira|cajero">Vendedor 1</option>
-<option value="José Luis|cajero">Vendedor 2</option>
+      <option value="Shessira|cajero">Vendedor 1</option>
+      <option value="José Luis|cajero">Vendedor 2</option>
     </select>
     <input type="password" id="login-pass" autocomplete="current-password" class="form-control" placeholder="Contraseña" onkeydown="if(event.key==='Enter')doLogin()" />
     <div id="login-error" style="color:var(--danger);font-size:0.8rem;margin-bottom:0.5rem;display:none">Contraseña incorrecta</div>
@@ -6733,6 +6733,10 @@ function fbProdDocRef()  { return fbFS.collection('aleze').doc('db_productos'); 
 let _fbSaveTimerProd = null;
 function fbGuardar() {
   if (!fbFS) return;
+  // Protección contra borrado accidental: no guardar si todos los arrays operativos están vacíos
+  const camposGuarda = ['clientes','historialVentas','ventas','fiados','movimientos','proveedores'];
+  const todoVacio = camposGuarda.every(k => !DB[k] || (Array.isArray(DB[k]) && DB[k].length === 0));
+  if (todoVacio) { console.warn('fbGuardar: bloqueado — todos los arrays operativos están vacíos'); return; }
   _fbLastWriteTs = Date.now();
   clearTimeout(_fbSaveTimer);
   _fbSaveTimer = setTimeout(() => {
@@ -6880,7 +6884,12 @@ function fbPatchDB() {
     let _val = DB[col];
     Object.defineProperty(DB, col, {
       get() { return _val; },
-      set(v)  { _val = v; fbGuardar(); },
+      set(v)  {
+        _val = v;
+        // Nunca guardar arrays vacíos — protege contra sobreescritura accidental
+        if (Array.isArray(v) && v.length === 0) return;
+        fbGuardar();
+      },
       configurable: true
     });
   });
@@ -6888,7 +6897,11 @@ function fbPatchDB() {
     let _val = DB[col];
     Object.defineProperty(DB, col, {
       get() { return _val; },
-      set(v)  { _val = v; fbGuardarProductos(); },
+      set(v)  {
+        _val = v;
+        if (Array.isArray(v) && v.length === 0) return;
+        fbGuardarProductos();
+      },
       configurable: true
     });
   });
@@ -6980,7 +6993,7 @@ function renderHistorialVentas() {
     (v.clienteNombre||'').toLowerCase().includes(buscar) ||
     (v.items||[]).some(i => (i.nombre||'').toLowerCase().includes(buscar))
   );
-lista.sort((a,b) => (b.fecha+b.hora) > (a.fecha+a.hora) ? -1 : 1);
+  lista.sort((a,b) => (b.fecha+b.hora) > (a.fecha+a.hora) ? -1 : 1);
 
   const total = lista.reduce((s,v) => s+(v.total||0), 0);
   const completadas = lista.filter(v=>v.estado==='completado').length;
@@ -7439,7 +7452,7 @@ function renderPedidosOnline() {
   if (filtro) lista = lista.filter(p => p.estado === filtro);
   if (desde) lista = lista.filter(p => p.fecha >= desde);
   if (hasta) lista = lista.filter(p => p.fecha <= hasta);
-  lista.sort((a,b) => (b.fecha+b.hora) > (a.fecha+a.hora) ? 1 : -1);
+  lista.sort((a,b) => (b.fecha+b.hora) > (a.fecha+a.hora) ? -1 : 1);
 
   const pendientes = DB.pedidosOnline.filter(p => p.estado === 'pendiente').length;
   const badge = document.getElementById('po-badge-pendiente');
