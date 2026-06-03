@@ -7158,7 +7158,7 @@ function guardarActualizarVenta() {
     // Estaba solo en DB.ventas → mover al historial
     const vi = DB.ventas.findIndex(x => String(x.id) === String(_hvEditId));
     if (vi < 0) { cerrarModal('modal-actualizar-venta'); return; }
-    DB.historialVentas.push({ ...DB.ventas[vi], origen:'pos', estado:'completado', estadoStock:'descontado' });
+ DB.historialVentas.push({ ...DB.ventas[vi], origen:'pos', estado: DB.ventas[vi].estado || 'completado', estadoStock:'descontado' });
     hvIdx = DB.historialVentas.length - 1;
   }
   const vDB = DB.historialVentas[hvIdx];
