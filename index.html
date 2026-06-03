@@ -2697,16 +2697,9 @@ let DB = {
     { id: 5, nombre: 'P&G Distribuciones', contacto: 'Luis Torres', tel: '999005005', productos: 'Higiene' },
     { id: 6, nombre: 'Bimbo Perú', contacto: 'Reparto', tel: '999006006', productos: 'Panadería' },
   ],
-  clientes: [
-    { id: 1, nombre: 'Ana Rodríguez', alias:'Doña Ana', tel: '987654321', dir: 'Mz A Lt 5', cumple:'1985-03-15', compras: 15, total: 145.50, deuda: 12.50 },
-    { id: 2, nombre: 'Carlos Mendoza', alias:'Carlos', tel: '976543210', dir: 'Mz B Lt 3', cumple:'1990-07-22', compras: 8, total: 87.00, deuda: 0 },
-    { id: 3, nombre: 'Rosa Huamán', alias:'Doña Rosa', tel: '965432109', dir: 'Mz C Lt 1', cumple:'1978-12-01', compras: 22, total: 230.00, deuda: 35.00 },
-  ],
+  clientes: [],
   ventas: [],
-  fiados: [
-    { id: 1, clienteId: 1, items: [{ nombre: 'Leche Gloria 1L', cant: 2, precio: 4.50 }, { nombre: 'Pan de molde', cant: 1, precio: 7.50 }], total: 16.50, pagado: 4.00, fecha: '2026-05-10' },
-    { id: 2, clienteId: 3, items: [{ nombre: 'Arroz Costeño 1kg', cant: 5, precio: 4.00 }], total: 20.00, pagado: 0, fecha: '2026-05-15' },
-  ],
+  fiados: [],
   mermas: [],
   promociones: [],
   movimientos: [],
@@ -3022,26 +3015,28 @@ function navigate(page) {
   checkAutoAbrirCaja();
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  document.getElementById('page-' + page).classList.add('active');
+  const pageEl = document.getElementById('page-' + page);
+  if (!pageEl) { console.warn('navigate: página no encontrada →', page); return; }
+  pageEl.classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n => {
     if (n.getAttribute('onclick') && n.getAttribute('onclick').includes("'" + page + "'")) n.classList.add('active');
   });
   if (page === 'dashboard') renderDashboard();
   if (page === 'pos') {
-  if (fbFS && DB.productos.length === 0) {
-    fbProdDocRef().get().then(snap => {
-      if (snap.exists) {
-        const pd = snap.data();
-        if (pd.productos)  DB.productos  = pd.productos;
-        if (pd.categorias) DB.categorias = pd.categorias;
-        if (pd.config)     DB.config = { ...DB.config, ...pd.config };
-      }
+    if (fbFS && DB.productos.length === 0) {
+      fbProdDocRef().get().then(snap => {
+        if (snap.exists) {
+          const pd = snap.data();
+          if (pd.productos)  DB.productos  = pd.productos;
+          if (pd.categorias) DB.categorias = pd.categorias;
+          if (pd.config)     DB.config = { ...DB.config, ...pd.config };
+        }
+        renderPos(); if (isMobile()) renderMobPos();
+      }).catch(() => { renderPos(); if (isMobile()) renderMobPos(); });
+    } else {
       renderPos(); if (isMobile()) renderMobPos();
-    }).catch(() => { renderPos(); if (isMobile()) renderMobPos(); });
-  } else {
-    renderPos(); if (isMobile()) renderMobPos();
+    }
   }
-}
   if (page === 'inventario') renderInventario();
   if (page === 'categorias') renderCategorias();
   if (page === 'proveedores') renderProveedores();
@@ -6639,6 +6634,8 @@ function renderMobPos() {
 
 // ===================== ADVERTENCIA AL RECARGAR =====================
 window.addEventListener('beforeunload', function(e) {
+  // No mostrar alerta si está instalada como PWA (standalone)
+  if (window.matchMedia('(display-mode: standalone)').matches) return;
   const msg = 'La página se está actualizando. Se perderá toda la información no guardada.';
   e.preventDefault();
   e.returnValue = msg;
