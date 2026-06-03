@@ -3248,8 +3248,10 @@ function setPosFilter(id) { posFilterCat = id; renderPosCategorias(); renderPosG
 function renderPosGrid(search = '') {
   // Guard: no renderizar sin sesión activa
   if (!currentUser) return;
-  const s = search || document.getElementById('pos-search').value.toLowerCase();
+const s = search || document.getElementById('pos-search')?.value.toLowerCase() || '';
   let prods = DB.productos.filter(p => p.stock > 0);
+  if (s) prods = prods.filter(p => p.nombre.toLowerCase().includes(s) || p.codigo.includes(s));
+  if (posFilterCat) prods = prods.filter(p => p.cat == posFilterCat);
 
   const promoActivas = DB.promociones.filter(p => p.activa && p.hasta >= today());
 
