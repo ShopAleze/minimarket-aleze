@@ -607,7 +607,7 @@ function _loadHtml5QrCode(cb) {
     /* page-pos oculto cuando no está activo — fix especificidad */
     #page-pos { display: none !important; }
     #page-pos.active {
-      height: calc(100dvh - var(--header-h) - 62px);
+      height: calc(100dvh - var(--header-h));
       padding: 0;
       overflow: hidden;
       display: flex !important;
@@ -667,6 +667,7 @@ function _loadHtml5QrCode(cb) {
 
     /* Categorías chips */
     .mob-pos-cats {
+      display: block;
       background: white;
       padding: 0.4rem 0.75rem;
       border-bottom: 1px solid var(--gray-100);
@@ -686,6 +687,8 @@ function _loadHtml5QrCode(cb) {
 
     /* Grid de productos */
     .mob-pos-grid-wrap {
+      display: flex;
+      flex-direction: column;
       flex: 1;
       overflow-y: auto;
       padding: 0.6rem 0.75rem;
@@ -1161,7 +1164,7 @@ function _loadHtml5QrCode(cb) {
     <div class="login-logo">🛒</div>
     <h1>Minimarket Aleze</h1>
     <p>Jr. Tigrillo Mz. Ll4 Lt. 5 – SJL</p>
-    <select id="login-user" class="form-control" style="margin-bottom:0.75rem">
+    <select id="login-user" class="form-control" style="margin-bottom:0.75rem;display:none">
       <option value="">Seleccionar usuario...</option>
       <option value="Jose Carlos|admin">Jose Carlos (Administrador)</option>
       <option value="Shessira|cajero">Shessira (Cajera)</option>
@@ -1170,8 +1173,9 @@ function _loadHtml5QrCode(cb) {
     <input type="password" id="login-pass" autocomplete="current-password" class="form-control" placeholder="Contraseña" onkeydown="if(event.key==='Enter')doLogin()" />
     <div id="login-error" style="color:var(--danger);font-size:0.8rem;margin-bottom:0.5rem;display:none">Contraseña incorrecta</div>
     <button type="button" class="btn-login" onclick="doLogin()">Ingresar</button>
-    <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid #e5e7eb">
-      <a href="#/tienda" onclick="initTienda();return false;" style="color:var(--primary);font-size:.85rem;font-weight:600;text-decoration:none">🛍️ Ver catálogo de la tienda →</a>
+    <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid #e5e7eb;display:flex;justify-content:space-between;align-items:center">
+      <a href="#/tienda" onclick="initTienda();return false;" style="color:var(--primary);font-size:.85rem;font-weight:600;text-decoration:none">🛍️ Compra aquí →</a>
+      <a href="#" onclick="toggleLoginUser();return false;" id="login-staff-toggle" style="color:var(--gray-400);font-size:.75rem;text-decoration:none">👤 Staff</a>
     </div>
   </div>
 </div>
@@ -2844,6 +2848,18 @@ function _mostrarBloqueo(hasta) {
   }, 500);
 }
 
+function toggleLoginUser() {
+  const sel = document.getElementById('login-user');
+  const toggle = document.getElementById('login-staff-toggle');
+  if (sel.style.display === 'none') {
+    sel.style.display = 'block';
+    toggle.textContent = '✕ Cerrar';
+  } else {
+    sel.style.display = 'none';
+    toggle.textContent = '👤 Staff';
+  }
+}
+
 async function doLogin() {
   // ── PASO 0: Reset total de estado anterior (sesión previa, cambio de usuario) ──
   resetAppState();
@@ -3248,7 +3264,7 @@ function setPosFilter(id) { posFilterCat = id; renderPosCategorias(); renderPosG
 function renderPosGrid(search = '') {
   // Guard: no renderizar sin sesión activa
   if (!currentUser) return;
-const s = search || document.getElementById('pos-search')?.value.toLowerCase() || '';
+  const s = search || document.getElementById('pos-search')?.value.toLowerCase() || '';
   let prods = DB.productos.filter(p => p.stock > 0);
   if (s) prods = prods.filter(p => p.nombre.toLowerCase().includes(s) || p.codigo.includes(s));
   if (posFilterCat) prods = prods.filter(p => p.cat == posFilterCat);
@@ -3370,7 +3386,7 @@ function ensureCajaAbierta() {
   if (DB.caja.abierta && DB.caja.fecha === fechaHoy) return; // already open today
   if (DB.caja.abierta && DB.caja.fecha && DB.caja.fecha !== fechaHoy) {
     const saldoAnt = (DB.caja.inicial||0) + (DB.caja.ingresos||0) - (DB.caja.egresos||0);
-   DB.movimientos.push({ tipo:'cierre-auto', desc:'Cierre automático — '+DB.caja.fecha+' Saldo: '+sol(saldoAnt), monto:saldoAnt, hora:'23:59', fecha:DB.caja.fecha });
+    DB.movimientos.push({ tipo:'cierre-auto', desc:'Cierre automático — '+DB.caja.fecha+' Saldo: '+sol(saldoAnt), monto:saldoAnt, hora:'23:59', fecha:DB.caja.fecha });
     try { fbGuardar(); } catch(e) {}
   }
   DB.caja = { abierta:true, inicial:montoAuto, ingresos:0, egresos:0, turnoInicio:nowTime(), cajero:currentUser||'Sistema', fecha:fechaHoy, apertura:'auto' };
@@ -3465,10 +3481,8 @@ function procesarVenta() {
     descuento: desc + comboDesc, descuentoManual: desc, descuentoCombo: comboDesc,
     total, metodo, clienteId
   };
-  DB.ventas.push(venta);
-
- if (!DB.historialVentas) DB.historialVentas = [];
-  DB.historialVentas.push({ ...venta, origen:'pos', estado:'completado', estadoStock:'descontado' });
+  if (!DB.historialVentas) DB.historialVentas = [];
+  DB.historialVentas.push({ ...venta, origen: 'pos', estado: 'completado', estadoStock: 'descontado' });
 
   // Actualizar stock
  cart.forEach(item => {
@@ -4026,7 +4040,7 @@ function guardarProducto() {
   renderInvTable();
   updateAlertCount();
   try { renderDashboard(); } catch(e){}
-  try { renderPosProducts(); } catch(e){}
+  try { renderPos(); } catch(e){}
 }
 
 // ===================== CATEGORIAS =====================
@@ -5807,11 +5821,11 @@ function updateCapStats() {
   document.getElementById('cap-meta-lbl').textContent  = 'Total invertido: ' + sol(DB_EXT.capital.total);
 
   const mes    = getMesActual();
-const ventasMes = DB.historialVentas.filter(v => v.fecha && v.fecha.startsWith(mes) &&
+  const ventasMes = DB.historialVentas.filter(v => v.fecha && v.fecha.startsWith(mes) &&
   ((v.origen === 'pos' && v.estado === 'completado') ||
    (v.origen === 'online' && v.estado === 'entregado') ||
    (v.origen === 'pago_fiado' && v.estado === 'completado'))).reduce((s,v) => s+v.total, 0);
-const costoMes  = DB.historialVentas.filter(v => v.fecha && v.fecha.startsWith(mes) &&
+  const costoMes  = DB.historialVentas.filter(v => v.fecha && v.fecha.startsWith(mes) &&
   v.items && v.items.length &&
   ((v.origen === 'pos' && v.estado === 'completado') ||
    (v.origen === 'online' && v.estado === 'entregado'))).reduce((s,v) =>
@@ -6406,7 +6420,7 @@ function mobSelectCat(catId, el) {
 }
 
 function renderMobPosGrid(prods) {
-  prods = prods || DB.productos;
+  prods = prods || DB.productos.filter(p => p.stock > 0);
   const grid = document.getElementById('mob-pos-grid');
   if (!grid) return;
   const promoActivas = DB.promociones.filter(p => p.activa && p.hasta >= today());
@@ -6538,7 +6552,7 @@ if (cli) { cli.deuda = (cli.deuda||0) + total; cli.compras = (cli.compras||0) + 
 
   // Always register movement with ensureCajaAbierta
   ensureCajaAbierta();
- DB.movimientos.push({ tipo:'fiado', desc:`Fiado — ${getClienteNombre(clienteId)}`, monto:total, hora:nowTime(), fecha:today(), cajero:currentUser });
+  DB.movimientos.push({ tipo:'fiado', desc:`Fiado — ${getClienteNombre(clienteId)}`, monto:total, hora:nowTime(), fecha:today(), cajero:currentUser });
 
   fbGuardar(); fbGuardarProductos();
   try { renderDashboard(); } catch(e){}
@@ -6593,7 +6607,6 @@ function mobProcesarVenta() {
   DB.caja.ingresos += total;
   DB.movimientos.push({ tipo:'ingreso', desc:`Venta POS móvil — ${metodo}`, monto:total, hora:nowTime(), fecha:today(), cajero:currentUser });
 
-  DB.ventas.push(venta);
   if (!DB.historialVentas) DB.historialVentas = [];
   DB.historialVentas.push({ ...venta, origen:'pos', estado:'completado', estadoStock:'descontado' });
   fbGuardar();
@@ -6602,7 +6615,7 @@ function mobProcesarVenta() {
   try { renderCaja(); } catch(e){}
   try { generarReporte(); } catch(e){}
   toggleMobCart();
-   cart = [];
+  cart = [];
   mobRenderCart(); mobCalcTotal(); mobUpdateBar();
   const descEl2 = document.getElementById('pos-descuento');
   if (descEl2) descEl2.value = '';
@@ -6765,8 +6778,8 @@ function fbEscuchar() {
   if (!fbFS) return;
 
   // Listener operaciones (ventas, caja, clientes, etc.)
- _fbSnapshotUnsub = fbDocRef().onSnapshot(snapshot => {
-   if (_fbEscribiendo) return;
+  _fbSnapshotUnsub = fbDocRef().onSnapshot(snapshot => {
+    if (_fbEscribiendo) return;
     if (snapshot.metadata && snapshot.metadata.hasPendingWrites) return;
     if (Date.now() - _fbLastWriteTs < 2000) return;
     if (!snapshot.exists) return;
@@ -6774,14 +6787,15 @@ function fbEscuchar() {
     if (!data) return;
     // Solo campos operativos (no productos/categorias que vienen de db_productos)
     const camposOp = ['ventas','clientes','fiados','mermas','movimientos',
-                      'proveedores','promociones','caja','config','inventariosMensuales','historialVentas','pedidosOnline'];
+                      'proveedores','promociones','caja','inventariosMensuales','historialVentas','pedidosOnline'];
     camposOp.forEach(k => { if (k in data && k in DB) DB[k] = data[k]; });
+    if (data.config) DB.config = { ...DB.config, ...data.config };
     try { renderDashboard(); }    catch(e){}
     try { updateAlertCount(); }   catch(e){}
     const activePage = document.querySelector('.page.active');
     const pageId = activePage ? activePage.id.replace('page-','') : '';
     try {
-      if (pageId === 'pos')         { renderPosProducts(); if (typeof renderMobPos === 'function') renderMobPos(); }
+      if (pageId === 'pos')         { renderPos(); if (typeof renderMobPos === 'function') renderMobPos(); }
       if (pageId === 'inventario')  { renderInvTable(); }
       if (pageId === 'clientes')    { renderClientes(); }
       if (pageId === 'fiados')      { renderFiados(); }
@@ -6798,29 +6812,29 @@ function fbEscuchar() {
 
   // Listener db_productos (catálogo — solo si otro dispositivo admin cambia inventario)
   fbProdDocRef().onSnapshot(snapshot => {
- if (_fbEscribiendo) return;
+    if (_fbEscribiendo) return;
     if (snapshot.metadata && snapshot.metadata.hasPendingWrites) return;
     if (Date.now() - _fbLastWriteProdTs < 2000) return;
     if (!snapshot.exists) return;
     const data = snapshot.data();
     if (!data) return;
-    if (data.productos) DB.productos  = data.productos;
+    if (data.productos)  DB.productos  = data.productos;
     if (data.categorias) DB.categorias = data.categorias;
-   if (data.config)     DB.config     = { ...DB.config, ...data.config };
+    if (data.config)     DB.config     = { ...DB.config, ...data.config };
     _fbProdCacheTs = Date.now();
     try { renderDashboard(); } catch(e){}
     try { updateAlertCount(); } catch(e){}
     const activePage = document.querySelector('.page.active');
     const pageId = activePage ? activePage.id.replace('page-','') : '';
     try {
-      if (pageId === 'pos')        { renderPosProducts(); if (typeof renderMobPos === 'function') renderMobPos(); }
+      if (pageId === 'pos')        { renderPos(); if (typeof renderMobPos === 'function') renderMobPos(); }
       if (pageId === 'inventario') { renderInvTable(); }
       if (pageId === 'categorias') { renderCategorias(); }
     } catch(e){}
   }, err => { console.warn('Firestore db_productos listener error:', err.code); });
 
   // Listener para DB_EXT (sueldos, gastos, capital, niveles, navidad)
- fbFS.collection('aleze').doc('db_ext').onSnapshot(snapshot => {
+  fbFS.collection('aleze').doc('db_ext').onSnapshot(snapshot => {
     if (_fbEscribiendo) return;
     if (snapshot.metadata && snapshot.metadata.hasPendingWrites) return;
     if (Date.now() - _fbLastWriteTs < 2000) return;
@@ -7183,7 +7197,7 @@ function guardarActualizarVenta() {
     // Estaba solo en DB.ventas → mover al historial
     const vi = DB.ventas.findIndex(x => String(x.id) === String(_hvEditId));
     if (vi < 0) { cerrarModal('modal-actualizar-venta'); return; }
- DB.historialVentas.push({ ...DB.ventas[vi], origen:'pos', estado: DB.ventas[vi].estado || 'completado', estadoStock:'descontado' });
+    DB.historialVentas.push({ ...DB.ventas[vi], origen:'pos', estado: DB.ventas[vi].estado || 'completado', estadoStock:'descontado' });
     hvIdx = DB.historialVentas.length - 1;
   }
   const vDB = DB.historialVentas[hvIdx];
@@ -7236,6 +7250,9 @@ function guardarActualizarVenta() {
     vDB.estado        = 'anulado';
     vDB.total         = 0;
     vDB.fechaAnulacion = today() + ' ' + nowTime();
+
+
+
     // Si la caja estaba cerrada registrar igualmente el movimiento
     if (!DB.caja.abierta) {
       DB.movimientos.push({
@@ -7310,6 +7327,8 @@ function guardarActualizarVenta() {
   vDB.total  = nuevoTotal;
   vDB.estado = nuevoTotal === 0 ? 'anulado' : 'parcial';
 
+
+
   // Registrar egreso en caja (siempre, aunque esté cerrada)
   if (DB.caja.abierta) {
     DB.caja.egresos = (DB.caja.egresos||0) + montoReembolso;
@@ -7382,11 +7401,11 @@ function fbEscucharPedidosOnline() {
 
   _pedidosOnlineUnsub = fbFS.collection('pedidos_online')
     .orderBy('fecha', 'desc')
- .onSnapshot(snapshot => {
-     if (_fbEscribiendo) return;
+    .onSnapshot(snapshot => {
+      if (_fbEscribiendo) return;
       if (snapshot.metadata && snapshot.metadata.hasPendingWrites) return;
       if (Date.now() - _fbLastWriteTs < 2000) return;
-      // Actualizar DB.pedidosOnline
+      // Actualizar DB.pedidosOnline con todos los documentos de la colección
       const nuevos = snapshot.docs
         .map(doc => doc.data())
         .filter(p => p.estado === 'pendiente' && !_pedidosKnownIds.has(String(p.id)));
@@ -7484,6 +7503,7 @@ function renderPedidosOnline() {
             <option value="procesado"  ${p.estado==='procesado' ?'selected':''}>Procesado</option>
             <option value="entregado"  ${p.estado==='entregado' ?'selected':''}>✅ Entregado</option>
             <option value="cancelado"  ${p.estado==='cancelado' ?'selected':''}>❌ Cancelado</option>
+            <option value="eliminar" style="color:var(--danger)">🗑️ Eliminar pedido</option>
           </select>
           ${!bloqueado ? `<button class="btn btn-primary btn-xs" onclick="confirmarEntregaPedido('${p.id}')">Guardar</button>` : ''}
         </div>
@@ -7730,7 +7750,7 @@ function guardarEdicionPedido() {
 
   // Guardar cambios operativos en aleze/db
   fbGuardar();
-setTimeout(() => { _fbEscribiendo = false; }, 8000);
+  setTimeout(() => { _fbEscribiendo = false; }, 8000);
   cerrarModal('modal-editar-pedido');
   renderPedidosOnline();
   try { renderDashboard(); }       catch(e){}
@@ -7805,6 +7825,23 @@ function confirmarEntregaPedido(id) {
     });
   }
 
+  // Si se elimina el pedido
+  if (nuevoEstado === 'eliminar') {
+    if (!confirm('¿Eliminar este pedido permanentemente?')) {
+      setTimeout(() => { _fbEscribiendo = false; }, 500);
+      return;
+    }
+    DB.pedidosOnline = DB.pedidosOnline.filter(x => String(x.id) !== String(id));
+    if (fbFS) {
+      fbFS.collection('pedidos_online').doc(String(id)).delete()
+        .catch(e => console.warn('pedidos_online delete error:', e.code));
+    }
+    fbGuardar();
+    setTimeout(() => { _fbEscribiendo = false; }, 8000);
+    renderPedidosOnline();
+    try { renderDashboard(); } catch(e) {}
+    return;
+  }
   // Si se cancela, no descontar nada — solo cambiar estado
   p.estado = nuevoEstado;
   // Register cash movement for online delivery
@@ -9073,7 +9110,7 @@ function aplicarCambiosExcel() {
   renderInvTable();
   updateAlertCount();
   try { renderDashboard(); } catch(e) {}
-  try { renderPosProducts(); } catch(e) {}
+  try { renderPos(); } catch(e) {}
 
   _excelCambiosPendientes = [];
 
