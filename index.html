@@ -6652,6 +6652,7 @@ let fbApp = null;
 let fbFS = null;          // Firestore instance
 let _fbEscribiendo = false; // Flag anti-loop: true mientras este dispositivo escribe
 let _fbSaveTimer = null;
+let _fbLastWriteTs = 0; // timestamp del último fbGuardar() — protege ventana debounce
 let fbAuth = null; // Firebase Authentication
 let _fbSnapshotUnsub = null; // Para desuscribirse si fuera necesario
 let _pedidosOnlineUnsub = null; // Listener colección pedidos_online
@@ -6717,9 +6718,10 @@ function fbProdDocRef()  { return fbFS.collection('aleze').doc('db_productos'); 
 let _fbSaveTimerProd = null;
 function fbGuardar() {
   if (!fbFS) return;
-  _fbEscribiendo = true;
+  _fbLastWriteTs = Date.now();
   clearTimeout(_fbSaveTimer);
   _fbSaveTimer = setTimeout(() => {
+    _fbEscribiendo = true;
     // Excluir productos y categorias — tienen su propio documento
     const payload = JSON.parse(JSON.stringify(DB));
     delete payload.productos;
@@ -6759,8 +6761,9 @@ function fbEscuchar() {
 
   // Listener operaciones (ventas, caja, clientes, etc.)
  _fbSnapshotUnsub = fbDocRef().onSnapshot(snapshot => {
-    if (_fbEscribiendo) return;
+   if (_fbEscribiendo) return;
     if (snapshot.metadata && snapshot.metadata.hasPendingWrites) return;
+    if (Date.now() - _fbLastWriteTs < 2000) return;
     if (!snapshot.exists) return;
     const data = snapshot.data();
     if (!data) return;
@@ -6790,12 +6793,13 @@ function fbEscuchar() {
 
   // Listener db_productos (catálogo — solo si otro dispositivo admin cambia inventario)
   fbProdDocRef().onSnapshot(snapshot => {
-    if (_fbEscribiendo) return;
+ if (_fbEscribiendo) return;
     if (snapshot.metadata && snapshot.metadata.hasPendingWrites) return;
+    if (Date.now() - _fbLastWriteTs < 2000) return;
     if (!snapshot.exists) return;
     const data = snapshot.data();
     if (!data) return;
-    if (data.productos)  DB.productos  = data.productos;
+    if (data.productos) DB.productos  = data.productos;
     if (data.categorias) DB.categorias = data.categorias;
     if (data.config)     DB.config     = data.config;
     _fbProdCacheTs = Date.now();
@@ -6814,6 +6818,7 @@ function fbEscuchar() {
  fbFS.collection('aleze').doc('db_ext').onSnapshot(snapshot => {
     if (_fbEscribiendo) return;
     if (snapshot.metadata && snapshot.metadata.hasPendingWrites) return;
+    if (Date.now() - _fbLastWriteTs < 2000) return;
     if (!snapshot.exists) return;
     const ext = snapshot.data();
     if (!ext) return;
@@ -7373,9 +7378,10 @@ function fbEscucharPedidosOnline() {
   _pedidosOnlineUnsub = fbFS.collection('pedidos_online')
     .orderBy('fecha', 'desc')
  .onSnapshot(snapshot => {
-      if (_fbEscribiendo) return;
+     if (_fbEscribiendo) return;
       if (snapshot.metadata && snapshot.metadata.hasPendingWrites) return;
-      // Actualizar DB.pedidosOnline con todos los documentos de la colección
+      if (Date.now() - _fbLastWriteTs < 2000) return;
+      // Actualizar DB.pedidosOnline
       const nuevos = snapshot.docs
         .map(doc => doc.data())
         .filter(p => p.estado === 'pendiente' && !_pedidosKnownIds.has(String(p.id)));
