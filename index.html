@@ -31,6 +31,13 @@
   };
   document.head.appendChild(s);
 })();
+
+function hideSplash() {
+  const s = document.getElementById('splash-screen');
+  if (!s || s.classList.contains('hidden')) return;
+  s.classList.add('fade-out');
+  setTimeout(() => { s.classList.add('hidden'); }, 420);
+}
 </script>
 <!-- html2canvas: carga diferida — solo cuando se imprime ticket -->
 <script>
@@ -192,6 +199,46 @@ function _loadHtml5QrCode(cb) {
   /* LAYOUT */
   #app { display: none; height: 100dvh; flex-direction: column; }
   #app.visible { display: flex; }
+
+  /* ── SPLASH SCREEN ─────────────────────────────── */
+  #splash-screen {
+    position: fixed; inset: 0;
+    background: linear-gradient(135deg, #5B21B6 0%, #7C3AED 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    transition: opacity 0.4s ease;
+  }
+  #splash-screen.fade-out {
+    opacity: 0;
+    pointer-events: none;
+  }
+  #splash-screen.hidden { display: none; }
+  .splash-icon {
+    width: 96px; height: 96px;
+    margin-bottom: 1.25rem;
+  }
+  .splash-name {
+    font-size: 2rem; font-weight: 900;
+    color: white; letter-spacing: 4px;
+    margin-bottom: 0.25rem;
+  }
+  .splash-sub {
+    font-size: 0.9rem; color: #C4B5FD;
+    letter-spacing: 8px; font-weight: 400;
+    margin-bottom: 2rem;
+  }
+  .splash-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: rgba(255,255,255,0.4);
+    animation: splashPulse 1.2s infinite ease-in-out;
+  }
+  @keyframes splashPulse {
+    0%, 100% { transform: scale(1); opacity: 0.4; }
+    50%       { transform: scale(1.4); opacity: 1; }
+  }
 
   header {
     height: var(--header-h);
@@ -407,7 +454,6 @@ function _loadHtml5QrCode(cb) {
   }
 
   /* POS SPECIFIC */
-  .pos-wrap-old { display: grid; gap: 1rem; height: calc(100dvh - var(--header-h) - 2.5rem); }
   .pos-products { overflow-y: auto; min-width: 0; }
   /* ── FASE 3.2: Cart Drawer derecho ──────────────────────────────────────── */
   /* pos-wrap ahora es una sola columna — máximo espacio para productos */
@@ -523,7 +569,6 @@ function _loadHtml5QrCode(cb) {
   }
 
   /* Tabs para móvil — hidden, replaced by split view */
-  .pos-tabs { display: none; }
 
 
   @media (max-width: 760px) {
@@ -655,7 +700,6 @@ function _loadHtml5QrCode(cb) {
     .product-card .p-stock { font-size: 0.65rem; }
 
     /* Ocultar elementos del POS desktop en móvil */
-    .pos-tabs { display: none !important; }
     .pos-wrap { display: none !important; }
 
 
@@ -1101,6 +1145,14 @@ function _loadHtml5QrCode(cb) {
 <div class="mob-sidebar-overlay" id="mob-sidebar-overlay" onclick="closeMobSidebar()"></div>
 
 <!-- LOGIN -->
+<!-- ── SPLASH SCREEN ── -->
+<div id="splash-screen">
+  <img src="icon.svg" class="splash-icon" alt="Aleze Shop" onerror="this.style.display='none'"/>
+  <div class="splash-name">ALEZE</div>
+  <div class="splash-sub">SHOP</div>
+  <div class="splash-dot"></div>
+</div>
+
 <div id="login-screen">
   <div class="login-card">
     <div class="login-logo">🛒</div>
@@ -1286,7 +1338,6 @@ function _loadHtml5QrCode(cb) {
         <!-- ══════════════════════════════════
              DESKTOP layout (>760px)
              ══════════════════════════════════ -->
-        <div class="pos-tabs" style="display:none"><!-- legacy tabs hidden --></div>
         <!-- Overlay del drawer — click fuera cierra el carrito -->
         <div class="pos-cart-overlay" id="pos-cart-overlay" onclick="cerrarCartDrawer()"></div>
 
@@ -2889,6 +2940,7 @@ async function doLogin() {
   // ── PASO 5: Mostrar UI — solo después de tener datos ──
   document.getElementById('login-screen').classList.remove('visible');
   document.getElementById('app').classList.add('visible');
+  try { hideSplash(); } catch(e) {}
   document.getElementById('header-username').textContent = name;
   document.getElementById('header-avatar').textContent = name.substring(0,2).toUpperCase();
   document.getElementById('header-role').textContent = role === 'admin' ? '(Admin)' : '(Cajero)';
@@ -2897,7 +2949,13 @@ async function doLogin() {
     document.getElementById('admin-nav').style.display = 'none';
     navigate('pos');
   } else {
-    renderDashboard();
+    // Resolver shortcut PWA si viene de #pos
+    if (window.__pendingRoute === 'pos') {
+      window.__pendingRoute = null;
+      navigate('pos');
+    } else {
+      renderDashboard();
+    }
   }
   updateAlertCount();
 
@@ -3237,7 +3295,6 @@ function renderCart() {
   const wrap = document.getElementById('cart-items');
   if (cart.length === 0) {
     wrap.innerHTML = '<p style="text-align:center;color:var(--gray-400);font-size:0.85rem;padding:2rem 0">Carrito vacío — agrega productos</p>';
-    updateCartTabCount();
     return;
   }
   wrap.innerHTML = cart.map((item, i) => `
@@ -3251,7 +3308,6 @@ function renderCart() {
       <div class="cart-item-price">${sol(item.precio * item.cant)}</div>
       <button class="qty-btn" onclick="removeItem(${i})" style="background:var(--danger-light);color:var(--danger)">✕</button>
     </div>`).join('');
-  updateCartTabCount();
   if (isMobile()) mobUpdateBar();
 }
 
@@ -5424,7 +5480,6 @@ function manejarCodigoDetectado(codigo) {
           addToCart(prod.id);
         }
         cerrarScanner();
-        if (window.innerWidth <= 900) switchPosTab('carrito');
       }, 700);
     } else {
       document.getElementById('scanner-prod-nombre').textContent = '⚠️ Código no registrado en inventario';
@@ -6251,33 +6306,7 @@ function toggleSidebar() {
 }
 
 // ===================== POS TABS MÓVIL =====================
-function switchPosTab(tab) {
-  const productos = document.getElementById('pos-products-panel');
-  const carrito   = document.getElementById('pos-cart-panel');
-  const btnProds  = document.getElementById('tab-productos');
-  const btnCart   = document.getElementById('tab-carrito');
-  if (tab === 'productos') {
-    productos.classList.remove('hidden');
-    carrito.classList.add('hidden');
-    btnProds.classList.add('active');
-    btnCart.classList.remove('active');
-  } else {
-    carrito.classList.remove('hidden');
-    productos.classList.add('hidden');
-    btnCart.classList.add('active');
-    btnProds.classList.remove('active');
-  }
-}
 
-// Actualizar contador de ítems en tab carrito
-function updateCartTabCount() {
-  const count = cart.reduce((s, i) => s + i.cant, 0);
-  const el = document.getElementById('tab-cart-count');
-  if (el) {
-    el.textContent = count > 0 ? count : 0;
-    el.style.display = count > 0 ? 'inline' : 'none';
-  }
-}
 
 // ===================== MOBILE POS =====================
 // cart[] ya declarado globalmente — sistema unificado
@@ -6559,13 +6588,7 @@ function mobProcesarVenta() {
   mostrarTicket(venta);
 }
 
-function syncMobToDesktop() {
-  // copy mob cart to desktop cart for shared operations
-  cart = cart.map(i => ({...i}));
-  renderCart(); calcTotal();
-  const cliId = document.getElementById('mob-pos-cliente')?.value || '';
-  document.getElementById('pos-cliente').value = cliId;
-}
+
 
 function renderMobPos() {
   if (!isMobile()) return;
@@ -7302,6 +7325,32 @@ function guardarActualizarVenta() {
 // ── Listener en tiempo real de colección pedidos_online ──────────────────────
 // Se activa cuando el admin inicia sesión — mantiene DB.pedidosOnline sincronizado
 // sin necesidad de recargar la página cuando llegan nuevos pedidos
+// ── Notificaciones de pedidos online ──────────────────────────
+// Solo muestra notificación cuando llega un pedido nuevo pendiente.
+// No toca lógica de ventas, dashboard ni sincronización.
+let _pedidosKnownIds = new Set(); // IDs ya vistos en esta sesión
+let _pedidosLoaded   = false;       // true tras la primera carga — evita notificar al iniciar
+
+function notificarNuevoPedido(pedido) {
+  if (!('Notification' in window)) return;
+  if (Notification.permission === 'denied') return;
+  const mostrar = () => {
+    try {
+      new Notification('🛍️ Nuevo pedido online', {
+        body: `${pedido.clienteNombre || 'Cliente'} — S/ ${(pedido.total || 0).toFixed(2)}`,
+        icon: '/minimarket-aleze/icon.svg',
+        tag: 'pedido-' + pedido.id, // evita duplicados
+        requireInteraction: false
+      });
+    } catch(e) { console.warn('[Notif] Error:', e); }
+  };
+  if (Notification.permission === 'granted') {
+    mostrar();
+  } else {
+    Notification.requestPermission().then(p => { if (p === 'granted') mostrar(); });
+  }
+}
+
 function fbEscucharPedidosOnline() {
   if (!fbFS) return;
   // Limpiar listener previo si existe
@@ -7312,7 +7361,17 @@ function fbEscucharPedidosOnline() {
     .onSnapshot(snapshot => {
       if (_fbEscribiendo) return;
       // Actualizar DB.pedidosOnline con todos los documentos de la colección
+      const nuevos = snapshot.docs
+        .map(doc => doc.data())
+        .filter(p => p.estado === 'pendiente' && !_pedidosKnownIds.has(String(p.id)));
       DB.pedidosOnline = snapshot.docs.map(doc => doc.data());
+      // Notificar pedidos nuevos SOLO después de la carga inicial
+      if (_pedidosLoaded) {
+        nuevos.forEach(p => { try { notificarNuevoPedido(p); } catch(e) {} });
+      }
+      // Registrar IDs conocidos para no re-notificar en siguientes snapshots
+      DB.pedidosOnline.forEach(p => _pedidosKnownIds.add(String(p.id)));
+      _pedidosLoaded = true;
       // Refrescar UI si el admin está viendo pedidos
       try { renderPedidosOnline(); } catch(e) {}
       // Actualizar badge de alertas (pedidos pendientes)
@@ -7815,6 +7874,7 @@ function initTienda() {
   document.getElementById('login-screen').classList.remove('visible');
   const appEl = document.getElementById('app');
   if (appEl) appEl.style.display = 'none';
+  try { hideSplash(); } catch(e) {}
   // Mostrar tienda
   let tiendaEl = document.getElementById('tienda-publica');
   if (!tiendaEl) {
@@ -8426,6 +8486,12 @@ function checkRoute() {
   if (esTienda) {
     initTienda();
     return;
+  }
+
+  // Shortcut PWA: guardar intent de ruta para resolver post-login
+  const hash = window.location.hash;
+  if (hash === '#pos' || hash.startsWith('#pos')) {
+    window.__pendingRoute = 'pos';
   }
 
   // Es la ruta admin — mostrar login (ya está visible por earlyRoute)
