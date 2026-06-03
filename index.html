@@ -3319,7 +3319,7 @@ function changeQty(i, delta) {
 }
 
 function removeItem(i) { cart.splice(i, 1); renderCart(); calcTotal(); }
-function clearCart() { cart = []; renderCart(); calcTotal(); document.getElementById('pos-search').value = ''; renderPosGrid(); }
+function clearCart() { cart = []; renderCart(); calcTotal(); document.getElementById('pos-search').value = ''; renderPosGrid(); try { updatePosCartBadge(); } catch(e){} try { mobUpdateBar(); } catch(e){} }
 
 
 // ── Helper: get category icon (image if available, else emoji) ──
