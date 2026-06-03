@@ -6811,8 +6811,9 @@ function fbEscuchar() {
   }, err => { console.warn('Firestore db_productos listener error:', err.code); });
 
   // Listener para DB_EXT (sueldos, gastos, capital, niveles, navidad)
-  fbFS.collection('aleze').doc('db_ext').onSnapshot(snapshot => {
+ fbFS.collection('aleze').doc('db_ext').onSnapshot(snapshot => {
     if (_fbEscribiendo) return;
+    if (snapshot.metadata && snapshot.metadata.hasPendingWrites) return;
     if (!snapshot.exists) return;
     const ext = snapshot.data();
     if (!ext) return;
