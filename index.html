@@ -3543,12 +3543,15 @@ if (cli) { cli.deuda = (cli.deuda||0) + total; cli.compras = (cli.compras||0) + 
 
 // ===================== TICKET =====================
 function mostrarTicket(venta) {
-  const cfg = DB.config;
+  const cfg = DB.config || {};
+  const cfgNombre = cfg.nombre || 'Minimarket Aleze';
+  const cfgDir    = cfg.direccion || '';
+  const cfgMsg    = cfg.ticketMsg || '¡Gracias por su compra!';
   const comboDescuento = venta.descuentoCombo || 0;
   const descManual = venta.descuentoManual || (comboDescuento === 0 ? (venta.descuento||0) : 0);
   const html = `<div class="ticket" id="ticket-print">
-    <div class="ticket-center"><strong style="font-size:1rem">${cfg.nombre}</strong></div>
-    <div class="ticket-center" style="font-size:0.7rem;color:#666">${cfg.direccion}</div>
+    <div class="ticket-center"><strong style="font-size:1rem">${cfgNombre}</strong></div>
+    <div class="ticket-center" style="font-size:0.7rem;color:#666">${cfgDir}</div>
     ${cfg.telefono ? `<div class="ticket-center" style="font-size:0.7rem">Tel: ${cfg.telefono}</div>` : ''}
     <div class="ticket-line"></div>
     <div class="ticket-row"><span>Fecha:</span><span>${formatDate(venta.fecha)}</span></div>
@@ -3565,7 +3568,7 @@ function mostrarTicket(venta) {
     ${descManual > 0 ? `<div class="ticket-row"><span>Descuento:</span><span>-${sol(descManual)}</span></div>` : ''}
     <div class="ticket-row"><strong>TOTAL</strong><strong>${sol(venta.total)}</strong></div>
     <div class="ticket-line"></div>
-    <div class="ticket-center" style="color:#666">${cfg.ticketMsg}</div>
+    <div class="ticket-center" style="color:#666">${cfgMsg}</div>
   </div>`;
   document.getElementById('ticket-content').innerHTML = html;
   abrirModal('modal-ticket');
@@ -6801,7 +6804,7 @@ function fbEscuchar() {
     if (!data) return;
     if (data.productos) DB.productos  = data.productos;
     if (data.categorias) DB.categorias = data.categorias;
-    if (data.config)     DB.config     = data.config;
+   if (data.config)     DB.config     = { ...DB.config, ...data.config };
     _fbProdCacheTs = Date.now();
     try { renderDashboard(); } catch(e){}
     try { updateAlertCount(); } catch(e){}
