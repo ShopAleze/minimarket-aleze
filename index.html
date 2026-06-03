@@ -5788,7 +5788,7 @@ function updateCapStats() {
 
   const mes    = getMesActual();
   const ventasMes = DB.ventas.filter(v => v.fecha.startsWith(mes)).reduce((s,v) => s+v.total, 0);
-  const costoMes  = DB.ventas.filter(v => v.fecha.startsWith(mes)).reduce((s,v) =>
+const costoMes  = DB.ventas.filter(v => v.fecha.startsWith(mes) && v.items && v.items.length).reduce((s,v) =>
     s + v.items.reduce((ss,i) => { const p=DB.productos.find(x=>x.id===i.prodId); return ss+(p?p.costo*i.cant:0); }, 0), 0);
   const gastosMes  = DB_EXT.gastos.filter(g => g.fecha && g.fecha.startsWith(mes)).reduce((s,g) => s+g.monto, 0);
   const gastosRec  = DB_EXT.gastosRec.reduce((s,g) => s+g.monto, 0);
