@@ -4328,7 +4328,16 @@ function guardarProveedor() {
   renderProveedores();
 }
 
-function eliminarProveedor(id) { if (!confirm('¿Eliminar proveedor?')) return; DB.proveedores = DB.proveedores.filter(p => p.id !== id); fbGuardar(); renderProveedores(); }
+function eliminarProveedor(id) {
+  const prodsAsociados = DB.productos.filter(p => p.prov == id);
+  if (prodsAsociados.length > 0) {
+    if (!confirm(`Este proveedor tiene ${prodsAsociados.length} producto(s) asociado(s).\n¿Deseas eliminarlo de todas formas? Los productos quedarán sin proveedor asignado.`)) return;
+  } else {
+    if (!confirm('¿Eliminar proveedor?')) return;
+  }
+  DB.proveedores = DB.proveedores.filter(p => p.id !== id);
+  fbGuardar(); renderProveedores();
+}
 
 let editingBoletaProvId = null;
 function verBoletas(provId) {
