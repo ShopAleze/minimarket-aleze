@@ -2865,7 +2865,18 @@ async function doLogin() {
     if (errEl) { errEl.style.display='block'; errEl.style.color='var(--danger)'; errEl.textContent='Usuario no configurado'; }
     return;
   }
-
+// ── PASO 1.5: Verificar versión ──
+  try {
+    const verSnap = await fbFS.collection('aleze').doc('version').get();
+    if (verSnap.exists) {
+      const requerida = verSnap.data().minVersion || '1.0.0';
+      if (APP_VERSION < requerida) {
+        if (btnEl) { btnEl.disabled = false; btnEl.textContent = 'Ingresar'; }
+        if (errEl) { errEl.style.display='block'; errEl.style.color='var(--danger)'; errEl.textContent='⚠️ Versión desactualizada. Cierra y vuelve a abrir la app para actualizar.'; }
+        return;
+      }
+    }
+  } catch(e) {}
   // ── PASO 2: Firebase Auth — única fuente de verdad ──
   if (btnEl) { btnEl.disabled = true; btnEl.textContent = '⏳ Verificando...'; }
 
@@ -6652,7 +6663,7 @@ window.addEventListener('beforeunload', function(e) {
 //   • Flag _fbEscribiendo evita el loop escritura→listener→escritura
 //   • Debounce 1200ms agrupa operaciones rápidas en UNA sola escritura
 //   • Toda la DB en 1 documento Firestore → mínimo de operaciones posible
-
+const APP_VERSION = '1.0.1';
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyBXelkwsha7QzyOLxIbb4wP0ePEbSyi5IE",
   authDomain: "minimarket-aleze-400b5.firebaseapp.com",
