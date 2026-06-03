@@ -6717,9 +6717,9 @@ function fbProdDocRef()  { return fbFS.collection('aleze').doc('db_productos'); 
 let _fbSaveTimerProd = null;
 function fbGuardar() {
   if (!fbFS) return;
+  _fbEscribiendo = true;
   clearTimeout(_fbSaveTimer);
   _fbSaveTimer = setTimeout(() => {
-    _fbEscribiendo = true;
     // Excluir productos y categorias — tienen su propio documento
     const payload = JSON.parse(JSON.stringify(DB));
     delete payload.productos;
