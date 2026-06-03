@@ -6791,6 +6791,7 @@ function fbEscuchar() {
   // Listener db_productos (catálogo — solo si otro dispositivo admin cambia inventario)
   fbProdDocRef().onSnapshot(snapshot => {
     if (_fbEscribiendo) return;
+    if (snapshot.metadata && snapshot.metadata.hasPendingWrites) return;
     if (!snapshot.exists) return;
     const data = snapshot.data();
     if (!data) return;
