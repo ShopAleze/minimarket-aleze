@@ -7710,7 +7710,7 @@ function guardarEdicionPedido() {
 
   // Guardar cambios operativos en aleze/db
   fbGuardar();
-  setTimeout(() => { _fbEscribiendo = false; }, 2000);
+setTimeout(() => { _fbEscribiendo = false; }, 8000);
   cerrarModal('modal-editar-pedido');
   renderPedidosOnline();
   try { renderDashboard(); }       catch(e){}
@@ -7767,7 +7767,6 @@ function confirmarEntregaPedido(id) {
       descuento: p.descuento || 0, total: p.total,
       metodo: p.metodo, origen: 'online'
     };
-    DB.ventas.push(ventaOnline);
     if (!DB.historialVentas) DB.historialVentas = [];
     const itemsFinales = (p.items||[]).filter(i=>i.cant>0&&!i.eliminado);
     DB.historialVentas.push({
@@ -7807,7 +7806,7 @@ function confirmarEntregaPedido(id) {
   // Guardar cambios operativos en aleze/db y aleze/db_productos
   fbGuardar();
   fbGuardarProductos();
-  setTimeout(() => { _fbEscribiendo = false; }, 2000);
+  setTimeout(() => { _fbEscribiendo = false; }, 8000);
 
   // Sincronización total — caja, inventario, historial, dashboard, reportes
   renderPedidosOnline();
