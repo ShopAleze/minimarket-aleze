@@ -3027,7 +3027,21 @@ function navigate(page) {
     if (n.getAttribute('onclick') && n.getAttribute('onclick').includes("'" + page + "'")) n.classList.add('active');
   });
   if (page === 'dashboard') renderDashboard();
-  if (page === 'pos') { renderPos(); if (isMobile()) renderMobPos(); }
+  if (page === 'pos') {
+  if (fbFS && DB.productos.length === 0) {
+    fbProdDocRef().get().then(snap => {
+      if (snap.exists) {
+        const pd = snap.data();
+        if (pd.productos)  DB.productos  = pd.productos;
+        if (pd.categorias) DB.categorias = pd.categorias;
+        if (pd.config)     DB.config = { ...DB.config, ...pd.config };
+      }
+      renderPos(); if (isMobile()) renderMobPos();
+    }).catch(() => { renderPos(); if (isMobile()) renderMobPos(); });
+  } else {
+    renderPos(); if (isMobile()) renderMobPos();
+  }
+}
   if (page === 'inventario') renderInventario();
   if (page === 'categorias') renderCategorias();
   if (page === 'proveedores') renderProveedores();
