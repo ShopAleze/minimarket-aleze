@@ -6521,10 +6521,11 @@ if (cli) { cli.deuda = (cli.deuda||0) + total; cli.compras = (cli.compras||0) + 
 
   // Always register movement with ensureCajaAbierta
   ensureCajaAbierta();
-  DB.movimientos.push({ tipo:'fiado', desc:`Fiado — ${getClienteNombre(clienteId)}`, monto:total, hora:nowTime(), fecha:today() });
+ DB.movimientos.push({ tipo:'fiado', desc:`Fiado — ${getClienteNombre(clienteId)}`, monto:total, hora:nowTime(), fecha:today(), cajero:currentUser });
 
   fbGuardar(); fbGuardarProductos();
   try { renderDashboard(); } catch(e){}
+  try { renderCaja(); } catch(e){}
   alert('Fiado registrado para ' + getClienteNombre(clienteId) + ': ' + sol(total));
 
   cart = [];
