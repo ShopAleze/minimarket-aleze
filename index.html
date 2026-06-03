@@ -6758,8 +6758,9 @@ function fbEscuchar() {
   if (!fbFS) return;
 
   // Listener operaciones (ventas, caja, clientes, etc.)
-  _fbSnapshotUnsub = fbDocRef().onSnapshot(snapshot => {
+ _fbSnapshotUnsub = fbDocRef().onSnapshot(snapshot => {
     if (_fbEscribiendo) return;
+    if (snapshot.metadata && snapshot.metadata.hasPendingWrites) return;
     if (!snapshot.exists) return;
     const data = snapshot.data();
     if (!data) return;
