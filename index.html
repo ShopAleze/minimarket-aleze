@@ -4616,14 +4616,89 @@ function renderFiados() {
           <span id="arr-${detalleId}" style="font-size:1.1rem;color:var(--gray-400)">▼</span>
         </div>
       </div>
-      <div id="${detalleId}" style="display:none;margin-top:.75rem">${detalle}</div>
+     <div id="${detalleId}" style="display:none;margin-top:.75rem">
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;margin-bottom:.75rem;padding:.5rem;background:var(--gray-50);border-radius:8px">
+          <select class="form-control" id="fi-tipo-${cid}" style="width:150px;font-size:.78rem" onchange="renderDetalleFiado(${cid})">
+            <option value="todo">Todo</option>
+            <option value="pendiente">Solo pendientes</option>
+            <option value="pagado">Solo pagados</option>
+          </select>
+          <input type="date" class="form-control" id="fi-int-desde-${cid}" style="width:140px;font-size:.78rem" onchange="renderDetalleFiado(${cid})"/>
+          <input type="date" class="form-control" id="fi-int-hasta-${cid}" style="width:140px;font-size:.78rem" onchange="renderDetalleFiado(${cid})"/>
+          <button class="btn btn-outline btn-xs" onclick="limpiarFiltrosInternosFiado(${cid})">✕</button>
+        </div>
+        <div id="fi-detalle-content-${cid}">${detalle}</div>
+      </div>
       <div style="margin-top:.5rem;padding-top:.5rem;border-top:1px solid var(--warning);text-align:right;display:flex;gap:.5rem;justify-content:flex-end">
-        <button class="btn btn-outline btn-sm" onclick="compartirResumenFiado(${cid})">💬 WhatsApp resumen</button>
+        <button class="btn btn-outline btn-sm" onclick="compartirResumenFiadoCliente(${cid})">💬 WhatsApp resumen</button>
         <button class="btn btn-outline btn-sm" onclick="abrirHistorialCliente(${cid},event)">📋 Ver historial completo</button>
       </div>
     </div>`;
   }).join('');
 }
+  function limpiarFiltrosInternosFiado(cid) {
+  document.getElementById('fi-tipo-' + cid).value = 'todo';
+  document.getElementById('fi-int-desde-' + cid).value = '';
+  document.getElementById('fi-int-hasta-' + cid).value = '';
+  renderDetalleFiado(cid);
+}
+  
+function renderDetalleFiado(cid) {
+  const tipo  = document.getElementById('fi-tipo-' + cid)?.value || 'todo';
+  const desde = document.getElementById('fi-int-desde-' + cid)?.value || '';
+  const hasta = document.getElementById('fi-int-hasta-' + cid)?.value || '';
+  let fiados  = DB.fiados.filter(f => f.clienteId === cid);
+  if (desde) fiados = fiados.filter(f => f.fecha >= desde);
+  if (hasta) fiados = fiados.filter(f => f.fecha <= hasta);
+  if (tipo === 'pendiente') fiados = fiados.filter(f => (f.total - f.pagado) > 0);
+  if (tipo === 'pagado')    fiados = fiados.filter(f => (f.total - f.pagado) <= 0);
+  const html = fiados.map(f => {
+    const pend = f.total - f.pagado;
+    return `<div style="border-left:3px solid var(--warning);padding:.5rem .75rem;margin-bottom:.5rem;background:white;border-radius:0 6px 6px 0">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.3rem">
+        <span style="font-size:.75rem;color:var(--gray-500)">${formatDate(f.fecha)}</span>
+        <span style="font-size:.82rem;font-weight:700;color:${pend>0?'var(--danger)':'var(--accent)'}">
+          ${pend > 0 ? sol(pend)+' pendiente' : '✅ Pagado'}
+        </span>
+      </div>
+      <div style="font-size:.8rem;margin-bottom:.3rem">
+        ${f.items.map(i => `${i.nombre} x${i.cant} = ${sol(i.precio*i.cant)}`).join(' · ')}
+      </div>
+      <div style="font-size:.72rem;color:var(--gray-500)">Total: ${sol(f.total)} | Pagado: ${sol(f.pagado)}</div>
+      <div style="display:flex;gap:.4rem;margin-top:.4rem;flex-wrap:wrap">
+        ${pend > 0 ? `<button class="btn btn-accent btn-xs" onclick="abrirPagoFiado(${f.id})">💰 Registrar pago</button>` : ''}
+        ${currentRole === 'admin' ? `<button class="btn btn-xs" style="background:var(--danger-light);color:var(--danger)" onclick="confirmarEliminarFiado(${f.id})">🗑️ Eliminar</button>` : ''}
+      </div>
+    </div>`;
+  }).join('') || '<p style="color:var(--gray-400);font-size:.82rem;padding:.5rem">Sin registros para los filtros seleccionados</p>';
+  document.getElementById('fi-detalle-content-' + cid).innerHTML = html;
+}
+function compartirResumenFiadoCliente(cid) {
+  const cli   = DB.clientes.find(c => c.id === cid);
+  const nombre = cli ? (cli.alias || cli.nombre) : 'Cliente';
+  const tel   = cli && cli.tel ? cli.tel.replace(/\s/g,'') : '';
+  const tipo  = document.getElementById('fi-tipo-' + cid)?.value || 'todo';
+  const desde = document.getElementById('fi-int-desde-' + cid)?.value || '';
+  const hasta = document.getElementById('fi-int-hasta-' + cid)?.value || '';
+  let fiados  = DB.fiados.filter(f => f.clienteId === cid);
+  if (desde) fiados = fiados.filter(f => f.fecha >= desde);
+  if (hasta) fiados = fiados.filter(f => f.fecha <= hasta);
+  if (tipo === 'pendiente') fiados = fiados.filter(f => (f.total - f.pagado) > 0);
+  if (tipo === 'pagado')    fiados = fiados.filter(f => (f.total - f.pagado) <= 0);
+  const totalPend = fiados.reduce((s, f) => s + Math.max(0, f.total - f.pagado), 0);
+  let msg = `Hola ${nombre}, su resumen de fiados en *Minimarket Aleze*:\n`;
+  if (desde || hasta) msg += `📅 Período: ${desde ? formatDate(desde) : 'inicio'} al ${hasta ? formatDate(hasta) : 'hoy'}\n`;
+  msg += '\n';
+  fiados.forEach(f => {
+    const pend = f.total - f.pagado;
+    msg += `📌 ${formatDate(f.fecha)}: ${f.items.map(i => i.nombre + ' x' + i.cant).join(', ')} → ${sol(f.total)}`;
+    msg += pend > 0 ? ` _(pendiente: ${sol(pend)})_\n` : ` ✅\n`;
+  });
+  msg += `\n*Total pendiente: ${sol(totalPend)}*\nGracias 🙏`;
+  const url = tel ? `https://wa.me/51${tel}?text=${encodeURIComponent(msg)}` : `https://wa.me/?text=${encodeURIComponent(msg)}`;
+  window.open(url, '_blank');
+}
+  
 function confirmarEliminarFiado(id) {
   const f = DB.fiados.find(x => x.id === id);
   if (!f) return;
