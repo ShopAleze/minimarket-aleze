@@ -6735,12 +6735,6 @@ appCheckInstance.activate(RECAPTCHA_SITE_KEY, true);
 
     fbFS  = firebase.firestore();
     fbAuth = firebase.auth(); // Firebase Authentication para seguridad Firestore
-    // Habilitar persistencia offline (cache local cuando no hay internet)
-    fbFS.enablePersistence({ synchronizeTabs: true })
-      .catch(e => {
-        if (e.code === 'failed-precondition') console.warn('Persistencia: múltiples pestañas abiertas');
-        else if (e.code === 'unimplemented') console.warn('Persistencia offline no disponible en este navegador');
-      });
     return true;
   } catch(e) {
     console.error('Firebase init error:', e);
