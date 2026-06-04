@@ -4521,25 +4521,54 @@ function eliminarCliente(id) {
 }
 
 // ===================== FIADOS =====================
+function limpiarFiltrosFiados() {
+  document.getElementById('fi-desde').value = '';
+  document.getElementById('fi-hasta').value = '';
+  document.getElementById('fi-estado').value = '';
+  document.getElementById('fi-cliente').value = '';
+  renderFiados();
+}
+
 function renderFiados() {
+  const desde     = document.getElementById('fi-desde')?.value || '';
+  const hasta     = document.getElementById('fi-hasta')?.value || '';
+  const estado    = document.getElementById('fi-estado')?.value || '';
+  const cliFilter = parseInt(document.getElementById('fi-cliente')?.value) || 0;
+
+  // Poblar selector de clientes
+  const selCli = document.getElementById('fi-cliente');
+  if (selCli) {
+    const valorActual = selCli.value;
+    selCli.innerHTML = '<option value="">Todos los clientes</option>';
+    const cidsConFiados = [...new Set(DB.fiados.map(f => f.clienteId))];
+    cidsConFiados.forEach(cid => {
+      const cli = DB.clientes.find(c => c.id === cid);
+      if (cli) selCli.innerHTML += `<option value="${cli.id}">${cli.alias||cli.nombre}</option>`;
+    });
+    selCli.value = valorActual;
+  }
+
   const porCliente = {};
   DB.fiados.forEach(f => {
     if (!porCliente[f.clienteId]) porCliente[f.clienteId] = [];
     porCliente[f.clienteId].push(f);
   });
-  const clienteIds = Object.keys(porCliente).map(Number);
+
+  let clienteIds = Object.keys(porCliente).map(Number);
+  if (cliFilter) clienteIds = clienteIds.filter(cid => cid === cliFilter);
+  if (estado === 'pendiente') clienteIds = clienteIds.filter(cid => porCliente[cid].some(f => (f.total - f.pagado) > 0));
+  if (estado === 'pagado') clienteIds = clienteIds.filter(cid => porCliente[cid].every(f => (f.total - f.pagado) <= 0));
+  if (desde || hasta) clienteIds = clienteIds.filter(cid => porCliente[cid].some(f => (!desde || f.fecha >= desde) && (!hasta || f.fecha <= hasta)));
+
   const totalDeuda = DB.fiados.reduce((s, f) => s + Math.max(0, f.total - f.pagado), 0);
-  const clientesConDeuda = clienteIds.filter(cid => porCliente[cid].some(f => (f.total - f.pagado) > 0)).length;
-  const mayor = clienteIds.reduce((m, cid) => {
-    const d = porCliente[cid].reduce((s, f) => s + Math.max(0, f.total - f.pagado), 0);
-    return Math.max(m, d);
-  }, 0);
+  const clientesConDeuda = [...new Set(DB.fiados.map(f => f.clienteId))].filter(cid => DB.fiados.filter(f => f.clienteId === cid).some(f => (f.total - f.pagado) > 0)).length;
+  const mayor = [...new Set(DB.fiados.map(f => f.clienteId))].reduce((m, cid) => { const d = DB.fiados.filter(f => f.clienteId === cid).reduce((s, f) => s + Math.max(0, f.total - f.pagado), 0); return Math.max(m, d); }, 0);
   document.getElementById('fiados-total').textContent = sol(totalDeuda);
   document.getElementById('fiados-clientes').textContent = clientesConDeuda;
   document.getElementById('fiados-mayor').textContent = sol(mayor);
 
   if (clienteIds.length === 0) {
-    document.getElementById('fiados-list').innerHTML = '<p style="color:var(--gray-500)">Sin fiados registrados</p>';
+    document.getElementById('fiados-list').innerHTML = '<p style="color:var(--gray-500)">Sin fiados que coincidan con los filtros</p>';
     return;
   }
 
@@ -4547,7 +4576,8 @@ function renderFiados() {
     const cli = DB.clientes.find(c => c.id === cid);
     const nombre = cli ? (cli.alias || cli.nombre) : 'Anónimo';
     const tel = cli ? cli.tel : '';
-    const fiados = porCliente[cid];
+    let fiados = porCliente[cid];
+    if (desde || hasta) fiados = fiados.filter(f => (!desde || f.fecha >= desde) && (!hasta || f.fecha <= hasta));
     const totalCli = fiados.reduce((s, f) => s + f.total, 0);
     const pagadoCli = fiados.reduce((s, f) => s + f.pagado, 0);
     const pendienteCli = totalCli - pagadoCli;
@@ -4565,7 +4595,10 @@ function renderFiados() {
           ${f.items.map(i => `${i.nombre} x${i.cant} = ${sol(i.precio*i.cant)}`).join(' · ')}
         </div>
         <div style="font-size:.72rem;color:var(--gray-500)">Total: ${sol(f.total)} | Pagado: ${sol(f.pagado)}</div>
-        ${pend > 0 ? `<button class="btn btn-accent btn-xs" style="margin-top:.4rem" onclick="abrirPagoFiado(${f.id})">💰 Registrar pago</button>` : ''}
+        <div style="display:flex;gap:.4rem;margin-top:.4rem;flex-wrap:wrap">
+          ${pend > 0 ? `<button class="btn btn-accent btn-xs" onclick="abrirPagoFiado(${f.id})">💰 Registrar pago</button>` : ''}
+          ${currentRole === 'admin' ? `<button class="btn btn-xs" style="background:var(--danger-light);color:var(--danger)" onclick="confirmarEliminarFiado(${f.id})">🗑️ Eliminar</button>` : ''}
+        </div>
       </div>`;
     }).join('');
     return `<div class="fiado-card" style="margin-bottom:.75rem">
@@ -4584,13 +4617,75 @@ function renderFiados() {
         </div>
       </div>
       <div id="${detalleId}" style="display:none;margin-top:.75rem">${detalle}</div>
-      <div style="margin-top:.5rem;padding-top:.5rem;border-top:1px solid var(--warning);text-align:right">
+      <div style="margin-top:.5rem;padding-top:.5rem;border-top:1px solid var(--warning);text-align:right;display:flex;gap:.5rem;justify-content:flex-end">
+        <button class="btn btn-outline btn-sm" onclick="compartirResumenFiado(${cid})">💬 WhatsApp resumen</button>
         <button class="btn btn-outline btn-sm" onclick="abrirHistorialCliente(${cid},event)">📋 Ver historial completo</button>
       </div>
     </div>`;
   }).join('');
 }
+function confirmarEliminarFiado(id) {
+  const f = DB.fiados.find(x => x.id === id);
+  if (!f) return;
+  const pend = f.total - f.pagado;
+  const resp = prompt(`¿Cómo eliminar este fiado de ${sol(f.total)}?\n\n1 = ERROR DE REGISTRO (restaura stock)\n${pend > 0 ? '2 = PÉRDIDA/INCOBRABLE (registra en mermas)' : ''}\n\nEscribe 1${pend > 0 ? ' o 2' : ''}:`);
+  if (!resp) return;
+  if (resp.trim() === '1') {
+    f.items.forEach(i => { const prod = DB.productos.find(p => p.id === i.prodId); if (prod) prod.stock += i.cant; });
+    DB.fiados = DB.fiados.filter(x => x.id !== id);
+    const cli = DB.clientes.find(c => c.id === f.clienteId);
+    if (cli) cli.deuda = Math.max(0, cli.deuda - pend);
+    fbGuardar(); fbGuardarProductos();
+    renderFiados();
+    alert('✅ Fiado eliminado y stock restaurado.');
+  } else if (resp.trim() === '2' && pend > 0) {
+    f.items.forEach(i => {
+      const prod = DB.productos.find(p => p.id === i.prodId);
+      if (!prod) return;
+      const propPend = pend / f.total;
+      const cantMerma = Math.round(i.cant * propPend * 100) / 100;
+      if (cantMerma <= 0) return;
+      DB.mermas.push({ id: getId(), prodId: i.prodId, cant: cantMerma, motivo: 'Fiado incobrable', obs: 'Fiado #' + f.id + ' — ' + getClienteNombre(f.clienteId), fecha: today(), usuario: currentUser });
+      ensureCajaAbierta();
+      DB.caja.egresos = (DB.caja.egresos||0) + prod.costo * cantMerma;
+      DB.movimientos.push({ tipo:'egreso', desc:'Merma fiado: ' + prod.nombre, monto: prod.costo * cantMerma, hora: nowTime(), fecha: today(), usuario: currentUser });
+    });
+    DB.fiados = DB.fiados.filter(x => x.id !== id);
+    const cli = DB.clientes.find(c => c.id === f.clienteId);
+    if (cli) cli.deuda = Math.max(0, cli.deuda - pend);
+    fbGuardar(); fbGuardarProductos();
+    renderFiados(); try { renderMermas(); } catch(e) {}
+    alert('✅ Fiado eliminado y registrado como merma.');
+  } else {
+    alert('Opción no válida.');
+  }
+}
 
+function compartirResumenFiado(cid) {
+  const cli = DB.clientes.find(c => c.id === cid);
+  const nombre = cli ? (cli.alias || cli.nombre) : 'Cliente';
+  const tel = cli && cli.tel ? cli.tel.replace(/\s/g,'') : '';
+  const desde = document.getElementById('fi-desde')?.value || '';
+  const hasta = document.getElementById('fi-hasta')?.value || '';
+  const estado = document.getElementById('fi-estado')?.value || '';
+  let fiados = DB.fiados.filter(f => f.clienteId === cid);
+  if (desde) fiados = fiados.filter(f => f.fecha >= desde);
+  if (hasta) fiados = fiados.filter(f => f.fecha <= hasta);
+  if (estado === 'pendiente') fiados = fiados.filter(f => (f.total - f.pagado) > 0);
+  if (estado === 'pagado') fiados = fiados.filter(f => (f.total - f.pagado) <= 0);
+  const totalPend = fiados.reduce((s, f) => s + Math.max(0, f.total - f.pagado), 0);
+  let msg = `Hola ${nombre}, su resumen de fiados en *Minimarket Aleze*:\n`;
+  if (desde || hasta) msg += `📅 Período: ${desde ? formatDate(desde) : 'inicio'} al ${hasta ? formatDate(hasta) : 'hoy'}\n`;
+  msg += '\n';
+  fiados.forEach(f => {
+    const pend = f.total - f.pagado;
+    msg += `📌 ${formatDate(f.fecha)}: ${f.items.map(i => i.nombre + ' x' + i.cant).join(', ')} → ${sol(f.total)}`;
+    msg += pend > 0 ? ` _(pendiente: ${sol(pend)})_\n` : ` ✅\n`;
+  });
+  msg += `\n*Total pendiente: ${sol(totalPend)}*\nGracias 🙏`;
+  const url = tel ? `https://wa.me/51${tel}?text=${encodeURIComponent(msg)}` : `https://wa.me/?text=${encodeURIComponent(msg)}`;
+  window.open(url, '_blank');
+}
 function toggleFiadoDetalle(id) {
   const el = document.getElementById(id);
   const arr = document.getElementById('arr-' + id);
