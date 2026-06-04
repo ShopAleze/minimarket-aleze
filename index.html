@@ -1629,9 +1629,23 @@ function _loadHtml5QrCode(cb) {
             <div class="stat-value" id="fiados-mayor">S/ 0.00</div>
           </div>
         </div>
+       <div class="card" style="margin-bottom:1rem">
+          <div style="display:flex;gap:.75rem;flex-wrap:wrap;align-items:center">
+            <input type="date" class="form-control" id="fi-desde" style="width:150px" onchange="renderFiados()"/>
+            <input type="date" class="form-control" id="fi-hasta" style="width:150px" onchange="renderFiados()"/>
+            <select class="form-control" id="fi-estado" style="width:160px" onchange="renderFiados()">
+              <option value="">Todos</option>
+              <option value="pendiente">Con pendiente</option>
+              <option value="pagado">Pagados</option>
+            </select>
+            <select class="form-control" id="fi-cliente" style="width:180px" onchange="renderFiados()">
+              <option value="">Todos los clientes</option>
+            </select>
+            <button type="button" class="btn btn-outline btn-sm" onclick="limpiarFiltrosFiados()">🔄 Limpiar</button>
+          </div>
+        </div>
         <div id="fiados-list"></div>
       </div>
-
       <!-- CAJA -->
       <div id="page-caja" class="page">
         <div class="page-title">Control de Caja</div>
