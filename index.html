@@ -3519,7 +3519,7 @@ function procesarVenta() {
     const cli = DB.clientes.find(c => c.id === clienteId);
     if (cli) { cli.compras = (cli.compras||0)+1; cli.total = (cli.total||0)+total; cli.puntos=(cli.puntos||0)+Math.floor(total); }
   }
-
+_fbLastWriteTs = Date.now();
 _fbEscribiendo = true;
 const _vPayload = JSON.parse(JSON.stringify(DB));
 delete _vPayload.productos; delete _vPayload.categorias;
@@ -3564,7 +3564,7 @@ if (cli) { cli.deuda = (cli.deuda||0) + total; cli.compras = (cli.compras||0) + 
 
   ensureCajaAbierta();
   DB.movimientos.push({ tipo:'fiado', desc:'Fiado — ' + getClienteNombre(clienteId), monto:total, hora:nowTime(), fecha:today(), cajero:currentUser });
-
+_fbLastWriteTs = Date.now();
 _fbEscribiendo = true;
 const _vPayload = JSON.parse(JSON.stringify(DB));
 delete _vPayload.productos; delete _vPayload.categorias;
@@ -6576,7 +6576,7 @@ if (cli) { cli.deuda = (cli.deuda||0) + total; cli.compras = (cli.compras||0) + 
   // Always register movement with ensureCajaAbierta
   ensureCajaAbierta();
   DB.movimientos.push({ tipo:'fiado', desc:`Fiado — ${getClienteNombre(clienteId)}`, monto:total, hora:nowTime(), fecha:today(), cajero:currentUser });
-
+_fbLastWriteTs = Date.now();
   _fbEscribiendo = true;
 const _vPayload = JSON.parse(JSON.stringify(DB));
 delete _vPayload.productos; delete _vPayload.categorias;
@@ -8636,7 +8636,7 @@ const RESET_CONFIG = {
       DB.clientes.forEach(c => { c.compras = 0; c.total = 0; c.deuda = 0; });
       DB_EXT.gastos = [];
       DB_EXT.capital = { total: 0, cuota: 0, meta: 0, recuperado: 0, hist: [] };
-     const _payload = JSON.parse(JSON.stringify(DB)); delete _payload.productos; delete _payload.categorias; _payload._resetToken = true; fbDocRef().set(_payload); fbGuardarExt();
+     const _payload = JSON.parse(JSON.stringify(DB)); delete _payload.productos; delete _payload.categorias; _payload._resetToken = true; _fbLastWriteTs = Date.now(); fbDocRef().set(_payload);
       try { renderDashboard(); } catch(e) {}
       try { updateAlertCount(); } catch(e) {}
     }
