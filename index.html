@@ -5680,6 +5680,7 @@ function renderFrecuentes() {
           </td>
           <td>${nv ? `<span class="badge badge-gold">${nv.desc}</span>` : '<span class="badge badge-gray">Sin nivel aún</span>'}</td>
          <td>${nv ? `<span style="color:var(--accent);font-weight:700">🎁 Hasta S/ ${nv.max}</span>` : '-'}</td>
+          <td><button class="btn btn-outline btn-xs" onclick="verHistorialCliente(${c.id})">📋</button></td>
         </tr>`;
       }).join('')}</tbody>
     </table></div>`;
