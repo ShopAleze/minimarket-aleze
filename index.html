@@ -6811,7 +6811,7 @@ function fbGuardarProductos() {
 let _fbProdCacheTs = 0; // timestamp última carga de db_productos
 function fbEscuchar() {
   if (!fbFS) return;
-
+if (_fbSnapshotUnsub) { _fbSnapshotUnsub(); _fbSnapshotUnsub = null; }
   // Listener operaciones (ventas, caja, clientes, etc.)
   _fbSnapshotUnsub = fbDocRef().onSnapshot(snapshot => {
     if (_fbEscribiendo) return;
