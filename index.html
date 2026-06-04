@@ -1772,6 +1772,12 @@ function _loadHtml5QrCode(cb) {
       <!-- CONFIGURACION -->
       <div id="page-configuracion" class="page">
         <div class="page-title">Configuración</div>
+        <div class="card" style="margin-bottom:1rem">
+          <div class="card-title">💾 Respaldo de datos</div>
+          <div style="font-size:.85rem;color:var(--gray-500);margin-bottom:.75rem">El sistema guarda un respaldo automático cada 30 minutos. Puedes restaurar manualmente si algo sale mal.</div>
+          <div id="backup-lista" style="margin-bottom:.75rem;font-size:.82rem"></div>
+          <button type="button" class="btn btn-outline btn-sm" onclick="verBackups()">🔍 Ver respaldos disponibles</button>
+        </div>
         <div class="grid-2">
           <div class="card">
             <div class="card-title">⚙️ Datos del negocio</div>
