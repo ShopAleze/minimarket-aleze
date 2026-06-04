@@ -3466,8 +3466,10 @@ function calcTotal() {
 
 function updatePosClientes() {
   const sel = document.getElementById('pos-cliente');
+  const valorActual = sel.value;
   sel.innerHTML = '<option value="">Cliente anónimo</option>';
   DB.clientes.forEach(c => sel.innerHTML += `<option value="${c.id}">${c.nombre}</option>`);
+  if (valorActual) sel.value = valorActual;
   updateMobPosClientes();
 }
 
