@@ -9281,7 +9281,65 @@ function confirmarCategoriasNuevasExcel() {
   abrirModal('modal-excel-review');
 }
 </script>
+<script>
+// ===================== BACKUP AUTOMÁTICO =====================
+let _backupTimer = null;
 
+function iniciarBackupAutomatico() {
+  if (_backupTimer) clearInterval(_backupTimer);
+  _backupTimer = setInterval(() => {
+    if (!fbFS || !currentUser) return;
+    const ahora = new Date();
+    const key = 'backup_' + ahora.toISOString().replace(/[:.]/g, '-').substring(0, 16);
+    const payload = JSON.parse(JSON.stringify(DB));
+    delete payload.productos; delete payload.categorias;
+    payload._backupTs = ahora.toISOString();
+    payload._backupUser = currentUser;
+    fbFS.collection('aleze_backups').doc(key).set(payload)
+      .then(() => console.log('[Backup] Guardado:', key))
+      .catch(e => console.warn('[Backup] Error:', e));
+  }, 30 * 60 * 1000); // cada 30 minutos
+}
+
+function verBackups() {
+  if (!fbFS) return;
+  const el = document.getElementById('backup-lista');
+  el.innerHTML = '⏳ Cargando respaldos...';
+  fbFS.collection('aleze_backups').orderBy('_backupTs', 'desc').limit(10).get()
+    .then(snap => {
+      if (snap.empty) { el.innerHTML = 'Sin respaldos disponibles aún.'; return; }
+      el.innerHTML = snap.docs.map(d => {
+        const ts = new Date(d.data()._backupTs).toLocaleString('es-PE');
+        const user = d.data()._backupUser || '?';
+        return `<div style="display:flex;justify-content:space-between;align-items:center;padding:.35rem 0;border-bottom:1px solid var(--gray-100)">
+          <span>📅 ${ts} — ${user}</span>
+          <button type="button" class="btn btn-xs btn-danger" onclick="restaurarBackup('${d.id}')">↩️ Restaurar</button>
+        </div>`;
+      }).join('');
+    })
+    .catch(e => { el.innerHTML = 'Error cargando respaldos.'; });
+}
+
+function restaurarBackup(id) {
+  if (!confirm('⚠️ ¿Restaurar este respaldo? Los datos actuales se reemplazarán.')) return;
+  fbFS.collection('aleze_backups').doc(id).get()
+    .then(doc => {
+      if (!doc.exists) { alert('Respaldo no encontrado.'); return; }
+      const data = doc.data();
+      delete data._backupTs; delete data._backupUser;
+      _fbLastWriteTs = Date.now();
+      _fbEscribiendo = true;
+      data._resetToken = true;
+      fbDocRef().set(data)
+        .then(() => {
+          setTimeout(() => { _fbEscribiendo = false; }, 300);
+          alert('✅ Respaldo restaurado correctamente.');
+          try { renderDashboard(); } catch(e) {}
+        })
+        .catch(e => { _fbEscribiendo = false; alert('Error al restaurar: ' + e.message); });
+    });
+}
+  </script>
 <!-- ── PWA: Registro del Service Worker ── -->
 <script>
 if ('serviceWorker' in navigator) {
