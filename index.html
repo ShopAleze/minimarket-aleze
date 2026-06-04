@@ -2939,7 +2939,7 @@ async function doLogin() {
       console.warn('Error cargando datos en login, continuando con caché local:', e.message);
     }
   }
-
+ fbPatchDB();
   // ── PASO 4: Estado de sesión — ahora que los datos están listos ──
   if (_loginIntervalo) { clearInterval(_loginIntervalo); _loginIntervalo = null; }
   if (errEl) errEl.style.display = 'none';
