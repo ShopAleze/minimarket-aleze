@@ -6984,7 +6984,7 @@ window.onload = async function() {
         const ext = snapExt.data();
         Object.keys(ext).forEach(k => { if (k in DB_EXT) DB_EXT[k] = ext[k]; });
       }
-
+_fbLastWriteTs = Date.now();
       fbPatchDB();
       fbEscuchar();
       checkAutoAbrirCaja();
