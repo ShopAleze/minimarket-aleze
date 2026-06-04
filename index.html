@@ -7038,7 +7038,7 @@ function renderHistorialVentas() {
   if (origen) lista = lista.filter(v => v.origen === origen);
   if (buscar) lista = lista.filter(v =>
     (v.cajero||'').toLowerCase().includes(buscar) ||
-    (v.clienteNombre||'').toLowerCase().includes(buscar) ||
+(v.clienteNombre||getClienteNombre(v.clienteId)||'').toLowerCase().includes(buscar) ||
     (v.items||[]).some(i => (i.nombre||'').toLowerCase().includes(buscar))
   );
 lista.sort((a,b) => (b.id || 0) > (a.id || 0) ? 1 : -1);
