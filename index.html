@@ -5663,7 +5663,7 @@ function renderFrecuentes() {
   const todos = [...DB.clientes].sort((a, b) => b.total - a.total);
   document.getElementById('ranking-table').innerHTML = `
     <div class="table-wrap"><table>
-      <thead><tr><th>#</th><th>Cliente</th><th>Alias</th><th>Consumo año</th><th>Nivel</th><th>Premio disponible</th></tr></thead>
+    <thead><tr><th>#</th><th>Cliente</th><th>Alias</th><th>Consumo año</th><th>Nivel</th><th>Premio disponible</th><th></th></tr></thead>
       <tbody>${todos.map((c, i) => {
         const nv = getNivel(c.total);
         const pct = nv ? Math.min(100, c.total / nv.umbral * 100) : Math.min(100, c.total / 100 * 100);
@@ -5676,8 +5676,9 @@ function renderFrecuentes() {
             <div class="progress-bar" style="margin-top:.3rem"><div class="progress-fill" style="background:var(--primary);width:${pct}%"></div></div>
           </td>
           <td>${nv ? `<span class="badge badge-gold">${nv.desc}</span>` : '<span class="badge badge-gray">Sin nivel aún</span>'}</td>
-          <td>${nv ? `<span style="color:var(--accent);font-weight:700">🎁 Hasta S/ ${nv.max}</span>` : '-'}</td>
-        </tr>`;
+         <td>${nv ? `<span style="color:var(--accent);font-weight:700">🎁 Hasta S/ ${nv.max}</span>` : '-'}</td>
+          <td><button class="btn btn-outline btn-xs" onclick="verHistorialCliente('${c.nombre}')">📋</button></td>
+        </tr>
       }).join('')}</tbody>
     </table></div>`;
 }
