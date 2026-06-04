@@ -4428,12 +4428,15 @@ function guardarBoleta() {
 // ===================== CLIENTES =====================
 let editingCliId = null;
 
-function verHistorialCliente(nombre) {
-navigate('historial-ventas');
+function verHistorialCliente(id) {
+  navigate('historial-ventas');
   const el = document.getElementById('hv-buscar');
-  if (el) { el.value = nombre; renderHistorialVentas(); }
+  if (el) {
+    const c = DB.clientes.find(x => x.id === id);
+    el.value = c ? (c.alias || c.nombre) : '';
+    renderHistorialVentas();
+  }
 }
-
 function renderClientes() {
   const buscar = (document.getElementById('cli-buscar')?.value || '').toLowerCase();
   const lista = buscar ? DB.clientes.filter(c =>
@@ -4450,7 +4453,7 @@ function renderClientes() {
     <td><strong>${sol(c.total||0)}</strong></td>
     <td style="color:${c.deuda>0?'var(--danger)':'var(--accent)'}"><strong>${c.deuda > 0 ? sol(c.deuda) : '✅ Al día'}</strong></td>
     <td style="white-space:nowrap">
-  <button class="btn btn-outline btn-xs" onclick="verHistorialCliente('${c.nombre}')">📋</button>
+ <button class="btn btn-outline btn-xs" onclick="verHistorialCliente(${c.id})">📋</button>
       <button class="btn btn-outline btn-xs" onclick="editarCliente(${c.id})">✏️ Editar</button>
       <button class="btn btn-xs" style="background:var(--danger-light);color:var(--danger)" onclick="eliminarCliente(${c.id})">🗑️</button>
     </td>
