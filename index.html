@@ -2979,6 +2979,7 @@ async function doLogin() {
   // ── PASO 6: Listener en tiempo real (DESPUÉS del render inicial) ──
 fbEscuchar();
 fbEscucharPedidosOnline();
+  if (currentRole === 'admin') iniciarBackupAutomatico();
 }
 
 function doLogout() {
