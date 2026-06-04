@@ -7027,7 +7027,7 @@ function renderHistorialVentas() {
     (v.clienteNombre||'').toLowerCase().includes(buscar) ||
     (v.items||[]).some(i => (i.nombre||'').toLowerCase().includes(buscar))
   );
-lista.sort((a,b) => (b.fecha+b.hora) > (a.fecha+a.hora) ? 1 : -1);
+lista.sort((a,b) => (b.id || 0) > (a.id || 0) ? 1 : -1);
 
   const total = lista.reduce((s,v) => s+(v.total||0), 0);
   const completadas = lista.filter(v=>v.estado==='completado').length;
@@ -7486,7 +7486,7 @@ function renderPedidosOnline() {
   if (filtro) lista = lista.filter(p => p.estado === filtro);
   if (desde) lista = lista.filter(p => p.fecha >= desde);
   if (hasta) lista = lista.filter(p => p.fecha <= hasta);
- lista.sort((a,b) => (b.fecha+b.hora) > (a.fecha+a.hora) ? 1 : -1);
+lista.sort((a,b) => (b.id || 0) > (a.id || 0) ? 1 : -1);
 
   const pendientes = DB.pedidosOnline.filter(p => p.estado === 'pendiente').length;
   const badge = document.getElementById('po-badge-pendiente');
