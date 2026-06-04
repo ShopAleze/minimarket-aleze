@@ -1597,6 +1597,9 @@ function _loadHtml5QrCode(cb) {
           <div class="page-title" style="margin:0">Clientes</div>
           <button type="button" class="btn btn-primary btn-sm" onclick="abrirModalCliente()">+ Nuevo Cliente</button>
         </div>
+        <div style="margin-bottom:.75rem">
+          <input type="text" class="form-control" id="cli-buscar" placeholder="🔍 Buscar cliente..." oninput="renderClientes()" style="max-width:300px"/>
+        </div>
         <div class="card" style="padding:0">
           <div class="table-wrap">
             <table>
@@ -1606,7 +1609,6 @@ function _loadHtml5QrCode(cb) {
           </div>
         </div>
       </div>
-
       <!-- FIADOS -->
       <div id="page-fiados" class="page">
         <div class="flex-between" style="margin-bottom:1rem">
@@ -4426,8 +4428,20 @@ function guardarBoleta() {
 // ===================== CLIENTES =====================
 let editingCliId = null;
 
+function verHistorialCliente(nombre) {
+  navigate('historialVentas');
+  const el = document.getElementById('hv-buscar');
+  if (el) { el.value = nombre; renderHistorialVentas(); }
+}
+
 function renderClientes() {
-  document.getElementById('cli-tbody').innerHTML = DB.clientes.map(c => `<tr>
+  const buscar = (document.getElementById('cli-buscar')?.value || '').toLowerCase();
+  const lista = buscar ? DB.clientes.filter(c =>
+    (c.nombre||'').toLowerCase().includes(buscar) ||
+    (c.alias||'').toLowerCase().includes(buscar) ||
+    (c.tel||'').toLowerCase().includes(buscar)
+  ) : DB.clientes;
+  document.getElementById('cli-tbody').innerHTML = lista.map(c => `<tr>
     <td><strong>${c.nombre}</strong></td>
     <td><span class="badge badge-blue">${c.alias||'-'}</span></td>
     <td>${c.tel||'-'}</td>
@@ -4436,6 +4450,7 @@ function renderClientes() {
     <td><strong>${sol(c.total||0)}</strong></td>
     <td style="color:${c.deuda>0?'var(--danger)':'var(--accent)'}"><strong>${c.deuda > 0 ? sol(c.deuda) : '✅ Al día'}</strong></td>
     <td style="white-space:nowrap">
+  <button class="btn btn-outline btn-xs" onclick="verHistorialCliente('${c.nombre}')">📋</button>
       <button class="btn btn-outline btn-xs" onclick="editarCliente(${c.id})">✏️ Editar</button>
       <button class="btn btn-xs" style="background:var(--danger-light);color:var(--danger)" onclick="eliminarCliente(${c.id})">🗑️</button>
     </td>
