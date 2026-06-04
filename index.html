@@ -9325,7 +9325,7 @@ function verBackups() {
         const user = d.data()._backupUser || '?';
         return `<div style="display:flex;justify-content:space-between;align-items:center;padding:.35rem 0;border-bottom:1px solid var(--gray-100)">
           <span>📅 ${ts} — ${user}</span>
-          <button type="button" class="btn btn-xs btn-danger" onclick="restaurarBackup('${d.id}')">↩️ Restaurar</button>
+       <button type="button" class="btn btn-xs btn-danger" onclick="restaurarBackup(this.dataset.id)" data-id="${d.id}">↩️ Restaurar</button>
         </div>`;
       }).join('');
     })
