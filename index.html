@@ -3518,7 +3518,13 @@ function procesarVenta() {
     if (cli) { cli.compras = (cli.compras||0)+1; cli.total = (cli.total||0)+total; cli.puntos=(cli.puntos||0)+Math.floor(total); }
   }
 
-  fbGuardar(); fbGuardarProductos();
+_fbEscribiendo = true;
+const _vPayload = JSON.parse(JSON.stringify(DB));
+delete _vPayload.productos; delete _vPayload.categorias;
+fbDocRef().set(_vPayload)
+  .then(() => { setTimeout(() => { _fbEscribiendo = false; }, 300); })
+  .catch(() => { _fbEscribiendo = false; });
+fbGuardarProductos();
   try { renderDashboard(); } catch(e){}
   try { renderCaja(); } catch(e){}
   try { generarReporte(); } catch(e){}
@@ -3557,7 +3563,13 @@ if (cli) { cli.deuda = (cli.deuda||0) + total; cli.compras = (cli.compras||0) + 
   ensureCajaAbierta();
   DB.movimientos.push({ tipo:'fiado', desc:'Fiado — ' + getClienteNombre(clienteId), monto:total, hora:nowTime(), fecha:today(), cajero:currentUser });
 
-  fbGuardar(); fbGuardarProductos();
+_fbEscribiendo = true;
+const _vPayload = JSON.parse(JSON.stringify(DB));
+delete _vPayload.productos; delete _vPayload.categorias;
+fbDocRef().set(_vPayload)
+  .then(() => { setTimeout(() => { _fbEscribiendo = false; }, 300); })
+  .catch(() => { _fbEscribiendo = false; });
+fbGuardarProductos();
   try { renderDashboard(); } catch(e){}
   try { renderCaja(); } catch(e){}
   alert('Fiado registrado para ' + getClienteNombre(clienteId) + ': ' + sol(total));
@@ -6563,7 +6575,13 @@ if (cli) { cli.deuda = (cli.deuda||0) + total; cli.compras = (cli.compras||0) + 
   ensureCajaAbierta();
   DB.movimientos.push({ tipo:'fiado', desc:`Fiado — ${getClienteNombre(clienteId)}`, monto:total, hora:nowTime(), fecha:today(), cajero:currentUser });
 
-  fbGuardar(); fbGuardarProductos();
+  _fbEscribiendo = true;
+const _vPayload = JSON.parse(JSON.stringify(DB));
+delete _vPayload.productos; delete _vPayload.categorias;
+fbDocRef().set(_vPayload)
+  .then(() => { setTimeout(() => { _fbEscribiendo = false; }, 300); })
+  .catch(() => { _fbEscribiendo = false; });
+fbGuardarProductos();
   try { renderDashboard(); } catch(e){}
   try { renderCaja(); } catch(e){}
   alert('Fiado registrado para ' + getClienteNombre(clienteId) + ': ' + sol(total));
