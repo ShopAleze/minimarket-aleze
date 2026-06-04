@@ -4833,8 +4833,7 @@ function updateCajaStats() {
   document.getElementById('caja-ingresos').textContent = sol(ingresos);
   document.getElementById('caja-egresos').textContent = sol(egresos);
   document.getElementById('caja-saldo').textContent = sol(DB.caja.inicial + ingresos - egresos);
-
-  document.getElementById('caja-mov-tbody').innerHTML = DB.movimientos.map(m => `<tr>
+  document.getElementById('caja-mov-tbody').innerHTML = [...DB.movimientos].reverse().map(m => `<tr>
     <td>${m.fecha ? m.fecha + ' ' : ''}${m.hora}</td>
     <td><span class="badge badge-${m.tipo==='ingreso'?'green':'red'}">${m.tipo}</span></td>
     <td>${m.desc}</td>
