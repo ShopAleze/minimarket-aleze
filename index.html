@@ -2254,7 +2254,19 @@ function _loadHtml5QrCode(cb) {
               <button type="button" class="btn btn-xs" onclick="limpiarImgPromo()" style="margin-top:.3rem;background:var(--danger-light);color:var(--danger)">✕ Quitar imagen</button>
             </div>
           </div>
-          <input type="hidden" id="promo-img-data" />
+        <input type="hidden" id="promo-img-data" />
+        </div>
+        <div class="form-group">
+          <label>🔖 Código QR del pack</label>
+          <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+            <input type="text" class="form-control" id="promo-codigo" placeholder="Se genera automáticamente al guardar" readonly style="flex:1;min-width:150px;background:var(--gray-50)" />
+            <button type="button" class="btn btn-outline btn-sm" onclick="generarQrPromo()" title="Generar QR para este pack">🔖 Generar QR</button>
+          </div>
+          <div id="promo-qr-container" style="margin-top:.75rem;display:none;border:1px dashed var(--gray-300);border-radius:8px;padding:.75rem;text-align:center;background:white">
+            <div style="font-size:.8rem;font-weight:700;color:var(--gray-700);margin-bottom:.5rem" id="promo-qr-nombre-label"></div>
+            <div id="promo-qr-preview" style="display:inline-block"></div>
+            <div style="font-size:.72rem;color:var(--gray-500);margin-top:.4rem">Escanea este QR desde el POS para agregar el pack al carrito</div>
+          </div>
         </div>
       </div>
     </div>
