@@ -2200,43 +2200,54 @@ function _loadHtml5QrCode(cb) {
 </div>
 
 <!-- Modal Combo Sinergia (Punto 8) -->
-<div class="modal-overlay" id="modal-combo-sinergia">
+<div class="modal-overlay" id="modal-promocion">
   <div class="modal modal-lg">
     <div class="modal-header">
-      <h3>🔗 Crear Combo Sinergia</h3>
-      <button type="button" class="modal-close" onclick="cerrarModal('modal-combo-sinergia')">✕</button>
+      <h3 id="promo-modal-titulo">🏷️ Nueva Promoción</h3>
+      <button type="button" class="modal-close" onclick="cerrarModal('modal-promocion')">✕</button>
     </div>
-    <p style="font-size:.82rem;color:var(--gray-500);margin-bottom:1rem">El combo se crea como un <strong>nuevo producto</strong> en el inventario. Al venderse, descuenta unidades de cada producto individualmente.</p>
     <div class="grid-2">
       <div>
-        <div class="form-group"><label>Nombre del combo *</label><input type="text" class="form-control" id="combo-nombre" placeholder="Ej: Combo Gaseosa + Papas" /></div>
-        <div class="form-group"><label>Producto 1 *</label><select class="form-control" id="combo-prod1" onchange="calcCombo()"></select></div>
-        <div class="form-group"><label>Cantidad prod. 1</label><input type="number" class="form-control" id="combo-cant1" value="1" min="1" step="1" oninput="calcCombo()" /></div>
-        <div class="form-group"><label>Producto 2 *</label><select class="form-control" id="combo-prod2" onchange="calcCombo()"></select></div>
-        <div class="form-group"><label>Cantidad prod. 2</label><input type="number" class="form-control" id="combo-cant2" value="1" min="1" step="1" oninput="calcCombo()" /></div>
+        <div class="form-group"><label>Nombre de la promoción *</label><input type="text" class="form-control" id="promo-nombre" placeholder="Se sugiere automáticamente" /></div>
+        <div class="form-group"><label>Tipo</label>
+          <select class="form-control" id="promo-tipo-sel" onchange="onPromoTipoChange()">
+            <option value="descuento">Descuento directo %</option>
+            <option value="pack">Pack combinado</option>
+            <option value="2x1">2x1</option>
+            <option value="3x2">3x2</option>
+            <option value="precio">Precio especial</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Producto 1 *</label><select class="form-control" id="promo-prod1" onchange="onPromoProductoChange()"></select></div>
+        <div class="form-group"><label>Cantidad producto 1</label><input type="number" class="form-control" id="promo-cant1" value="1" min="1" step="1" oninput="calcPromo()" /></div>
+        <div class="form-group" id="promo-prod2-wrap"><label>Producto 2 (opcional)</label><select class="form-control" id="promo-prod2" onchange="onPromoProductoChange()"><option value="">Sin segundo producto</option></select></div>
+        <div class="form-group" id="promo-cant2-wrap"><label>Cantidad producto 2</label><input type="number" class="form-control" id="promo-cant2" value="1" min="1" step="1" oninput="calcPromo()" /></div>
+        <div class="grid-2">
+          <div class="form-group"><label>Válido desde</label><input type="date" class="form-control" id="promo-desde" /></div>
+          <div class="form-group"><label>Válido hasta</label><input type="date" class="form-control" id="promo-hasta" /></div>
+        </div>
       </div>
       <div>
         <div style="background:var(--gray-50);border-radius:10px;padding:1rem;margin-bottom:.75rem">
           <div style="font-size:.8rem;font-weight:600;color:var(--gray-600);margin-bottom:.5rem">📊 Cálculo automático</div>
-          <div style="font-size:.82rem" id="combo-calc-detalle">Selecciona los productos para ver el cálculo</div>
+          <div style="font-size:.82rem" id="promo-calc-detalle">Selecciona los productos para ver el cálculo</div>
         </div>
         <div class="form-group">
-          <label>Margen de ganancia combo % (15-25% sugerido)</label>
+          <label>Margen de ganancia % <span style="font-size:.75rem;color:var(--gray-500)">(sobre costo)</span></label>
           <div style="display:flex;gap:.5rem;align-items:center">
-            <input type="range" id="combo-margen-slider" min="5" max="50" value="20" oninput="document.getElementById('combo-margen-num').value=this.value; calcCombo()" style="flex:1" />
-            <input type="number" id="combo-margen-num" class="form-control" value="20" min="5" max="50" style="width:70px" oninput="document.getElementById('combo-margen-slider').value=this.value; calcCombo()" />
+            <input type="range" id="promo-margen-slider" min="0" max="80" value="20" oninput="document.getElementById('promo-margen-num').value=this.value; calcPromo()" style="flex:1" />
+            <input type="number" id="promo-margen-num" class="form-control" value="20" min="0" max="80" style="width:70px" oninput="document.getElementById('promo-margen-slider').value=this.value; calcPromo()" />
             <span style="font-size:.82rem">%</span>
           </div>
         </div>
-        <div class="form-group"><label>Precio combo final (S/) — editable</label><input type="number" class="form-control" id="combo-precio-final" step="0.1" /></div>
-        <div class="form-group"><label>Stock inicial del combo</label><input type="number" class="form-control" id="combo-stock" value="10" min="1" /></div>
-        <div class="form-group"><label>Vigencia hasta</label><input type="date" class="form-control" id="combo-hasta" /></div>
+        <div class="form-group"><label>Precio promocional final (S/) — editable</label><input type="number" class="form-control" id="promo-precio-promo" step="0.01" oninput="calcPromoDesdeManual()" /></div>
+        <div class="form-group"><label>Precio original (S/) — referencia</label><input type="number" class="form-control" id="promo-precio-orig" step="0.01" readonly style="background:var(--gray-50)" /></div>
+        <div id="promo-aviso" style="font-size:.78rem;color:var(--danger);margin-bottom:.5rem"></div>
       </div>
     </div>
-    <div id="combo-aviso" style="font-size:.78rem;color:var(--danger);margin-bottom:.5rem"></div>
     <div style="display:flex;justify-content:flex-end;gap:.5rem;margin-top:1rem">
-      <button type="button" class="btn btn-outline" onclick="cerrarModal('modal-combo-sinergia')">Cancelar</button>
-      <button type="button" class="btn btn-primary" onclick="guardarComboSinergia()">Crear combo en inventario</button>
+      <button type="button" class="btn btn-outline" onclick="cerrarModal('modal-promocion')">Cancelar</button>
+      <button type="button" class="btn btn-primary" onclick="guardarPromocion()">Guardar Promoción</button>
     </div>
   </div>
 </div>
@@ -2256,41 +2267,7 @@ function _loadHtml5QrCode(cb) {
     </div>
   </div>
 </div>
-
-<!-- Modal Promoción -->
-<div class="modal-overlay" id="modal-promocion">
-  <div class="modal modal-lg">
-    <div class="modal-header">
-      <h3>Nueva Promoción</h3>
-      <button type="button" class="modal-close" onclick="cerrarModal('modal-promocion')">✕</button>
-    </div>
-    <div class="form-group"><label>Nombre de la promoción *</label><input type="text" class="form-control" id="promo-nombre" /></div>
-    <div class="form-group"><label>Tipo</label>
-      <select class="form-control" id="promo-tipo-sel">
-        <option value="pack">Pack combinado</option><option value="descuento">Descuento directo %</option>
-        <option value="2x1">2x1</option><option value="3x2">3x2</option><option value="precio">Precio especial</option>
-      </select>
-    </div>
-    <div class="form-group"><label>Productos incluidos</label>
-      <select class="form-control" id="promo-prod1"></select>
-      <select class="form-control" id="promo-prod2" style="margin-top:0.5rem"><option value="">Segundo producto (opcional)</option></select>
-    </div>
-    <div class="grid-2">
-      <div class="form-group"><label>Precio original (S/)</label><input type="number" class="form-control" id="promo-precio-orig" step="0.01" oninput="calcPrecioPromo()" /></div>
-      <div class="form-group"><label>Precio promocional sugerido (S/)</label><input type="number" class="form-control" id="promo-precio-promo" step="0.01" /></div>
-    </div>
-    <div class="grid-2">
-      <div class="form-group"><label>Válido desde</label><input type="date" class="form-control" id="promo-desde" /></div>
-      <div class="form-group"><label>Válido hasta</label><input type="date" class="form-control" id="promo-hasta" /></div>
-    </div>
-    <div id="promo-aviso" style="font-size:0.8rem;color:var(--danger);margin-bottom:0.5rem"></div>
-    <div style="display:flex;justify-content:flex-end;gap:0.5rem;margin-top:1rem">
-      <button type="button" class="btn btn-outline" onclick="cerrarModal('modal-promocion')">Cancelar</button>
-      <button type="button" class="btn btn-primary" onclick="guardarPromocion()">Guardar Promoción</button>
-    </div>
-  </div>
-</div>
-
+  
 <!-- Modal Cliente Rápido POS -->
 <div class="modal-overlay" id="modal-cli-rapido">
   <div class="modal"><div class="modal-header"><h3>👤 Cliente rápido</h3><button type="button" class="modal-close" onclick="cerrarModal('modal-cli-rapido')">✕</button></div>
@@ -3325,7 +3302,7 @@ function renderPosGrid(search = '') {
   // Guard: no renderizar sin sesión activa
   if (!currentUser) return;
   const s = search || document.getElementById('pos-search')?.value.toLowerCase() || '';
-  let prods = DB.productos.filter(p => p.stock > 0);
+let prods = DB.productos.filter(p => p.stock > 0 && !p.esCombo);
   if (s) prods = prods.filter(p => p.nombre.toLowerCase().includes(s) || p.codigo.includes(s));
   if (posFilterCat) prods = prods.filter(p => p.cat == posFilterCat);
 
