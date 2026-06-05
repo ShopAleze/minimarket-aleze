@@ -2258,6 +2258,15 @@ function _loadHtml5QrCode(cb) {
         </div>
       </div>
     </div>
+    <div style="display:flex;gap:1rem;align-items:center;margin-top:1rem;flex-wrap:wrap">
+      <div class="form-group" style="margin:0;flex:1;min-width:180px">
+        <label>🔢 Límite de unidades (0 = sin límite)</label>
+        <input type="number" class="form-control" id="promo-limite" value="0" min="0" step="1" />
+      </div>
+      <div id="promo-vendidos-display" style="font-size:.82rem;color:var(--gray-500);min-width:120px;display:none">
+        📦 <span id="promo-vendidos-num">0</span> vendidos de <span id="promo-limite-num">0</span>
+      </div>
+    </div>
     <div style="display:flex;justify-content:flex-end;gap:.5rem;margin-top:1rem">
       <button type="button" class="btn btn-outline" onclick="cerrarModal('modal-promocion')">Cancelar</button>
       <button type="button" class="btn btn-primary" onclick="guardarPromocion()">Guardar Promoción</button>
