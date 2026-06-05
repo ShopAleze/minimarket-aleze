@@ -6482,8 +6482,12 @@ function onPromoProductoChange() {
   const p2Id = parseInt(document.getElementById('promo-prod2').value) || null;
   const p1 = DB.productos.find(p => p.id === p1Id);
   const p2 = p2Id ? DB.productos.find(p => p.id === p2Id) : null;
-  if (p1 && !document.getElementById('promo-nombre').value) {
-    document.getElementById('promo-nombre').value = p2 ? `Promo ${p1.nombre} + ${p2.nombre}` : `Promo ${p1.nombre}`;
+if (p1) {
+    const nombreSugerido = [p1, p2].filter(Boolean).map(p => p.nombre).join(' + ');
+    const campoNombre = document.getElementById('promo-nombre');
+    const valorActual = campoNombre.value;
+    const esSugerido = !valorActual || DB.productos.some(p => valorActual.includes(p.nombre));
+    if (esSugerido) campoNombre.value = 'Promo ' + nombreSugerido;
   }
   calcPromo();
 }
@@ -6519,7 +6523,15 @@ function calcPromoDesdeManual() {
   const precioOrig = parseFloat(document.getElementById('promo-precio-orig').value) || 0;
   const precioPromo = parseFloat(document.getElementById('promo-precio-promo').value) || 0;
   if (precioOrig > 0) {
-    const margenReal = Math.round((precioPromo / precioOrig - 1) * 100);
+   const p1Id = parseInt(document.getElementById('promo-prod1').value);
+  const p2Id = parseInt(document.getElementById('promo-prod2').value) || null;
+  const cant1 = parseFloat(document.getElementById('promo-cant1').value) || 1;
+  const cant2 = parseFloat(document.getElementById('promo-cant2').value) || 1;
+  const p1 = DB.productos.find(p => p.id === p1Id);
+  const p2 = p2Id ? DB.productos.find(p => p.id === p2Id) : null;
+  const costoReal = ((p1?.costo||0)*cant1) + ((p2?.costo||0)*cant2);
+  if (costoReal > 0) {
+    const margenReal = Math.round((precioPromo / costoReal - 1) * 100);
     document.getElementById('promo-margen-num').value = margenReal;
     document.getElementById('promo-margen-slider').value = Math.max(0, margenReal);
   }
@@ -6557,7 +6569,9 @@ function guardarPromocion() {
   const data = {
     nombre, tipo: document.getElementById('promo-tipo-sel').value,
     prod1: prod1Id, prod1nombre: prod1?.nombre,
-    prod2: prod2Id, prod2nombre: prod2?.nombre||null,
+   prod2: prod2Id, prod2nombre: prod2?.nombre||null,
+    cant1: parseFloat(document.getElementById('promo-cant1').value)||1,
+    cant2: parseFloat(document.getElementById('promo-cant2').value)||1,
     precioOrig, precioPromo,
     desde: document.getElementById('promo-desde').value,
     hasta: document.getElementById('promo-hasta').value,
