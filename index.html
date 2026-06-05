@@ -4699,7 +4699,74 @@ function compartirResumenFiadoCliente(cid) {
   const url = tel ? `https://wa.me/51${tel}?text=${encodeURIComponent(msg)}` : `https://wa.me/?text=${encodeURIComponent(msg)}`;
   window.open(url, '_blank');
 }
-  
+function abrirPagoGlobal(cid) {
+  const cli = DB.clientes.find(c => c.id === cid);
+  const nombre = cli ? (cli.alias || cli.nombre) : 'Cliente';
+  const pendienteTotal = DB.fiados.filter(f => f.clienteId === cid).reduce((s,f) => s + Math.max(0, f.total - f.pagado), 0);
+  if (pendienteTotal <= 0) { alert('Este cliente no tiene deuda pendiente.'); return; }
+  const monto = parseFloat(prompt(`Pago global para ${nombre}\nDeuda total: ${sol(pendienteTotal)}\n\nIngresa el monto a pagar:`));
+  if (!monto || isNaN(monto) || monto <= 0) return;
+  if (monto > pendienteTotal) { alert('El monto supera la deuda total de ' + sol(pendienteTotal)); return; }
+  ejecutarPagoGlobal(cid, monto);
+}
+
+function ejecutarPagoGlobal(cid, montoTotal) {
+  let saldo = montoTotal;
+  const fiados = DB.fiados.filter(f => f.clienteId === cid && (f.total - f.pagado) > 0).sort((a,b) => a.fecha < b.fecha ? -1 : a.fecha > b.fecha ? 1 : a.id - b.id);
+
+  fiados.forEach(f => {
+    if (saldo <= 0) return;
+    const pendFiado = f.total - f.pagado;
+    if (saldo >= pendFiado) {
+      // Cubre este fiado completo
+      if (!f.pagos) f.pagos = [];
+      f.pagos.push({ fecha: today(), hora: nowTime(), cajero: currentUser, monto: pendFiado, tipo: 'global' });
+      f.pagado += pendFiado;
+      saldo -= pendFiado;
+    } else {
+      // Pago parcial en este fiado — distribuir en items de menor a mayor
+      const itemsOrdenados = [...f.items].sort((a,b) => (a.precio*a.cant) - (b.precio*b.cant));
+      let saldoItem = saldo;
+      itemsOrdenados.forEach(i => {
+        if (saldoItem <= 0) return;
+        const pendItem = (i.precio * i.cant) - (i.pagado || 0);
+        if (pendItem <= 0) return;
+        if (saldoItem >= pendItem) {
+          i.pagado = (i.pagado || 0) + pendItem;
+          saldoItem -= pendItem;
+        } else {
+          i.pagado = (i.pagado || 0) + saldoItem;
+          saldoItem = 0;
+        }
+      });
+      if (!f.pagos) f.pagos = [];
+      f.pagos.push({ fecha: today(), hora: nowTime(), cajero: currentUser, monto: saldo, tipo: 'global' });
+      f.pagado += saldo;
+      saldo = 0;
+    }
+  });
+
+  // Actualizar deuda del cliente
+  const cli = DB.clientes.find(c => c.id === cid);
+  if (cli) cli.deuda = Math.max(0, cli.deuda - montoTotal);
+
+  // Registrar en caja — un solo movimiento
+  ensureCajaAbierta();
+  DB.caja.ingresos += montoTotal;
+  DB.movimientos.push({ tipo:'ingreso', desc:'Pago global fiado: ' + getClienteNombre(cid), monto: montoTotal, hora: nowTime(), fecha: today() });
+
+  // Registrar en historialVentas — un solo registro
+  if (!DB.historialVentas) DB.historialVentas = [];
+  DB.historialVentas.push({ id: getId(), fecha: today(), hora: nowTime(), origen: 'pago_fiado', estado: 'completado', clienteId: cid, total: montoTotal, cajero: currentUser });
+
+  fbGuardar();
+  renderFiados();
+  updateAlertCount();
+  try { renderDashboard(); } catch(e) {}
+  try { renderCaja(); } catch(e) {}
+  alert('✅ Pago global de ' + sol(montoTotal) + ' registrado correctamente.');
+}
+
 function confirmarEliminarFiado(id) {
   const f = DB.fiados.find(x => x.id === id);
   if (!f) return;
