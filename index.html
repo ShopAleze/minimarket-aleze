@@ -4630,6 +4630,7 @@ function renderFiados() {
         <div id="fi-detalle-content-${cid}">${detalle}</div>
       </div>
       <div style="margin-top:.5rem;padding-top:.5rem;border-top:1px solid var(--warning);text-align:right;display:flex;gap:.5rem;justify-content:flex-end">
+      <button class="btn btn-outline btn-sm" onclick="abrirPagoGlobal(${cid})">💳 Pago global</button>
         <button class="btn btn-outline btn-sm" onclick="compartirResumenFiadoCliente(${cid})">💬 WhatsApp resumen</button>
         <button class="btn btn-outline btn-sm" onclick="abrirHistorialCliente(${cid},event)">📋 Ver historial completo</button>
       </div>
