@@ -2243,7 +2243,19 @@ function _loadHtml5QrCode(cb) {
         </div>
         <div class="form-group"><label>Precio promocional final (S/) — editable</label><input type="number" class="form-control" id="promo-precio-promo" step="0.01" oninput="calcPromoDesdeManual()" /></div>
         <div class="form-group"><label>Precio original (S/) — referencia</label><input type="number" class="form-control" id="promo-precio-orig" step="0.01" readonly style="background:var(--gray-50)" /></div>
-        <div id="promo-aviso" style="font-size:.78rem;color:var(--danger);margin-bottom:.5rem"></div>
+   <div id="promo-aviso" style="font-size:.78rem;color:var(--danger);margin-bottom:.5rem"></div>
+        <div class="form-group">
+          <label>📷 Imagen del pack (opcional)</label>
+          <div style="display:flex;gap:.75rem;align-items:flex-start;flex-wrap:wrap">
+            <div id="promo-img-preview" style="width:80px;height:80px;border:2px dashed var(--gray-300);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:2rem;background:var(--gray-50);overflow:hidden;flex-shrink:0">🎁</div>
+            <div style="flex:1;min-width:180px">
+              <input type="file" id="promo-img-file" accept="image/*" style="display:none" onchange="onPromoImgSelect(event)" />
+              <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('promo-img-file').click()" style="margin-bottom:.4rem;width:100%">📁 Seleccionar imagen</button>
+              <button type="button" class="btn btn-xs" onclick="limpiarImgPromo()" style="margin-top:.3rem;background:var(--danger-light);color:var(--danger)">✕ Quitar imagen</button>
+            </div>
+          </div>
+          <input type="hidden" id="promo-img-data" />
+        </div>
       </div>
     </div>
     <div style="display:flex;justify-content:flex-end;gap:.5rem;margin-top:1rem">
