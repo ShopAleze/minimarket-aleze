@@ -6444,43 +6444,107 @@ function renderPromociones() {
   </tr>`).join('') || '<tr><td colspan="8" style="text-align:center;padding:1rem;color:var(--gray-400)">Sin promociones</td></tr>';
 }
 
-function editarPromocion(id) {
+  function editarPromocion(id) {
   editingPromoId = id;
   const pr = DB.promociones.find(x => x.id === id);
-  const prods = DB.productos;
-  ['promo-prod1','promo-prod2'].forEach((selId, idx) => {
-    const sel = document.getElementById(selId);
-    if (!sel) return;
-    sel.innerHTML = (idx===1?'<option value="">Sin segundo producto</option>':'') +
-      prods.map(p=>`<option value="${p.id}">${p.nombre} (${sol(p.precio)})</option>`).join('');
-  });
+  document.getElementById('promo-modal-titulo').textContent = '✏️ Editar Promoción';
+  _llenarSelectsPromo();
   document.getElementById('promo-nombre').value = pr.nombre;
   document.getElementById('promo-tipo-sel').value = pr.tipo;
   document.getElementById('promo-prod1').value = pr.prod1||'';
   document.getElementById('promo-prod2').value = pr.prod2||'';
-  document.getElementById('promo-precio-orig').value = pr.precioOrig;
-  document.getElementById('promo-precio-promo').value = pr.precioPromo;
+  document.getElementById('promo-cant1').value = pr.cant1||1;
+  document.getElementById('promo-cant2').value = pr.cant2||1;
   document.getElementById('promo-desde').value = pr.desde;
   document.getElementById('promo-hasta').value = pr.hasta;
+  const margen = pr.precioOrig > 0 ? Math.round((pr.precioPromo/pr.precioOrig-1)*100) : 20;
+  document.getElementById('promo-margen-num').value = Math.max(0,margen);
+  document.getElementById('promo-margen-slider').value = Math.max(0,margen);
+  document.getElementById('promo-aviso').textContent = '';
+  calcPromo();
+  document.getElementById('promo-precio-promo').value = pr.precioPromo;
   abrirModal('modal-promocion');
 }
 
-function abrirModalPromocion() {
-  editingPromoId = null;
-  const prods = DB.productos;
+function _llenarSelectsPromo() {
+  const prods = DB.productos.filter(p => !p.esCombo);
   ['promo-prod1','promo-prod2'].forEach((selId, idx) => {
     const sel = document.getElementById(selId);
     if (!sel) return;
     sel.innerHTML = (idx===1?'<option value="">Sin segundo producto</option>':'') +
       prods.map(p=>`<option value="${p.id}">${p.nombre} (${sol(p.precio)})</option>`).join('');
   });
+}
+
+function onPromoTipoChange() { calcPromo(); }
+
+function onPromoProductoChange() {
+  const p1Id = parseInt(document.getElementById('promo-prod1').value);
+  const p2Id = parseInt(document.getElementById('promo-prod2').value) || null;
+  const p1 = DB.productos.find(p => p.id === p1Id);
+  const p2 = p2Id ? DB.productos.find(p => p.id === p2Id) : null;
+  if (p1 && !document.getElementById('promo-nombre').value) {
+    document.getElementById('promo-nombre').value = p2 ? `Promo ${p1.nombre} + ${p2.nombre}` : `Promo ${p1.nombre}`;
+  }
+  calcPromo();
+}
+
+function calcPromo() {
+  const p1Id = parseInt(document.getElementById('promo-prod1').value);
+  const p2Id = parseInt(document.getElementById('promo-prod2').value) || null;
+  const cant1 = parseFloat(document.getElementById('promo-cant1').value) || 1;
+  const cant2 = parseFloat(document.getElementById('promo-cant2').value) || 1;
+  const margen = parseFloat(document.getElementById('promo-margen-num').value) || 0;
+  const p1 = DB.productos.find(p => p.id === p1Id);
+  const p2 = p2Id ? DB.productos.find(p => p.id === p2Id) : null;
+  if (!p1) { document.getElementById('promo-calc-detalle').textContent = 'Selecciona los productos para ver el cálculo'; return; }
+  const costoTotal = (p1.costo * cant1) + (p2 ? p2.costo * cant2 : 0);
+  const precioOrig = (p1.precio * cant1) + (p2 ? p2.precio * cant2 : 0);
+  const precioSugerido = Math.ceil(costoTotal * (1 + margen / 100) * 10) / 10;
+  const ahorro = precioOrig - precioSugerido;
+  document.getElementById('promo-precio-orig').value = precioOrig.toFixed(2);
+  document.getElementById('promo-precio-promo').value = precioSugerido.toFixed(2);
+  document.getElementById('promo-calc-detalle').innerHTML = `
+    <div style="display:flex;justify-content:space-between"><span>${p1.nombre} x${cant1}:</span><span>Costo ${sol(p1.costo*cant1)} / Venta ${sol(p1.precio*cant1)}</span></div>
+    ${p2 ? `<div style="display:flex;justify-content:space-between"><span>${p2.nombre} x${cant2}:</span><span>Costo ${sol(p2.costo*cant2)} / Venta ${sol(p2.precio*cant2)}</span></div>` : ''}
+    <div style="border-top:1px solid var(--gray-200);margin-top:.3rem;padding-top:.3rem">
+      <div style="display:flex;justify-content:space-between"><span>Costo total:</span><strong>${sol(costoTotal)}</strong></div>
+      <div style="display:flex;justify-content:space-between"><span>Precio individual sumado:</span><span style="text-decoration:line-through;color:var(--gray-400)">${sol(precioOrig)}</span></div>
+      <div style="display:flex;justify-content:space-between"><span>Precio promo (${margen}% margen):</span><strong style="color:var(--accent)">${sol(precioSugerido)}</strong></div>
+      <div style="display:flex;justify-content:space-between"><span>Ahorro cliente:</span><strong style="color:var(--primary)">${sol(ahorro)}</strong></div>
+    </div>`;
+  document.getElementById('promo-aviso').textContent = precioSugerido < costoTotal ? '⚠️ Precio por debajo del costo' : '';
+}
+
+function calcPromoDesdeManual() {
+  const precioOrig = parseFloat(document.getElementById('promo-precio-orig').value) || 0;
+  const precioPromo = parseFloat(document.getElementById('promo-precio-promo').value) || 0;
+  if (precioOrig > 0) {
+    const margenReal = Math.round((precioPromo / precioOrig - 1) * 100);
+    document.getElementById('promo-margen-num').value = margenReal;
+    document.getElementById('promo-margen-slider').value = Math.max(0, margenReal);
+  }
+}
+
+function abrirModalPromocion() {
+  editingPromoId = null;
+  document.getElementById('promo-modal-titulo').textContent = '🏷️ Nueva Promoción';
+  _llenarSelectsPromo();
   const hoy = today(); const en7 = new Date(); en7.setDate(en7.getDate()+7);
   document.getElementById('promo-desde').value = hoy;
   document.getElementById('promo-hasta').value = en7.toISOString().split('T')[0];
-  ['promo-nombre','promo-precio-orig','promo-precio-promo'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('promo-nombre').value = '';
+  document.getElementById('promo-cant1').value = 1;
+  document.getElementById('promo-cant2').value = 1;
+  document.getElementById('promo-margen-num').value = 20;
+  document.getElementById('promo-margen-slider').value = 20;
+  document.getElementById('promo-precio-orig').value = '';
+  document.getElementById('promo-precio-promo').value = '';
+  document.getElementById('promo-calc-detalle').textContent = 'Selecciona los productos para ver el cálculo';
+  document.getElementById('promo-aviso').textContent = '';
   abrirModal('modal-promocion');
 }
-
+  
 function guardarPromocion() {
   const nombre = document.getElementById('promo-nombre').value.trim();
   const prod1Id = parseInt(document.getElementById('promo-prod1').value);
