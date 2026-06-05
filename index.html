@@ -2390,9 +2390,31 @@ function _loadHtml5QrCode(cb) {
 
 <!-- Modal Ver Boletas -->
 <div class="modal-overlay" id="modal-ver-boletas">
-  <div class="modal" style="max-width:680px"><div class="modal-header"><h3 id="vb-titulo">Boletas del proveedor</h3><button type="button" class="modal-close" onclick="cerrarModal('modal-ver-boletas')">✕</button></div>
-    <div class="form-group"><input type="text" class="form-control" id="bol-buscar" placeholder="Buscar por N° boleta, fecha, descripción..." oninput="filtrarBoletas()" /></div>
-    <div class="table-wrap"><table><thead><tr><th>N° Boleta</th><th>Fecha</th><th>Descripción</th><th>Monto</th><th>Archivo</th></tr></thead><tbody id="boletas-tbody"></tbody></table></div>
+  <div class="modal" style="max-width:680px">
+    <div class="modal-header">
+      <h3 id="vb-titulo">Boletas del proveedor</h3>
+      <button type="button" class="modal-close" onclick="cerrarModal('modal-ver-boletas')">✕</button>
+    </div>
+    <div style="display:flex;gap:.5rem;margin-bottom:.75rem">
+      <input type="text" class="form-control" id="bol-buscar" placeholder="Buscar por N° boleta, fecha, descripción..." oninput="filtrarBoletas()" />
+      <button type="button" class="btn btn-primary btn-sm" onclick="abrirAgregarBoleta()">+ Agregar</button>
+    </div>
+    <div id="bol-form" style="display:none;background:var(--gray-50);border-radius:8px;padding:.75rem;margin-bottom:.75rem">
+      <div class="grid-2">
+        <div class="form-group"><label>N° Boleta *</label><input type="text" class="form-control" id="bol-num" /></div>
+        <div class="form-group"><label>Fecha *</label><input type="date" class="form-control" id="bol-fecha" /></div>
+      </div>
+      <div class="grid-2">
+        <div class="form-group"><label>Monto (S/)</label><input type="number" class="form-control" id="bol-monto" step="0.01" /></div>
+        <div class="form-group"><label>URL imagen (opcional)</label><input type="text" class="form-control" id="bol-url" placeholder="Link Google Drive o foto" /></div>
+      </div>
+      <div class="form-group"><label>Descripción</label><input type="text" class="form-control" id="bol-desc" /></div>
+      <div style="display:flex;gap:.5rem;justify-content:flex-end">
+        <button type="button" class="btn btn-outline btn-sm" onclick="cerrarAgregarBoleta()">Cancelar</button>
+        <button type="button" class="btn btn-primary btn-sm" onclick="guardarBoleta()">Guardar boleta</button>
+      </div>
+    </div>
+    <div class="table-wrap"><table><thead><tr><th>N° Boleta</th><th>Fecha</th><th>Descripción</th><th>Monto</th><th>URL</th></tr></thead><tbody id="boletas-tbody"></tbody></table></div>
   </div>
 </div>
 <div class="modal-overlay" id="modal-ticket">
@@ -4419,6 +4441,18 @@ function eliminarProveedor(id) {
 }
 
 let editingBoletaProvId = null;
+  function abrirAgregarBoleta() {
+  document.getElementById('bol-form').style.display = 'block';
+  document.getElementById('bol-num').value = '';
+  document.getElementById('bol-fecha').value = today();
+  document.getElementById('bol-monto').value = '';
+  document.getElementById('bol-url').value = '';
+  document.getElementById('bol-desc').value = '';
+}
+
+function cerrarAgregarBoleta() {
+  document.getElementById('bol-form').style.display = 'none';
+}
 function verBoletas(provId) {
   editingBoletaProvId = provId;
   const p = DB.proveedores.find(x => x.id === provId);
@@ -4433,23 +4467,22 @@ function filtrarBoletas() {
   const filtradas = q ? boletas.filter(b => (b.num+b.fecha+b.desc).toLowerCase().includes(q)) : boletas;
   document.getElementById('boletas-tbody').innerHTML = filtradas.map(b => `<tr>
     <td>${b.num}</td><td>${formatDate(b.fecha)}</td><td>${b.desc||'-'}</td>
-    <td>${sol(b.monto||0)}</td><td>${b.archivo?'📎 '+b.archivo:'-'}</td>
+    <td>${sol(b.monto||0)}</td><td>${b.url?`<a href="${b.url}" target="_blank" style="color:var(--primary)">🔗 Ver</a>`:'-'}</td>
   </tr>`).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--gray-400);padding:1rem">Sin boletas registradas</td></tr>';
 }
 function guardarBoleta() {
-  const num = document.getElementById('b2-num').value.trim();
-  const fecha = document.getElementById('b2-fecha').value;
+  const num = document.getElementById('bol-num').value.trim();
+  const fecha = document.getElementById('bol-fecha').value;
   if (!num || !fecha) { alert('Ingresa número y fecha'); return; }
   const prov = DB.proveedores.find(x => x.id === editingBoletaProvId);
   if (!prov) return;
   if (!prov.boletas) prov.boletas = [];
-  prov.boletas.push({ num, fecha, monto: parseFloat(document.getElementById('b2-monto').value)||0, desc: document.getElementById('b2-desc').value, archivo: document.getElementById('b2-file').files[0]?.name||'' });
+  prov.boletas.push({ num, fecha, monto: parseFloat(document.getElementById('bol-monto').value)||0, desc: document.getElementById('bol-desc').value, url: document.getElementById('bol-url').value.trim() });
   fbGuardar();
-  cerrarModal('modal-boleta');
+  cerrarAgregarBoleta();
   renderProveedores();
-  if (document.getElementById('modal-ver-boletas').classList.contains('open')) filtrarBoletas();
+  filtrarBoletas();
 }
-
 // ===================== CLIENTES =====================
 let editingCliId = null;
 
