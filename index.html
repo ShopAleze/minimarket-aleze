@@ -6502,23 +6502,55 @@ function renderPromociones() {
 
 function _llenarSelectsPromo() {
   const prods = DB.productos.filter(p => !p.esCombo);
-  ['promo-prod1','promo-prod2'].forEach((selId, idx) => {
+  [['promo-prod1',0],['promo-prod2',1],['promo-prod3',2]].forEach(([selId, idx]) => {
     const sel = document.getElementById(selId);
     if (!sel) return;
-    sel.innerHTML = (idx===1?'<option value="">Sin segundo producto</option>':'') +
+    sel.innerHTML = (idx>0?`<option value="">${idx===1?'Sin segundo producto':'Sin tercer producto'}</option>`:'') +
       prods.map(p=>`<option value="${p.id}">${p.nombre} (${sol(p.precio)})</option>`).join('');
   });
 }
 
 function onPromoTipoChange() { calcPromo(); }
 
+function onPromoImgSelect(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const data = ev.target.result;
+    document.getElementById('promo-img-data').value = data;
+    const prev = document.getElementById('promo-img-preview');
+    prev.innerHTML = `<img src="${data}" style="width:100%;height:100%;object-fit:cover">`;
+  };
+  reader.readAsDataURL(file);
+}
+
+function limpiarImgPromo() {
+  document.getElementById('promo-img-data').value = '';
+  document.getElementById('promo-img-preview').innerHTML = '🎁';
+  document.getElementById('promo-img-file').value = '';
+}
+
+function generarQrPromo() {
+  const nombre = document.getElementById('promo-nombre').value.trim() || 'Pack';
+  const codigo = 'PROMO-' + Date.now();
+  document.getElementById('promo-codigo').value = codigo;
+  document.getElementById('promo-qr-nombre-label').textContent = nombre;
+  const cont = document.getElementById('promo-qr-preview');
+  cont.innerHTML = '';
+  new QRCode(cont, { text: codigo, width: 100, height: 100 });
+  document.getElementById('promo-qr-container').style.display = '';
+}
+
 function onPromoProductoChange() {
   const p1Id = parseInt(document.getElementById('promo-prod1').value);
   const p2Id = parseInt(document.getElementById('promo-prod2').value) || null;
+  const p3Id = parseInt(document.getElementById('promo-prod3').value) || null;
   const p1 = DB.productos.find(p => p.id === p1Id);
   const p2 = p2Id ? DB.productos.find(p => p.id === p2Id) : null;
-if (p1) {
-    const nombreSugerido = [p1, p2].filter(Boolean).map(p => p.nombre).join(' + ');
+  const p3 = p3Id ? DB.productos.find(p => p.id === p3Id) : null;
+  if (p1) {
+    const nombreSugerido = [p1, p2, p3].filter(Boolean).map(p => p.nombre).join(' + ');
     const campoNombre = document.getElementById('promo-nombre');
     const valorActual = campoNombre.value;
     const esSugerido = !valorActual || DB.productos.some(p => valorActual.includes(p.nombre));
