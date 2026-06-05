@@ -4597,7 +4597,7 @@ function renderFiados() {
         <div style="font-size:.72rem;color:var(--gray-500)">Total: ${sol(f.total)} | Pagado: ${sol(f.pagado)}</div>
         <div style="display:flex;gap:.4rem;margin-top:.4rem;flex-wrap:wrap">
           ${pend > 0 ? `<button class="btn btn-accent btn-xs" onclick="abrirPagoFiado(${f.id})">💰 Registrar pago</button>` : ''}
-          ${currentRole === 'admin' ? `<button class="btn btn-xs" style="background:var(--danger-light);color:var(--danger)" onclick="confirmarEliminarFiado(${f.id})">🗑️ Eliminar</button>` : ''}
+     ${currentRole === 'admin' && pend > 0 ? `<button class="btn btn-xs" style="background:var(--danger-light);color:var(--danger)" onclick="confirmarEliminarFiado(${f.id})">🗑️ Eliminar</button>` : ''}
         </div>
       </div>`;
     }).join('');
@@ -4668,7 +4668,7 @@ function renderDetalleFiado(cid) {
       <div style="font-size:.72rem;color:var(--gray-500)">Total: ${sol(f.total)} | Pagado: ${sol(f.pagado)}</div>
       <div style="display:flex;gap:.4rem;margin-top:.4rem;flex-wrap:wrap">
         ${pend > 0 ? `<button class="btn btn-accent btn-xs" onclick="abrirPagoFiado(${f.id})">💰 Registrar pago</button>` : ''}
-        ${currentRole === 'admin' ? `<button class="btn btn-xs" style="background:var(--danger-light);color:var(--danger)" onclick="confirmarEliminarFiado(${f.id})">🗑️ Eliminar</button>` : ''}
+  ${currentRole === 'admin' && pend > 0 ? `<button class="btn btn-xs" style="background:var(--danger-light);color:var(--danger)" onclick="confirmarEliminarFiado(${f.id})">🗑️ Eliminar</button>` : ''}
       </div>
     </div>`;
   }).join('') || '<p style="color:var(--gray-400);font-size:.82rem;padding:.5rem">Sin registros para los filtros seleccionados</p>';
