@@ -7424,7 +7424,7 @@ function fbGuardar() {
     delete payload.productos;
     delete payload.categorias;
     delete payload.promociones;
-    fbDocRef().set(payload)
+    fbDocRef().set(payload, { merge: true })
       .then(() => { setTimeout(() => { _fbEscribiendo = false; }, 300); })
       .catch(e => { _fbEscribiendo = false; console.warn('Firestore write error:', e); });
   }, 1200);
@@ -7508,9 +7508,9 @@ if (_fbSnapshotUnsub) { _fbSnapshotUnsub(); _fbSnapshotUnsub = null; }
     const data = snapshot.data();
     if (!data) return;
     if (data.productos) {
-  const localCombos = (DB.productos||[]).filter(p => p.esCombo && !data.productos.find(x => x.id === p.id));
-  DB.productos = [...data.productos, ...localCombos];
-}
+      const localCombos = (DB.productos||[]).filter(p => p.esCombo && !data.productos.find(x => x.id === p.id));
+      DB.productos = [...data.productos, ...localCombos];
+    }
     if (data.categorias) DB.categorias = data.categorias;
     if (data.config)     DB.config     = { ...DB.config, ...data.config };
     _fbProdCacheTs = Date.now();
@@ -9358,7 +9358,7 @@ const RESET_CONFIG = {
       DB.clientes.forEach(c => { c.compras = 0; c.total = 0; c.deuda = 0; });
       DB_EXT.gastos = [];
       DB_EXT.capital = { total: 0, cuota: 0, meta: 0, recuperado: 0, hist: [] };
-     const _payload = JSON.parse(JSON.stringify(DB)); delete _payload.productos; delete _payload.categorias; _payload._resetToken = true; _fbLastWriteTs = Date.now(); fbDocRef().set(_payload);
+     const _payload = JSON.parse(JSON.stringify(DB)); delete _payload.productos; delete _payload.categorias; _payload._resetToken = true; _fbLastWriteTs = Date.now(); clearTimeout(_fbSaveTimer); _fbEscribiendo = true; fbDocRef().set(_payload, { merge: true }).then(() => { setTimeout(() => { _fbEscribiendo = false; }, 3000); }).catch(() => { _fbEscribiendo = false; });
       try { renderDashboard(); } catch(e) {}
       try { updateAlertCount(); } catch(e) {}
     }
