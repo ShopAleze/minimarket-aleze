@@ -6636,6 +6636,8 @@ function guardarPromocion() {
   const prod1 = DB.productos.find(p => p.id === prod1Id);
   const prod2Id = parseInt(document.getElementById('promo-prod2').value) || null;
   const prod2 = prod2Id ? DB.productos.find(p => p.id === prod2Id) : null;
+  const prod3Id = parseInt(document.getElementById('promo-prod3').value) || null;
+  const prod3 = prod3Id ? DB.productos.find(p => p.id === prod3Id) : null;
   const precioOrig = parseFloat(document.getElementById('promo-precio-orig').value) || 0;
   const precioPromo = parseFloat(document.getElementById('promo-precio-promo').value) || 0;
   if (!nombre || !prod1) { alert('Completa los campos obligatorios'); return; }
@@ -6643,9 +6645,15 @@ function guardarPromocion() {
   const data = {
     nombre, tipo: document.getElementById('promo-tipo-sel').value,
     prod1: prod1Id, prod1nombre: prod1?.nombre,
-   prod2: prod2Id, prod2nombre: prod2?.nombre||null,
+    prod2: prod2Id, prod2nombre: prod2?.nombre||null,
+    prod3: prod3Id, prod3nombre: prod3?.nombre||null,
     cant1: parseFloat(document.getElementById('promo-cant1').value)||1,
     cant2: parseFloat(document.getElementById('promo-cant2').value)||1,
+    cant3: parseFloat(document.getElementById('promo-cant3').value)||1,
+    imagen: document.getElementById('promo-img-data').value || null,
+    codigo: document.getElementById('promo-codigo').value || null,
+    limite: parseInt(document.getElementById('promo-limite').value)||0,
+    vendidos: editingPromoId ? (DB.promociones.find(x=>x.id===editingPromoId)?.vendidos||0) : 0,
     precioOrig, precioPromo,
     desde: document.getElementById('promo-desde').value,
     hasta: document.getElementById('promo-hasta').value,
@@ -6657,13 +6665,12 @@ function guardarPromocion() {
   } else {
     DB.promociones.push({ id: getId(), ...data });
   }
- fbGuardar();
+  fbGuardar();
   cerrarModal('modal-promocion');
   renderPromociones();
   try { renderPosGrid(); } catch(e){}
   try { renderMobPosGrid(); } catch(e){}
 }
-
 function togglePromo(id) {
   const p = DB.promociones.find(x => x.id === id);
   if (p) { p.activa = !p.activa; fbGuardar(); }
