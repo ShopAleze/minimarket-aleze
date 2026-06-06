@@ -3322,7 +3322,9 @@ function renderPos() {
 function renderPosCategorias() {
   const wrap = document.getElementById('pos-categorias');
   wrap.innerHTML = `<span class="tag ${posFilterCat === '' ? 'active' : ''}" onclick="setPosFilter('')">🏪 Todos</span>`;
+const promoActivas = DB.promociones.filter(p => p.activa && p.hasta >= today());
   DB.categorias.forEach(c => {
+    if (c.nombre === 'Promociones' && promoActivas.length === 0) return;
     const icon = c.imagen
       ? `<img src="${c.imagen}" style="width:16px;height:16px;object-fit:cover;border-radius:3px;vertical-align:middle;margin-right:3px"/>`
       : (c.emoji + ' ');
@@ -3336,20 +3338,24 @@ function renderPosGrid(search = '') {
   // Guard: no renderizar sin sesión activa
   if (!currentUser) return;
   const s = search || document.getElementById('pos-search')?.value.toLowerCase() || '';
-let prods = DB.productos.filter(p => p.stock > 0 && !p.esCombo);
-  if (s) prods = prods.filter(p => p.nombre.toLowerCase().includes(s) || p.codigo.includes(s));
-  if (posFilterCat) prods = prods.filter(p => p.cat == posFilterCat);
-
   const promoActivas = DB.promociones.filter(p => p.activa && p.hasta >= today());
+  const catPromo = DB.categorias.find(c => c.nombre === 'Promociones');
+  const enCatPromo = catPromo && posFilterCat == catPromo.id;
+
+  let prods = DB.productos.filter(p => p.stock > 0 && !p.esCombo);
+  if (s) prods = prods.filter(p => p.nombre.toLowerCase().includes(s) || (p.codigo||'').includes(s));
+  if (posFilterCat && !enCatPromo) prods = prods.filter(p => p.cat == posFilterCat);
+  if (enCatPromo) prods = prods.filter(p => promoActivas.some(pr => pr.prod1==p.id || pr.prod2==p.id || pr.prod3==p.id));
 
   document.getElementById('pos-grid').innerHTML = prods.map(p => {
-    const promo = promoActivas.find(pr => pr.prod1 == p.id || pr.prod2 == p.id);
-    const esCombo2 = promo && promo.prod2;
-    const precioMostrar = (!esCombo2 && promo) ? promo.precioPromo : p.precio;
-    const iconHtml = p.imagen
-      ? `<div style="width:46px;height:46px;margin:0 auto .3rem;border-radius:8px;overflow:hidden"><img src="${p.imagen}" style="width:100%;height:100%;object-fit:cover" /></div>`
+    const promo = promoActivas.find(pr => pr.prod1==p.id || pr.prod2==p.id || pr.prod3==p.id);
+    const esComboMulti = promo && (promo.prod2 || promo.prod3);
+    const precioMostrar = (!esComboMulti && promo) ? promo.precioPromo : p.precio;
+    const imgSrc = (esComboMulti && promo.imagen) ? promo.imagen : p.imagen;
+    const iconHtml = imgSrc
+      ? `<div style="width:46px;height:46px;margin:0 auto .3rem;border-radius:8px;overflow:hidden"><img src="${imgSrc}" style="width:100%;height:100%;object-fit:cover" /></div>`
       : `<div class="p-icon">${getCatIcono(p.cat)}</div>`;
-    const promoTag = esCombo2
+    const promoTag = esComboMulti
       ? `<span class="promo-tag" style="background:var(--accent)">COMBO</span>`
       : (promo ? '<span class="promo-tag">PROMO</span>' : '');
     return `<div class="product-card" onclick="addToCart(${p.id})">
@@ -3563,20 +3569,31 @@ function procesarVenta() {
   if (!DB.historialVentas) DB.historialVentas = [];
   DB.historialVentas.push({ ...venta, origen: 'pos', estado: 'completado', estadoStock: 'descontado' });
 
-  // Actualizar stock
- cart.forEach(item => {
-    const prod = DB.productos.find(p => p.id === item.prodId);
-    if (prod) {
-        prod.stock = Math.max(0, prod.stock - item.cant);
-        if (prod.esCombo && prod.componentes) {
-            prod.componentes.forEach(comp => {
-                const cp = DB.productos.find(x => x.id === comp.prodId);
-                if (cp) cp.stock = Math.max(0, cp.stock - comp.cant * item.cant);
-            });
-        }
+// Actualizar stock
+  const promosYaProcesadas = new Set();
+  itemsConPrecioReal.forEach(item => {
+    if (item.enCombo) {
+      const promo = DB.promociones.find(p => p.activa && (p.prod1==item.prodId||p.prod2==item.prodId||p.prod3==item.prodId) && (p.prod2||p.prod3));
+      if (promo && !promosYaProcesadas.has(promo.id)) {
+        promosYaProcesadas.add(promo.id);
+        const sets = Math.min(
+          cart.find(i=>i.prodId==promo.prod1)?.cant||0,
+          promo.prod2 ? (cart.find(i=>i.prodId==promo.prod2)?.cant||0) : Infinity,
+          promo.prod3 ? (cart.find(i=>i.prodId==promo.prod3)?.cant||0) : Infinity
+        );
+        [['prod1','cant1'],['prod2','cant2'],['prod3','cant3']].forEach(([pk,ck]) => {
+          if (!promo[pk]) return;
+          const comp = DB.productos.find(p => p.id==promo[pk]);
+          if (comp) comp.stock = Math.max(0, comp.stock - (promo[ck]||1) * sets);
+        });
+        promo.vendidos = (promo.vendidos||0) + sets;
+        if (promo.limite > 0 && promo.vendidos >= promo.limite) promo.activa = false;
+      }
+    } else {
+      const prod = DB.productos.find(p => p.id === item.prodId);
+      if (prod) prod.stock = Math.max(0, prod.stock - item.cant);
     }
-});
-
+  });
   // Caja: register always (ensureCajaAbierta abre si hace falta)
   ensureCajaAbierta();
   DB.caja.ingresos += total;
@@ -6471,7 +6488,7 @@ function renderPromociones() {
   document.getElementById('promo-tbody').innerHTML = DB.promociones.map(p => `<tr>
     <td><strong>${p.nombre}</strong></td>
     <td><span class="badge badge-${p.tipo==='combo'?'blue':'purple'}">${p.tipo}</span></td>
-    <td style="font-size:0.8rem">${p.prod1nombre||''}${p.prod2nombre?' + '+p.prod2nombre:''}</td>
+ <td style="font-size:0.8rem">${p.prod1nombre||''}${p.prod2nombre?' + '+p.prod2nombre:''}${p.prod3nombre?' + '+p.prod3nombre:''}</td>
     <td>${sol(p.precioOrig)}</td>
     <td style="color:var(--accent);font-weight:700">${sol(p.precioPromo)}</td>
     <td style="font-size:0.8rem">${formatDate(p.desde)} - ${formatDate(p.hasta)}</td>
@@ -6682,9 +6699,13 @@ function guardarPromocion() {
   } else {
     DB.promociones.push({ id: getId(), ...data });
   }
+ if (!DB.categorias.find(c => c.nombre === 'Promociones')) {
+    DB.categorias.push({ id: getId(), nombre: 'Promociones', emoji: '🏷️', imagen: null });
+  }
   fbGuardar();
   cerrarModal('modal-promocion');
   renderPromociones();
+  try { renderPosCategorias(); } catch(e){}
   try { renderPosGrid(); } catch(e){}
   try { renderMobPosGrid(); } catch(e){}
 }
