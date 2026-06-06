@@ -3386,6 +3386,14 @@ function addToCart(prodId) {
       const nombres = sinStock.map(c => DB.productos.find(p=>p.id===c.prodId)?.nombre||'Producto').join(', ');
       alert('Stock insuficiente para: ' + nombres); return;
     }
+    const promoPackDes = DB.promociones.find(p => p.packProdId === prodId);
+    if (promoPackDes && promoPackDes.limite > 0) {
+      const enCarrito = cart.find(i => i.prodId === prodId);
+      const cantCarrito = enCarrito ? enCarrito.cant : 0;
+      if ((promoPackDes.vendidos||0) + cantCarrito >= promoPackDes.limite) {
+        alert('Límite de esta promoción alcanzado (' + promoPackDes.limite + ' unidades)'); return;
+      }
+    }
     const existing = cart.find(i => i.prodId === prodId);
     if (existing) { existing.cant++; }
     else { cart.push({ prodId, nombre: prod.nombre, precio: prod.precio, cant: 1, tipo: 'unidad', unidad: prod.unidad||'und', esCombo: true }); }
@@ -3434,7 +3442,7 @@ function changeQty(i, delta) {
 }
 
 function removeItem(i) { cart.splice(i, 1); renderCart(); calcTotal(); }
-function clearCart() { cart = []; renderCart(); calcTotal(); document.getElementById('pos-search').value = ''; renderPosGrid(); try { updatePosCartBadge(); } catch(e){} try { mobUpdateBar(); } catch(e){} }
+function clearCart() { cart = []; renderCart(); calcTotal(); document.getElementById('pos-search').value = ''; renderPosGrid(); try { renderPosCategorias(); } catch(e){} try { renderMobPosCats(); } catch(e){} try { updatePosCartBadge(); } catch(e){} try { mobUpdateBar(); } catch(e){} }
 
 
 // ── Helper: get category icon (image if available, else emoji) ──
@@ -3630,6 +3638,7 @@ fbGuardarProductos();
   try { renderCaja(); } catch(e){}
   try { generarReporte(); } catch(e){}
   mostrarTicket(venta);
+  try { renderPosCategorias(); } catch(e){}
   clearCart();
   updateAlertCount();
 }
@@ -7055,8 +7064,12 @@ function mobFilterPos() {
 function renderMobPosCats() {
   const el = document.getElementById('mob-pos-categorias');
   if (!el) return;
-  const cats = [{ id: '', emoji: '🏪', nombre: 'Todos', imagen: null }, ...DB.categorias];
+  const promoActivas = DB.promociones.filter(p => p.activa && p.hasta >= today());
+  const hayPromosMob = promoActivas.length > 0 || DB.productos.some(p => p.esCombo && p.stock > 0);
+  const catsOrdenadas = [...DB.categorias].sort((a,b) => a.nombre==='Promociones'?-1:b.nombre==='Promociones'?1:0);
+  const cats = [{ id: '', emoji: '🏪', nombre: 'Todos', imagen: null }, ...catsOrdenadas];
   el.innerHTML = cats.map(c => {
+    if (c.nombre === 'Promociones' && !hayPromosMob) return '';
     const icon = c.imagen
       ? `<img src="${c.imagen}" style="width:14px;height:14px;object-fit:cover;border-radius:2px;vertical-align:middle;margin-right:2px"/>`
       : (c.emoji + ' ');
@@ -7109,6 +7122,14 @@ function mobAddToCart(prodId) {
     if (sinStock.length > 0) {
       const nombres = sinStock.map(c => DB.productos.find(p=>p.id===c.prodId)?.nombre||'Producto').join(', ');
       alert('Stock insuficiente para: ' + nombres); return;
+    }
+    const promoPackDesMob = DB.promociones.find(p => p.packProdId === prodId);
+    if (promoPackDesMob && promoPackDesMob.limite > 0) {
+      const enCarritoMob = cart.find(i => i.prodId === prodId);
+      const cantCarritoMob = enCarritoMob ? enCarritoMob.cant : 0;
+      if ((promoPackDesMob.vendidos||0) + cantCarritoMob >= promoPackDesMob.limite) {
+        alert('Límite de esta promoción alcanzado (' + promoPackDesMob.limite + ' unidades)'); return;
+      }
     }
     const existing = cart.find(i => i.prodId === prodId);
     if (existing) { existing.cant++; }
