@@ -6621,12 +6621,23 @@ function abrirModalPromocion() {
   document.getElementById('promo-nombre').value = '';
   document.getElementById('promo-cant1').value = 1;
   document.getElementById('promo-cant2').value = 1;
+  document.getElementById('promo-cant3').value = 1;
+  document.getElementById('promo-prod2').value = '';
+  document.getElementById('promo-prod3').value = '';
   document.getElementById('promo-margen-num').value = 20;
   document.getElementById('promo-margen-slider').value = 20;
   document.getElementById('promo-precio-orig').value = '';
   document.getElementById('promo-precio-promo').value = '';
   document.getElementById('promo-calc-detalle').textContent = 'Selecciona los productos para ver el cálculo';
   document.getElementById('promo-aviso').textContent = '';
+  document.getElementById('promo-limite').value = 0;
+  document.getElementById('promo-vendidos-display').style.display = 'none';
+  document.getElementById('promo-img-data').value = '';
+  document.getElementById('promo-img-preview').innerHTML = '🎁';
+  document.getElementById('promo-img-file').value = '';
+  document.getElementById('promo-codigo').value = '';
+  document.getElementById('promo-qr-container').style.display = 'none';
+  document.getElementById('promo-qr-preview').innerHTML = '';
   abrirModal('modal-promocion');
 }
   
