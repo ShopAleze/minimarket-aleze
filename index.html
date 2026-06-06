@@ -6562,14 +6562,17 @@ function onPromoProductoChange() {
 function calcPromo() {
   const p1Id = parseInt(document.getElementById('promo-prod1').value);
   const p2Id = parseInt(document.getElementById('promo-prod2').value) || null;
+  const p3Id = parseInt(document.getElementById('promo-prod3').value) || null;
   const cant1 = parseFloat(document.getElementById('promo-cant1').value) || 1;
   const cant2 = parseFloat(document.getElementById('promo-cant2').value) || 1;
+  const cant3 = parseFloat(document.getElementById('promo-cant3').value) || 1;
   const margen = parseFloat(document.getElementById('promo-margen-num').value) || 0;
   const p1 = DB.productos.find(p => p.id === p1Id);
   const p2 = p2Id ? DB.productos.find(p => p.id === p2Id) : null;
+  const p3 = p3Id ? DB.productos.find(p => p.id === p3Id) : null;
   if (!p1) { document.getElementById('promo-calc-detalle').textContent = 'Selecciona los productos para ver el cálculo'; return; }
-  const costoTotal = (p1.costo * cant1) + (p2 ? p2.costo * cant2 : 0);
-  const precioOrig = (p1.precio * cant1) + (p2 ? p2.precio * cant2 : 0);
+  const costoTotal = (p1.costo * cant1) + (p2 ? p2.costo * cant2 : 0) + (p3 ? p3.costo * cant3 : 0);
+  const precioOrig = (p1.precio * cant1) + (p2 ? p2.precio * cant2 : 0) + (p3 ? p3.precio * cant3 : 0);
   const precioSugerido = Math.ceil(costoTotal * (1 + margen / 100) * 10) / 10;
   const ahorro = precioOrig - precioSugerido;
   document.getElementById('promo-precio-orig').value = precioOrig.toFixed(2);
@@ -6577,6 +6580,7 @@ function calcPromo() {
   document.getElementById('promo-calc-detalle').innerHTML = `
     <div style="display:flex;justify-content:space-between"><span>${p1.nombre} x${cant1}:</span><span>Costo ${sol(p1.costo*cant1)} / Venta ${sol(p1.precio*cant1)}</span></div>
     ${p2 ? `<div style="display:flex;justify-content:space-between"><span>${p2.nombre} x${cant2}:</span><span>Costo ${sol(p2.costo*cant2)} / Venta ${sol(p2.precio*cant2)}</span></div>` : ''}
+    ${p3 ? `<div style="display:flex;justify-content:space-between"><span>${p3.nombre} x${cant3}:</span><span>Costo ${sol(p3.costo*cant3)} / Venta ${sol(p3.precio*cant3)}</span></div>` : ''}
     <div style="border-top:1px solid var(--gray-200);margin-top:.3rem;padding-top:.3rem">
       <div style="display:flex;justify-content:space-between"><span>Costo total:</span><strong>${sol(costoTotal)}</strong></div>
       <div style="display:flex;justify-content:space-between"><span>Precio individual sumado:</span><span style="text-decoration:line-through;color:var(--gray-400)">${sol(precioOrig)}</span></div>
@@ -6596,7 +6600,10 @@ function calcPromoDesdeManual() {
   const cant2 = parseFloat(document.getElementById('promo-cant2').value) || 1;
   const p1 = DB.productos.find(p => p.id === p1Id);
   const p2 = p2Id ? DB.productos.find(p => p.id === p2Id) : null;
-  const costoReal = ((p1?.costo||0)*cant1) + ((p2?.costo||0)*cant2);
+const p3Id = parseInt(document.getElementById('promo-prod3').value) || null;
+  const cant3 = parseFloat(document.getElementById('promo-cant3').value) || 1;
+  const p3 = p3Id ? DB.productos.find(p => p.id === p3Id) : null;
+  const costoReal = ((p1?.costo||0)*cant1) + ((p2?.costo||0)*cant2) + ((p3?.costo||0)*cant3);
   if (costoReal > 0) {
     const margenReal = Math.round((precioPromo / costoReal - 1) * 100);
     document.getElementById('promo-margen-num').value = margenReal;
