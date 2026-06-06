@@ -3480,19 +3480,20 @@ function checkAutoAbrirCaja() {
 function calcComboDescuento(cartRef) {
   // Returns { total: number, lineas: [{nombre, sets, descuento}] }
   cartRef = cartRef || cart;
-  const promoActivas = DB.promociones.filter(p => p.activa && p.hasta >= today() && p.prod2);
+  const promoActivas = DB.promociones.filter(p => p.activa && p.hasta >= today() && (p.prod2 || p.prod3));
   let totalDesc = 0;
   const lineas = [];
   promoActivas.forEach(promo => {
     const item1 = cartRef.find(i => i.prodId == promo.prod1);
-    const item2 = cartRef.find(i => i.prodId == promo.prod2);
-    if (!item1 || !item2) return;
-    const sets = Math.min(item1.cant, item2.cant);
+    const item2 = promo.prod2 ? cartRef.find(i => i.prodId == promo.prod2) : null;
+    const item3 = promo.prod3 ? cartRef.find(i => i.prodId == promo.prod3) : null;
+    if (!item1) return;
+    const sets = Math.min(item1.cant, item2 ? item2.cant : Infinity, item3 ? item3.cant : Infinity);
     if (sets <= 0) return;
-    // Price without combo: sum of regular prices × sets
     const prod1 = DB.productos.find(p => p.id == promo.prod1);
-    const prod2 = DB.productos.find(p => p.id == promo.prod2);
-    const precioSinCombo = ((prod1 ? prod1.precio : item1.precio) + (prod2 ? prod2.precio : item2.precio)) * sets;
+    const prod2 = promo.prod2 ? DB.productos.find(p => p.id == promo.prod2) : null;
+    const prod3 = promo.prod3 ? DB.productos.find(p => p.id == promo.prod3) : null;
+    const precioSinCombo = ((prod1?.precio||item1.precio) + (item2 ? (prod2?.precio||item2.precio) : 0) + (item3 ? (prod3?.precio||item3.precio) : 0)) * sets;
     const precioConCombo = promo.precioPromo * sets;
     const descuento = Math.max(0, precioSinCombo - precioConCombo);
     if (descuento > 0) {
