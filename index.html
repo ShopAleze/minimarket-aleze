@@ -1175,6 +1175,7 @@ function _loadHtml5QrCode(cb) {
     <button type="button" class="btn-login" onclick="doLogin()">Ingresar</button>
     <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid #e5e7eb">
       <a href="#/tienda" onclick="initTienda();return false;" style="color:var(--primary);font-size:.85rem;font-weight:600;text-decoration:none">🛍️ Compra aquí →</a>
+      <div style="color:var(--gray-400);font-size:0.7rem;margin-top:0.5rem">v1.0.1</div>
     </div>
   </div>
 </div>
@@ -1596,6 +1597,9 @@ function _loadHtml5QrCode(cb) {
           <div class="page-title" style="margin:0">Clientes</div>
           <button type="button" class="btn btn-primary btn-sm" onclick="abrirModalCliente()">+ Nuevo Cliente</button>
         </div>
+        <div style="margin-bottom:.75rem">
+          <input type="text" class="form-control" id="cli-buscar" placeholder="🔍 Buscar cliente..." oninput="renderClientes()" style="max-width:300px"/>
+        </div>
         <div class="card" style="padding:0">
           <div class="table-wrap">
             <table>
@@ -1624,6 +1628,21 @@ function _loadHtml5QrCode(cb) {
           <div class="stat-card">
             <div class="stat-label">Mayor Deuda</div>
             <div class="stat-value" id="fiados-mayor">S/ 0.00</div>
+          </div>
+        </div>
+       <div class="card" style="margin-bottom:1rem">
+          <div style="display:flex;gap:.75rem;flex-wrap:wrap;align-items:center">
+            <input type="date" class="form-control" id="fi-desde" style="width:150px" onchange="renderFiados()"/>
+            <input type="date" class="form-control" id="fi-hasta" style="width:150px" onchange="renderFiados()"/>
+            <select class="form-control" id="fi-estado" style="width:160px" onchange="renderFiados()">
+              <option value="">Todos</option>
+              <option value="pendiente">Con pendiente</option>
+              <option value="pagado">Pagados</option>
+            </select>
+            <select class="form-control" id="fi-cliente" style="width:180px" onchange="renderFiados()">
+              <option value="">Todos los clientes</option>
+            </select>
+            <button type="button" class="btn btn-outline btn-sm" onclick="limpiarFiltrosFiados()">🔄 Limpiar</button>
           </div>
         </div>
         <div id="fiados-list"></div>
@@ -1771,6 +1790,12 @@ function _loadHtml5QrCode(cb) {
       <!-- CONFIGURACION -->
       <div id="page-configuracion" class="page">
         <div class="page-title">Configuración</div>
+        <div class="card" style="margin-bottom:1rem">
+          <div class="card-title">💾 Respaldo de datos</div>
+          <div style="font-size:.85rem;color:var(--gray-500);margin-bottom:.75rem">El sistema guarda un respaldo automático cada 30 minutos. Puedes restaurar manualmente si algo sale mal.</div>
+          <div id="backup-lista" style="margin-bottom:.75rem;font-size:.82rem"></div>
+          <button type="button" class="btn btn-outline btn-sm" onclick="verBackups()">🔍 Ver respaldos disponibles</button>
+        </div>
         <div class="grid-2">
           <div class="card">
             <div class="card-title">⚙️ Datos del negocio</div>
@@ -2367,9 +2392,31 @@ function _loadHtml5QrCode(cb) {
 
 <!-- Modal Ver Boletas -->
 <div class="modal-overlay" id="modal-ver-boletas">
-  <div class="modal" style="max-width:680px"><div class="modal-header"><h3 id="vb-titulo">Boletas del proveedor</h3><button type="button" class="modal-close" onclick="cerrarModal('modal-ver-boletas')">✕</button></div>
-    <div class="form-group"><input type="text" class="form-control" id="bol-buscar" placeholder="Buscar por N° boleta, fecha, descripción..." oninput="filtrarBoletas()" /></div>
-    <div class="table-wrap"><table><thead><tr><th>N° Boleta</th><th>Fecha</th><th>Descripción</th><th>Monto</th><th>Archivo</th></tr></thead><tbody id="boletas-tbody"></tbody></table></div>
+  <div class="modal" style="max-width:680px">
+    <div class="modal-header">
+      <h3 id="vb-titulo">Boletas del proveedor</h3>
+      <button type="button" class="modal-close" onclick="cerrarModal('modal-ver-boletas')">✕</button>
+    </div>
+    <div style="display:flex;gap:.5rem;margin-bottom:.75rem">
+      <input type="text" class="form-control" id="bol-buscar" placeholder="Buscar por N° boleta, fecha, descripción..." oninput="filtrarBoletas()" />
+      <button type="button" class="btn btn-primary btn-sm" onclick="abrirAgregarBoleta()">+ Agregar</button>
+    </div>
+    <div id="bol-form" style="display:none;background:var(--gray-50);border-radius:8px;padding:.75rem;margin-bottom:.75rem">
+      <div class="grid-2">
+        <div class="form-group"><label>N° Boleta *</label><input type="text" class="form-control" id="bol-num" /></div>
+        <div class="form-group"><label>Fecha *</label><input type="date" class="form-control" id="bol-fecha" /></div>
+      </div>
+      <div class="grid-2">
+        <div class="form-group"><label>Monto (S/)</label><input type="number" class="form-control" id="bol-monto" step="0.01" /></div>
+        <div class="form-group"><label>URL imagen (opcional)</label><input type="text" class="form-control" id="bol-url" placeholder="Link Google Drive o foto" /></div>
+      </div>
+      <div class="form-group"><label>Descripción</label><input type="text" class="form-control" id="bol-desc" /></div>
+      <div style="display:flex;gap:.5rem;justify-content:flex-end">
+        <button type="button" class="btn btn-outline btn-sm" onclick="cerrarAgregarBoleta()">Cancelar</button>
+        <button type="button" class="btn btn-primary btn-sm" onclick="guardarBoleta()">Guardar boleta</button>
+      </div>
+    </div>
+    <div class="table-wrap"><table><thead><tr><th>N° Boleta</th><th>Fecha</th><th>Descripción</th><th>Monto</th><th>URL</th></tr></thead><tbody id="boletas-tbody"></tbody></table></div>
   </div>
 </div>
 <div class="modal-overlay" id="modal-ticket">
@@ -2866,6 +2913,18 @@ async function doLogin() {
     return;
   }
 
+  // ── PASO 1.5: Verificar versión ──
+  try {
+    const verSnap = await fbFS.collection('aleze').doc('version').get();
+    if (verSnap.exists) {
+      const requerida = verSnap.data().minVersion || '1.0.0';
+      if (APP_VERSION < requerida) {
+        if (btnEl) { btnEl.disabled = false; btnEl.textContent = 'Ingresar'; }
+        if (errEl) { errEl.style.display='block'; errEl.style.color='var(--danger)'; errEl.textContent='⚠️ Versión desactualizada. Cierra y vuelve a abrir la app para actualizar.'; }
+        return;
+      }
+    }
+  } catch(e) {}
   // ── PASO 2: Firebase Auth — única fuente de verdad ──
   if (btnEl) { btnEl.disabled = true; btnEl.textContent = '⏳ Verificando...'; }
 
@@ -2928,6 +2987,7 @@ async function doLogin() {
     }
   }
 
+  fbPatchDB();
   // ── PASO 4: Estado de sesión — ahora que los datos están listos ──
   if (_loginIntervalo) { clearInterval(_loginIntervalo); _loginIntervalo = null; }
   if (errEl) errEl.style.display = 'none';
@@ -2959,7 +3019,9 @@ async function doLogin() {
   updateAlertCount();
 
   // ── PASO 6: Listener en tiempo real (DESPUÉS del render inicial) ──
+  fbEscuchar();
   fbEscucharPedidosOnline();
+  if (currentRole === 'admin') iniciarBackupAutomatico();
 }
 
 function doLogout() {
@@ -2967,6 +3029,7 @@ function doLogout() {
   resetAppState();
 
   // Detener listeners en tiempo real
+  if (_backupTimer) { clearInterval(_backupTimer); _backupTimer = null; }
   if (_pedidosOnlineUnsub) { _pedidosOnlineUnsub(); _pedidosOnlineUnsub = null; }
   if (_fbSnapshotUnsub)    { _fbSnapshotUnsub();    _fbSnapshotUnsub    = null; }
 
@@ -3140,7 +3203,7 @@ function renderDashboard() {
   const mes = getMesActual();
   // Use historialVentas as source of truth (reflects annulments/returns)
   const hvAll = DB.historialVentas || [];
-  const ventasHoy = hvAll.filter(v => v.fecha === hoy && v.estado !== 'anulado' && v.origen !== 'pago_fiado');
+  const ventasHoy = hvAll.filter(v => v.fecha === hoy && v.estado !== 'anulado' && v.estado !== 'fiado' && v.origen !== 'pago_fiado');
   const fiadosCobradosHoy = hvAll.filter(v => v.fecha === hoy && v.origen === 'pago_fiado').reduce((s,v) => s + (v.total||0), 0);
   const totalHoy = ventasHoy.reduce((s, v) => s + (v.total||0), 0);
   const txHoy = ventasHoy.length;
@@ -3157,7 +3220,13 @@ document.getElementById('dash-ventas').textContent = sol(totalHoy + fiadosCobrad
     const p=DB.productos.find(x=>x.id===m.prodId); return s+(p?p.costo*m.cant:0);
   },0);
   const gastosHoy = (DB_EXT.gastos||[]).filter(g=>g.fecha===hoy).reduce((s,g)=>s+g.monto,0);
-  document.getElementById('dash-rent').textContent = sol(totalHoy - costoHoy - gastosHoy - mermasHoy);
+  const costoFiadosHoy = hvAll.filter(v => v.fecha === hoy && v.origen === 'pago_fiado').reduce((s,v) => {
+    const fiado = DB.fiados.find(f => f.clienteId === v.clienteId && f.total > 0);
+    if (!fiado) return s;
+    const prop = Math.min(1, v.total / fiado.total);
+    return s + (fiado.items||[]).reduce((ss,i) => ss + ((i.costoUnitario||0) * i.cant * prop), 0);
+  }, 0);
+  document.getElementById('dash-rent').textContent = sol(totalHoy + fiadosCobradosHoy - costoHoy - costoFiadosHoy - gastosHoy - mermasHoy);
 
   document.getElementById('dash-stock-bajo').textContent = DB.productos.filter(p => p.stock <= p.stockMin).length;
   document.getElementById('dash-vencimientos').textContent = DB.productos.filter(p => p.venc && diasHasta(p.venc) <= 7 && diasHasta(p.venc) >= 0).length;
@@ -3168,11 +3237,11 @@ document.getElementById('dash-ventas').textContent = sol(totalHoy + fiadosCobrad
   document.getElementById('dash-capital-sub').textContent = sol(DB_EXT.capital.recuperado)+' / '+sol(DB_EXT.capital.total);
 
   // Panel financiero mensual
-  const ventasMes = hvAll.filter(v=>v.fecha&&v.fecha.startsWith(mes)&&v.estado!=='anulado').reduce((s,v)=>s+(v.total||0),0);
+  const ventasMes = hvAll.filter(v=>v.fecha&&v.fecha.startsWith(mes)&&v.estado!=='anulado'&&v.estado!=='fiado').reduce((s,v)=>s+(v.total||0),0);
   const gastosMes = (DB_EXT.gastos||[]).filter(g=>g.fecha&&g.fecha.startsWith(mes)).reduce((s,g)=>s+g.monto,0);
   const sueldosMes = Object.values(DB_EXT.sueldos||{}).reduce((s,v)=>s+v,0);
   const gastosRec = (DB_EXT.gastosRec||[]).reduce((s,g)=>s+g.monto,0);
-  const costoMes = hvAll.filter(v=>v.fecha&&v.fecha.startsWith(mes)&&v.estado!=='anulado')
+  const costoMes = hvAll.filter(v=>v.fecha&&v.fecha.startsWith(mes)&&v.estado!=='anulado'&&v.estado!=='fiado')
     .reduce((s,v)=>s+(v.items||[]).reduce((ss,i)=>{const p=DB.productos.find(x=>x.id===i.prodId);return ss+(p?p.costo*i.cant:0);},0),0);
   const mermasMes = (DB.mermas||[]).filter(m=>m.fecha&&m.fecha.startsWith(mes)).reduce((s,m)=>{
     const p=DB.productos.find(x=>x.id===m.prodId); return s+(p?p.costo*m.cant:0);
@@ -3453,8 +3522,10 @@ function calcTotal() {
 
 function updatePosClientes() {
   const sel = document.getElementById('pos-cliente');
+  const valorActual = sel.value;
   sel.innerHTML = '<option value="">Cliente anónimo</option>';
   DB.clientes.forEach(c => sel.innerHTML += `<option value="${c.id}">${c.nombre}</option>`);
+  if (valorActual) sel.value = valorActual;
   updateMobPosClientes();
 }
 
@@ -3505,7 +3576,14 @@ function procesarVenta() {
     if (cli) { cli.compras = (cli.compras||0)+1; cli.total = (cli.total||0)+total; cli.puntos=(cli.puntos||0)+Math.floor(total); }
   }
 
-  fbGuardar(); fbGuardarProductos();
+  _fbLastWriteTs = Date.now();
+  _fbEscribiendo = true;
+  const _vPayload = JSON.parse(JSON.stringify(DB));
+  delete _vPayload.productos; delete _vPayload.categorias;
+  fbDocRef().set(_vPayload)
+    .then(() => { setTimeout(() => { _fbEscribiendo = false; }, 300); })
+    .catch(() => { _fbEscribiendo = false; });
+  fbGuardarProductos();
   try { renderDashboard(); } catch(e){}
   try { renderCaja(); } catch(e){}
   try { generarReporte(); } catch(e){}
@@ -3526,7 +3604,11 @@ function cobrarFiado() {
   const itemsConPrecioReal = aplicarPreciosProporcionales(cart, comboInfo);
 
   const fiado = {
-    id: getId(), clienteId, items: itemsConPrecioReal,
+    id: getId(), clienteId,
+    items: itemsConPrecioReal.map(i => {
+      const prod = DB.productos.find(p => p.id === i.prodId);
+      return { ...i, costoUnitario: prod ? prod.costo : 0 };
+    }),
     total, pagado: 0, fecha: today(), descuentoCombo: comboDesc, descuentoManual: desc
   };
   DB.fiados.push(fiado);
@@ -3544,7 +3626,14 @@ if (cli) { cli.deuda = (cli.deuda||0) + total; cli.compras = (cli.compras||0) + 
   ensureCajaAbierta();
   DB.movimientos.push({ tipo:'fiado', desc:'Fiado — ' + getClienteNombre(clienteId), monto:total, hora:nowTime(), fecha:today(), cajero:currentUser });
 
-  fbGuardar(); fbGuardarProductos();
+  _fbLastWriteTs = Date.now();
+  _fbEscribiendo = true;
+  const _vPayload = JSON.parse(JSON.stringify(DB));
+  delete _vPayload.productos; delete _vPayload.categorias;
+  fbDocRef().set(_vPayload)
+    .then(() => { setTimeout(() => { _fbEscribiendo = false; }, 300); })
+    .catch(() => { _fbEscribiendo = false; });
+  fbGuardarProductos();
   try { renderDashboard(); } catch(e){}
   try { renderCaja(); } catch(e){}
   alert('Fiado registrado para ' + getClienteNombre(clienteId) + ': ' + sol(total));
@@ -4358,6 +4447,17 @@ function eliminarProveedor(id) {
 }
 
 let editingBoletaProvId = null;
+function abrirAgregarBoleta() {
+  document.getElementById('bol-form').style.display = 'block';
+  document.getElementById('bol-num').value = '';
+  document.getElementById('bol-fecha').value = today();
+  document.getElementById('bol-monto').value = '';
+  document.getElementById('bol-url').value = '';
+  document.getElementById('bol-desc').value = '';
+}
+function cerrarAgregarBoleta() {
+  document.getElementById('bol-form').style.display = 'none';
+}
 function verBoletas(provId) {
   editingBoletaProvId = provId;
   const p = DB.proveedores.find(x => x.id === provId);
@@ -4372,28 +4472,44 @@ function filtrarBoletas() {
   const filtradas = q ? boletas.filter(b => (b.num+b.fecha+b.desc).toLowerCase().includes(q)) : boletas;
   document.getElementById('boletas-tbody').innerHTML = filtradas.map(b => `<tr>
     <td>${b.num}</td><td>${formatDate(b.fecha)}</td><td>${b.desc||'-'}</td>
-    <td>${sol(b.monto||0)}</td><td>${b.archivo?'📎 '+b.archivo:'-'}</td>
+    <td>${sol(b.monto||0)}</td><td>${b.url?`<a href="${b.url}" target="_blank" style="color:var(--primary)">🔗 Ver</a>`:'-'}</td>
   </tr>`).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--gray-400);padding:1rem">Sin boletas registradas</td></tr>';
 }
 function guardarBoleta() {
-  const num = document.getElementById('b2-num').value.trim();
-  const fecha = document.getElementById('b2-fecha').value;
+  const num = document.getElementById('bol-num').value.trim();
+  const fecha = document.getElementById('bol-fecha').value;
   if (!num || !fecha) { alert('Ingresa número y fecha'); return; }
   const prov = DB.proveedores.find(x => x.id === editingBoletaProvId);
   if (!prov) return;
   if (!prov.boletas) prov.boletas = [];
-  prov.boletas.push({ num, fecha, monto: parseFloat(document.getElementById('b2-monto').value)||0, desc: document.getElementById('b2-desc').value, archivo: document.getElementById('b2-file').files[0]?.name||'' });
+  prov.boletas.push({ num, fecha, monto: parseFloat(document.getElementById('bol-monto').value)||0, desc: document.getElementById('bol-desc').value, url: document.getElementById('bol-url').value.trim() });
   fbGuardar();
-  cerrarModal('modal-boleta');
+  cerrarAgregarBoleta();
   renderProveedores();
-  if (document.getElementById('modal-ver-boletas').classList.contains('open')) filtrarBoletas();
+  filtrarBoletas();
 }
 
 // ===================== CLIENTES =====================
 let editingCliId = null;
 
+function verHistorialCliente(id) {
+  navigate('historial-ventas');
+  const el = document.getElementById('hv-buscar');
+  if (el) {
+    const c = DB.clientes.find(x => x.id === id);
+    el.value = c ? (c.alias || c.nombre) : '';
+    renderHistorialVentas();
+  }
+}
+
 function renderClientes() {
-  document.getElementById('cli-tbody').innerHTML = DB.clientes.map(c => `<tr>
+  const buscar = (document.getElementById('cli-buscar')?.value || '').toLowerCase();
+  const lista = buscar ? DB.clientes.filter(c =>
+    (c.nombre||'').toLowerCase().includes(buscar) ||
+    (c.alias||'').toLowerCase().includes(buscar) ||
+    (c.tel||'').toLowerCase().includes(buscar)
+  ) : DB.clientes;
+  document.getElementById('cli-tbody').innerHTML = lista.map(c => `<tr>
     <td><strong>${c.nombre}</strong></td>
     <td><span class="badge badge-blue">${c.alias||'-'}</span></td>
     <td>${c.tel||'-'}</td>
@@ -4402,6 +4518,7 @@ function renderClientes() {
     <td><strong>${sol(c.total||0)}</strong></td>
     <td style="color:${c.deuda>0?'var(--danger)':'var(--accent)'}"><strong>${c.deuda > 0 ? sol(c.deuda) : '✅ Al día'}</strong></td>
     <td style="white-space:nowrap">
+      <button class="btn btn-outline btn-xs" onclick="verHistorialCliente(${c.id})">📋</button>
       <button class="btn btn-outline btn-xs" onclick="editarCliente(${c.id})">✏️ Editar</button>
       <button class="btn btn-xs" style="background:var(--danger-light);color:var(--danger)" onclick="eliminarCliente(${c.id})">🗑️</button>
     </td>
@@ -4455,17 +4572,61 @@ function eliminarCliente(id) {
 }
 
 // ===================== FIADOS =====================
+function limpiarFiltrosFiados() {
+  document.getElementById('fi-desde').value = '';
+  document.getElementById('fi-hasta').value = '';
+  document.getElementById('fi-estado').value = '';
+  document.getElementById('fi-cliente').value = '';
+  renderFiados();
+}
+
 function renderFiados() {
+  const desde    = document.getElementById('fi-desde')?.value || '';
+  const hasta    = document.getElementById('fi-hasta')?.value || '';
+  const estado   = document.getElementById('fi-estado')?.value || '';
+  const cliFilter = parseInt(document.getElementById('fi-cliente')?.value) || 0;
+
+  // Poblar selector de clientes con los que tienen fiados
+  const selCli = document.getElementById('fi-cliente');
+  if (selCli) {
+    const valorActual = selCli.value;
+    selCli.innerHTML = '<option value="">Todos los clientes</option>';
+    const cidsConFiados = [...new Set(DB.fiados.map(f => f.clienteId))];
+    cidsConFiados.forEach(cid => {
+      const cli = DB.clientes.find(c => c.id === cid);
+      if (cli) selCli.innerHTML += `<option value="${cli.id}">${cli.alias||cli.nombre}</option>`;
+    });
+    selCli.value = valorActual;
+  }
+
   const porCliente = {};
   DB.fiados.forEach(f => {
     if (!porCliente[f.clienteId]) porCliente[f.clienteId] = [];
     porCliente[f.clienteId].push(f);
   });
-  const clienteIds = Object.keys(porCliente).map(Number);
+
+  let clienteIds = Object.keys(porCliente).map(Number);
+
+  // Filtro por cliente
+  if (cliFilter) clienteIds = clienteIds.filter(cid => cid === cliFilter);
+
+  // Filtro por estado
+  if (estado === 'pendiente') clienteIds = clienteIds.filter(cid => porCliente[cid].some(f => (f.total - f.pagado) > 0));
+  if (estado === 'pagado') clienteIds = clienteIds.filter(cid => porCliente[cid].every(f => (f.total - f.pagado) <= 0));
+
+  // Filtro por fecha — aplica sobre fiados individuales
+  if (desde || hasta) {
+    clienteIds = clienteIds.filter(cid => porCliente[cid].some(f =>
+      (!desde || f.fecha >= desde) && (!hasta || f.fecha <= hasta)
+    ));
+  }
+
   const totalDeuda = DB.fiados.reduce((s, f) => s + Math.max(0, f.total - f.pagado), 0);
-  const clientesConDeuda = clienteIds.filter(cid => porCliente[cid].some(f => (f.total - f.pagado) > 0)).length;
-  const mayor = clienteIds.reduce((m, cid) => {
-    const d = porCliente[cid].reduce((s, f) => s + Math.max(0, f.total - f.pagado), 0);
+  const clientesConDeuda = [...new Set(DB.fiados.map(f => f.clienteId))].filter(cid =>
+    DB.fiados.filter(f => f.clienteId === cid).some(f => (f.total - f.pagado) > 0)
+  ).length;
+  const mayor = [...new Set(DB.fiados.map(f => f.clienteId))].reduce((m, cid) => {
+    const d = DB.fiados.filter(f => f.clienteId === cid).reduce((s, f) => s + Math.max(0, f.total - f.pagado), 0);
     return Math.max(m, d);
   }, 0);
   document.getElementById('fiados-total').textContent = sol(totalDeuda);
@@ -4473,7 +4634,7 @@ function renderFiados() {
   document.getElementById('fiados-mayor').textContent = sol(mayor);
 
   if (clienteIds.length === 0) {
-    document.getElementById('fiados-list').innerHTML = '<p style="color:var(--gray-500)">Sin fiados registrados</p>';
+    document.getElementById('fiados-list').innerHTML = '<p style="color:var(--gray-500)">Sin fiados que coincidan con los filtros</p>';
     return;
   }
 
@@ -4481,7 +4642,8 @@ function renderFiados() {
     const cli = DB.clientes.find(c => c.id === cid);
     const nombre = cli ? (cli.alias || cli.nombre) : 'Anónimo';
     const tel = cli ? cli.tel : '';
-    const fiados = porCliente[cid];
+    let fiados = porCliente[cid];
+    if (desde || hasta) fiados = fiados.filter(f => (!desde || f.fecha >= desde) && (!hasta || f.fecha <= hasta));
     const totalCli = fiados.reduce((s, f) => s + f.total, 0);
     const pagadoCli = fiados.reduce((s, f) => s + f.pagado, 0);
     const pendienteCli = totalCli - pagadoCli;
@@ -4499,7 +4661,10 @@ function renderFiados() {
           ${f.items.map(i => `${i.nombre} x${i.cant} = ${sol(i.precio*i.cant)}`).join(' · ')}
         </div>
         <div style="font-size:.72rem;color:var(--gray-500)">Total: ${sol(f.total)} | Pagado: ${sol(f.pagado)}</div>
-        ${pend > 0 ? `<button class="btn btn-accent btn-xs" style="margin-top:.4rem" onclick="abrirPagoFiado(${f.id})">💰 Registrar pago</button>` : ''}
+        <div style="display:flex;gap:.4rem;margin-top:.4rem;flex-wrap:wrap">
+          ${pend > 0 ? `<button class="btn btn-accent btn-xs" onclick="abrirPagoFiado(${f.id})">💰 Registrar pago</button>` : ''}
+          ${currentRole === 'admin' && pend > 0 ? `<button class="btn btn-xs" style="background:var(--danger-light);color:var(--danger)" onclick="confirmarEliminarFiado(${f.id})">🗑️ Eliminar</button>` : ''}
+        </div>
       </div>`;
     }).join('');
     return `<div class="fiado-card" style="margin-bottom:.75rem">
@@ -4517,12 +4682,227 @@ function renderFiados() {
           <span id="arr-${detalleId}" style="font-size:1.1rem;color:var(--gray-400)">▼</span>
         </div>
       </div>
-      <div id="${detalleId}" style="display:none;margin-top:.75rem">${detalle}</div>
-      <div style="margin-top:.5rem;padding-top:.5rem;border-top:1px solid var(--warning);text-align:right">
+      <div id="${detalleId}" style="display:none;margin-top:.75rem">
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;margin-bottom:.75rem;padding:.5rem;background:var(--gray-50);border-radius:8px">
+          <select class="form-control" id="fi-tipo-${cid}" style="width:150px;font-size:.78rem" onchange="renderDetalleFiado(${cid})">
+            <option value="todo">Todo</option>
+            <option value="pendiente">Solo pendientes</option>
+            <option value="pagado">Solo pagados</option>
+          </select>
+          <input type="date" class="form-control" id="fi-int-desde-${cid}" style="width:140px;font-size:.78rem" onchange="renderDetalleFiado(${cid})"/>
+          <input type="date" class="form-control" id="fi-int-hasta-${cid}" style="width:140px;font-size:.78rem" onchange="renderDetalleFiado(${cid})"/>
+          <button class="btn btn-outline btn-xs" onclick="limpiarFiltrosInternosFiado(${cid})">✕</button>
+        </div>
+        <div id="fi-detalle-content-${cid}">${detalle}</div>
+      </div>
+      <div style="margin-top:.5rem;padding-top:.5rem;border-top:1px solid var(--warning);text-align:right;display:flex;gap:.5rem;justify-content:flex-end">
+        <button class="btn btn-outline btn-sm" onclick="abrirPagoGlobal(${cid})">💳 Pago global</button>
+        <button class="btn btn-outline btn-sm" onclick="compartirResumenFiadoCliente(${cid})">💬 WhatsApp resumen</button>
         <button class="btn btn-outline btn-sm" onclick="abrirHistorialCliente(${cid},event)">📋 Ver historial completo</button>
       </div>
     </div>`;
   }).join('');
+}
+
+function limpiarFiltrosInternosFiado(cid) {
+  document.getElementById('fi-tipo-' + cid).value = 'todo';
+  document.getElementById('fi-int-desde-' + cid).value = '';
+  document.getElementById('fi-int-hasta-' + cid).value = '';
+  renderDetalleFiado(cid);
+}
+
+function renderDetalleFiado(cid) {
+  const tipo  = document.getElementById('fi-tipo-' + cid)?.value || 'todo';
+  const desde = document.getElementById('fi-int-desde-' + cid)?.value || '';
+  const hasta = document.getElementById('fi-int-hasta-' + cid)?.value || '';
+  let fiados  = DB.fiados.filter(f => f.clienteId === cid);
+  if (desde) fiados = fiados.filter(f => f.fecha >= desde);
+  if (hasta) fiados = fiados.filter(f => f.fecha <= hasta);
+  if (tipo === 'pendiente') fiados = fiados.filter(f => (f.total - f.pagado) > 0);
+  if (tipo === 'pagado')    fiados = fiados.filter(f => (f.total - f.pagado) <= 0);
+  const html = fiados.map(f => {
+    const pend = f.total - f.pagado;
+    return `<div style="border-left:3px solid var(--warning);padding:.5rem .75rem;margin-bottom:.5rem;background:white;border-radius:0 6px 6px 0">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.3rem">
+        <span style="font-size:.75rem;color:var(--gray-500)">${formatDate(f.fecha)}</span>
+        <span style="font-size:.82rem;font-weight:700;color:${pend>0?'var(--danger)':'var(--accent)'}">
+          ${pend > 0 ? sol(pend)+' pendiente' : '✅ Pagado'}
+        </span>
+      </div>
+      <div style="font-size:.8rem;margin-bottom:.3rem">
+        ${f.items.map(i => `${i.nombre} x${i.cant} = ${sol(i.precio*i.cant)}`).join(' · ')}
+      </div>
+      <div style="font-size:.72rem;color:var(--gray-500)">Total: ${sol(f.total)} | Pagado: ${sol(f.pagado)}</div>
+      <div style="display:flex;gap:.4rem;margin-top:.4rem;flex-wrap:wrap">
+        ${pend > 0 ? `<button class="btn btn-accent btn-xs" onclick="abrirPagoFiado(${f.id})">💰 Registrar pago</button>` : ''}
+        ${currentRole === 'admin' && pend > 0 ? `<button class="btn btn-xs" style="background:var(--danger-light);color:var(--danger)" onclick="confirmarEliminarFiado(${f.id})">🗑️ Eliminar</button>` : ''}
+      </div>
+    </div>`;
+  }).join('') || '<p style="color:var(--gray-400);font-size:.82rem;padding:.5rem">Sin registros para los filtros seleccionados</p>';
+  document.getElementById('fi-detalle-content-' + cid).innerHTML = html;
+}
+
+function compartirResumenFiadoCliente(cid) {
+  const cli   = DB.clientes.find(c => c.id === cid);
+  const nombre = cli ? (cli.alias || cli.nombre) : 'Cliente';
+  const tel   = cli && cli.tel ? cli.tel.replace(/\s/g,'') : '';
+  const tipo  = document.getElementById('fi-tipo-' + cid)?.value || 'todo';
+  const desde = document.getElementById('fi-int-desde-' + cid)?.value || '';
+  const hasta = document.getElementById('fi-int-hasta-' + cid)?.value || '';
+  let fiados  = DB.fiados.filter(f => f.clienteId === cid);
+  if (desde) fiados = fiados.filter(f => f.fecha >= desde);
+  if (hasta) fiados = fiados.filter(f => f.fecha <= hasta);
+  if (tipo === 'pendiente') fiados = fiados.filter(f => (f.total - f.pagado) > 0);
+  if (tipo === 'pagado')    fiados = fiados.filter(f => (f.total - f.pagado) <= 0);
+  const totalPend = fiados.reduce((s, f) => s + Math.max(0, f.total - f.pagado), 0);
+  let msg = `Hola ${nombre}, su resumen de fiados en *Minimarket Aleze*:\n`;
+  if (desde || hasta) msg += `📅 Período: ${desde ? formatDate(desde) : 'inicio'} al ${hasta ? formatDate(hasta) : 'hoy'}\n`;
+  msg += '\n';
+  fiados.forEach(f => {
+    const pend = f.total - f.pagado;
+    msg += `📌 ${formatDate(f.fecha)}: ${f.items.map(i => i.nombre + ' x' + i.cant).join(', ')} → ${sol(f.total)}`;
+    msg += pend > 0 ? ` _(pendiente: ${sol(pend)})_\n` : ` ✅\n`;
+  });
+  msg += `\n*Total pendiente: ${sol(totalPend)}*\nGracias 🙏`;
+  const url = tel ? `https://wa.me/51${tel}?text=${encodeURIComponent(msg)}` : `https://wa.me/?text=${encodeURIComponent(msg)}`;
+  window.open(url, '_blank');
+}
+
+function abrirPagoGlobal(cid) {
+  const cli = DB.clientes.find(c => c.id === cid);
+  const nombre = cli ? (cli.alias || cli.nombre) : 'Cliente';
+  const pendienteTotal = DB.fiados.filter(f => f.clienteId === cid).reduce((s,f) => s + Math.max(0, f.total - f.pagado), 0);
+  if (pendienteTotal <= 0) { alert('Este cliente no tiene deuda pendiente.'); return; }
+  const monto = parseFloat(prompt(`Pago global para ${nombre}\nDeuda total: ${sol(pendienteTotal)}\n\nIngresa el monto a pagar:`));
+  if (!monto || isNaN(monto) || monto <= 0) return;
+  if (monto > pendienteTotal) { alert('El monto supera la deuda total de ' + sol(pendienteTotal)); return; }
+  ejecutarPagoGlobal(cid, monto);
+}
+
+function ejecutarPagoGlobal(cid, montoTotal) {
+  let saldo = montoTotal;
+  const fiados = DB.fiados.filter(f => f.clienteId === cid && (f.total - f.pagado) > 0).sort((a,b) => a.fecha < b.fecha ? -1 : a.fecha > b.fecha ? 1 : a.id - b.id);
+  fiados.forEach(f => {
+    if (saldo <= 0) return;
+    const pendFiado = f.total - f.pagado;
+    if (saldo >= pendFiado) {
+      if (!f.pagos) f.pagos = [];
+      f.pagos.push({ fecha: today(), hora: nowTime(), cajero: currentUser, monto: pendFiado, tipo: 'global' });
+      f.pagado += pendFiado;
+      saldo -= pendFiado;
+    } else {
+      const itemsOrdenados = [...f.items].sort((a,b) => (a.precio*a.cant) - (b.precio*b.cant));
+      let saldoItem = saldo;
+      itemsOrdenados.forEach(i => {
+        if (saldoItem <= 0) return;
+        const pendItem = (i.precio * i.cant) - (i.pagado || 0);
+        if (pendItem <= 0) return;
+        if (saldoItem >= pendItem) {
+          i.pagado = (i.pagado || 0) + pendItem;
+          saldoItem -= pendItem;
+        } else {
+          i.pagado = (i.pagado || 0) + saldoItem;
+          saldoItem = 0;
+        }
+      });
+      if (!f.pagos) f.pagos = [];
+      f.pagos.push({ fecha: today(), hora: nowTime(), cajero: currentUser, monto: saldo, tipo: 'global' });
+      f.pagado += saldo;
+      saldo = 0;
+    }
+  });
+  const cli = DB.clientes.find(c => c.id === cid);
+  if (cli) cli.deuda = Math.max(0, cli.deuda - montoTotal);
+  ensureCajaAbierta();
+  DB.caja.ingresos += montoTotal;
+  DB.movimientos.push({ tipo:'ingreso', desc:'Pago global fiado: ' + getClienteNombre(cid), monto: montoTotal, hora: nowTime(), fecha: today() });
+  if (!DB.historialVentas) DB.historialVentas = [];
+  DB.historialVentas.push({ id: getId(), fecha: today(), hora: nowTime(), origen: 'pago_fiado', estado: 'completado', clienteId: cid, total: montoTotal, cajero: currentUser });
+  fbGuardar();
+  renderFiados();
+  updateAlertCount();
+  try { renderDashboard(); } catch(e) {}
+  try { renderCaja(); } catch(e) {}
+  alert('✅ Pago global de ' + sol(montoTotal) + ' registrado correctamente.');
+}
+
+function confirmarEliminarFiado(id) {
+  const f = DB.fiados.find(x => x.id === id);
+  if (!f) return;
+  const pend = f.total - f.pagado;
+  const opciones = pend > 0
+    ? `¿Cómo deseas eliminar este fiado de ${sol(f.total)}?
+
+1. ERROR DE REGISTRO → restaura stock
+2. PÉRDIDA/INCOBRABLE → registra en mermas
+
+Escribe 1 o 2:`
+    : `¿Eliminar este fiado ya pagado?
+
+Escribe 1 para confirmar:`;
+  const resp = prompt(opciones);
+  if (!resp) return;
+  if (resp.trim() === '1') {
+    // Restaurar stock
+    f.items.forEach(i => {
+      const prod = DB.productos.find(p => p.id === i.prodId);
+      if (prod) prod.stock += i.cant;
+    });
+    DB.fiados = DB.fiados.filter(x => x.id !== id);
+    const cli = DB.clientes.find(c => c.id === f.clienteId);
+    if (cli) cli.deuda = Math.max(0, cli.deuda - pend);
+    fbGuardar(); fbGuardarProductos();
+    renderFiados(); renderInventario && renderInventario();
+    alert('✅ Fiado eliminado y stock restaurado.');
+  } else if (resp.trim() === '2' && pend > 0) {
+    // Registrar como merma
+    f.items.forEach(i => {
+      const prod = DB.productos.find(p => p.id === i.prodId);
+      if (!prod) return;
+      const propPend = pend / f.total;
+      const cantMerma = Math.round(i.cant * propPend * 100) / 100;
+      if (cantMerma <= 0) return;
+      DB.mermas.push({ id: getId(), prodId: i.prodId, cant: cantMerma, motivo: 'Fiado incobrable', obs: 'Fiado #' + f.id + ' — ' + getClienteNombre(f.clienteId), fecha: today(), usuario: currentUser });
+      ensureCajaAbierta();
+      DB.caja.egresos = (DB.caja.egresos||0) + prod.costo * cantMerma;
+      DB.movimientos.push({ tipo:'egreso', desc:'Merma fiado incobrable: ' + prod.nombre, monto: prod.costo * cantMerma, hora: nowTime(), fecha: today(), usuario: currentUser });
+    });
+    DB.fiados = DB.fiados.filter(x => x.id !== id);
+    const cli = DB.clientes.find(c => c.id === f.clienteId);
+    if (cli) cli.deuda = Math.max(0, cli.deuda - pend);
+    fbGuardar(); fbGuardarProductos();
+    renderFiados(); try { renderMermas(); } catch(e) {}
+    alert('✅ Fiado eliminado y registrado como merma.');
+  } else {
+    alert('Opción no válida. No se realizó ningún cambio.');
+  }
+}
+
+function compartirResumenFiado(cid) {
+  const cli = DB.clientes.find(c => c.id === cid);
+  const nombre = cli ? (cli.alias || cli.nombre) : 'Cliente';
+  const tel = cli && cli.tel ? cli.tel.replace(/\s/g,'') : '';
+  const desde = document.getElementById('fi-desde')?.value || '';
+  const hasta = document.getElementById('fi-hasta')?.value || '';
+  const estado = document.getElementById('fi-estado')?.value || '';
+  let fiados = DB.fiados.filter(f => f.clienteId === cid);
+  if (desde) fiados = fiados.filter(f => f.fecha >= desde);
+  if (hasta) fiados = fiados.filter(f => f.fecha <= hasta);
+  if (estado === 'pendiente') fiados = fiados.filter(f => (f.total - f.pagado) > 0);
+  if (estado === 'pagado') fiados = fiados.filter(f => (f.total - f.pagado) <= 0);
+  const totalPend = fiados.reduce((s, f) => s + Math.max(0, f.total - f.pagado), 0);
+  let msg = `Hola ${nombre}, su resumen de fiados en *Minimarket Aleze*:\n`;
+  if (desde || hasta) msg += `📅 Período: ${desde ? formatDate(desde) : 'inicio'} al ${hasta ? formatDate(hasta) : 'hoy'}\n`;
+  msg += '\n';
+  fiados.forEach(f => {
+    const pend = f.total - f.pagado;
+    msg += `📌 ${formatDate(f.fecha)}: ${f.items.map(i => i.nombre + ' x' + i.cant).join(', ')}`;
+    msg += ` → ${sol(f.total)}`;
+    msg += pend > 0 ? ` _(pendiente: ${sol(pend)})_\n` : ` ✅\n`;
+  });
+  msg += `\n*Total pendiente: ${sol(totalPend)}*\nGracias 🙏`;
+  const url = tel ? `https://wa.me/51${tel}?text=${encodeURIComponent(msg)}` : `https://wa.me/?text=${encodeURIComponent(msg)}`;
+  window.open(url, '_blank');
 }
 
 function toggleFiadoDetalle(id) {
@@ -4800,8 +5180,8 @@ function updateCajaStats() {
   document.getElementById('caja-egresos').textContent = sol(egresos);
   document.getElementById('caja-saldo').textContent = sol(DB.caja.inicial + ingresos - egresos);
 
-  document.getElementById('caja-mov-tbody').innerHTML = DB.movimientos.map(m => `<tr>
-    <td>${m.hora}</td>
+  document.getElementById('caja-mov-tbody').innerHTML = [...DB.movimientos].reverse().map(m => `<tr>
+    <td>${m.fecha ? m.fecha + ' ' : ''}${m.hora}</td>
     <td><span class="badge badge-${m.tipo==='ingreso'?'green':'red'}">${m.tipo}</span></td>
     <td>${m.desc}</td>
     <td style="color:${m.tipo==='ingreso'?'var(--accent)':'var(--danger)'};font-weight:700">${m.tipo==='ingreso'?'+':'-'}${sol(m.monto)}</td>
@@ -5629,6 +6009,7 @@ function renderFrecuentes() {
           </td>
           <td>${nv ? `<span class="badge badge-gold">${nv.desc}</span>` : '<span class="badge badge-gray">Sin nivel aún</span>'}</td>
           <td>${nv ? `<span style="color:var(--accent);font-weight:700">🎁 Hasta S/ ${nv.max}</span>` : '-'}</td>
+          <td><button class="btn btn-outline btn-xs" onclick="verHistorialCliente(${c.id})">📋</button></td>
         </tr>`;
       }).join('')}</tbody>
     </table></div>`;
@@ -6550,7 +6931,14 @@ if (cli) { cli.deuda = (cli.deuda||0) + total; cli.compras = (cli.compras||0) + 
   ensureCajaAbierta();
   DB.movimientos.push({ tipo:'fiado', desc:`Fiado — ${getClienteNombre(clienteId)}`, monto:total, hora:nowTime(), fecha:today(), cajero:currentUser });
 
-  fbGuardar(); fbGuardarProductos();
+  _fbLastWriteTs = Date.now();
+  _fbEscribiendo = true;
+  const _vPayload = JSON.parse(JSON.stringify(DB));
+  delete _vPayload.productos; delete _vPayload.categorias;
+  fbDocRef().set(_vPayload)
+    .then(() => { setTimeout(() => { _fbEscribiendo = false; }, 300); })
+    .catch(() => { _fbEscribiendo = false; });
+  fbGuardarProductos();
   try { renderDashboard(); } catch(e){}
   try { renderCaja(); } catch(e){}
   alert('Fiado registrado para ' + getClienteNombre(clienteId) + ': ' + sol(total));
@@ -6652,6 +7040,7 @@ window.addEventListener('beforeunload', function(e) {
 //   • Debounce 1200ms agrupa operaciones rápidas en UNA sola escritura
 //   • Toda la DB en 1 documento Firestore → mínimo de operaciones posible
 
+const APP_VERSION = '1.0.1';
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyBXelkwsha7QzyOLxIbb4wP0ePEbSyi5IE",
   authDomain: "minimarket-aleze-400b5.firebaseapp.com",
@@ -6695,12 +7084,6 @@ appCheckInstance.activate(RECAPTCHA_SITE_KEY, true);
 
     fbFS  = firebase.firestore();
     fbAuth = firebase.auth(); // Firebase Authentication para seguridad Firestore
-    // Habilitar persistencia offline (cache local cuando no hay internet)
-    fbFS.enablePersistence({ synchronizeTabs: true })
-      .catch(e => {
-        if (e.code === 'failed-precondition') console.warn('Persistencia: múltiples pestañas abiertas');
-        else if (e.code === 'unimplemented') console.warn('Persistencia offline no disponible en este navegador');
-      });
     return true;
   } catch(e) {
     console.error('Firebase init error:', e);
@@ -6778,6 +7161,7 @@ function fbGuardarProductos() {
 let _fbProdCacheTs = 0; // timestamp última carga de db_productos
 function fbEscuchar() {
   if (!fbFS) return;
+  if (_fbSnapshotUnsub) { _fbSnapshotUnsub(); _fbSnapshotUnsub = null; }
 
   // Listener operaciones (ventas, caja, clientes, etc.)
   _fbSnapshotUnsub = fbDocRef().onSnapshot(snapshot => {
@@ -6951,6 +7335,7 @@ window.onload = async function() {
         Object.keys(ext).forEach(k => { if (k in DB_EXT) DB_EXT[k] = ext[k]; });
       }
 
+      _fbLastWriteTs = Date.now();
       fbPatchDB();
       fbEscuchar();
       checkAutoAbrirCaja();
@@ -6990,10 +7375,10 @@ function renderHistorialVentas() {
   if (origen) lista = lista.filter(v => v.origen === origen);
   if (buscar) lista = lista.filter(v =>
     (v.cajero||'').toLowerCase().includes(buscar) ||
-    (v.clienteNombre||'').toLowerCase().includes(buscar) ||
+    (v.clienteNombre||getClienteNombre(v.clienteId)||'').toLowerCase().includes(buscar) ||
     (v.items||[]).some(i => (i.nombre||'').toLowerCase().includes(buscar))
   );
-  lista.sort((a,b) => (b.fecha+b.hora) > (a.fecha+a.hora) ? -1 : 1);
+  lista.sort((a,b) => (b.id || 0) > (a.id || 0) ? 1 : -1);
 
   const total = lista.reduce((s,v) => s+(v.total||0), 0);
   const completadas = lista.filter(v=>v.estado==='completado').length;
@@ -7452,7 +7837,7 @@ function renderPedidosOnline() {
   if (filtro) lista = lista.filter(p => p.estado === filtro);
   if (desde) lista = lista.filter(p => p.fecha >= desde);
   if (hasta) lista = lista.filter(p => p.fecha <= hasta);
-  lista.sort((a,b) => (b.fecha+b.hora) > (a.fecha+a.hora) ? -1 : 1);
+  lista.sort((a,b) => (b.id || 0) > (a.id || 0) ? 1 : -1);
 
   const pendientes = DB.pedidosOnline.filter(p => p.estado === 'pendiente').length;
   const badge = document.getElementById('po-badge-pendiente');
@@ -8598,11 +8983,12 @@ const RESET_CONFIG = {
       DB.fiados = [];
       DB.mermas = [];
       DB.movimientos = [];
+      DB.historialVentas = [];
       DB.caja = { abierta: false, inicial: 0, ingresos: 0, egresos: 0, turnoInicio: null, cajero: '' };
       DB.clientes.forEach(c => { c.compras = 0; c.total = 0; c.deuda = 0; });
       DB_EXT.gastos = [];
       DB_EXT.capital = { total: 0, cuota: 0, meta: 0, recuperado: 0, hist: [] };
-      fbGuardar(); fbGuardarExt();
+      const _payload = JSON.parse(JSON.stringify(DB)); delete _payload.productos; delete _payload.categorias; _payload._resetToken = true; _fbLastWriteTs = Date.now(); fbDocRef().set(_payload); fbGuardarExt();
       try { renderDashboard(); } catch(e) {}
       try { updateAlertCount(); } catch(e) {}
     }
@@ -9242,6 +9628,59 @@ function confirmarCategoriasNuevasExcel() {
 }
 </script>
 
+<script>
+// ===================== BACKUP AUTOMÁTICO =====================
+let _backupTimer = null;
+function iniciarBackupAutomatico() {
+  if (_backupTimer) clearInterval(_backupTimer);
+  _backupTimer = setInterval(() => {
+    if (!fbFS || !currentUser) return;
+    const ahora = new Date();
+    const key = 'backup_' + ahora.toISOString().replace(/[:.]/g, '-').substring(0, 16);
+    const payload = JSON.parse(JSON.stringify(DB));
+    delete payload.productos; delete payload.categorias;
+    payload._backupTs = ahora.toISOString();
+    payload._backupUser = currentUser;
+    fbFS.collection('aleze_backups').doc(key).set(payload)
+      .then(() => console.log('[Backup] Guardado:', key))
+      .catch(e => console.warn('[Backup] Error:', e));
+  }, 30 * 60 * 1000);
+}
+function verBackups() {
+  if (!fbFS) return;
+  const el = document.getElementById('backup-lista');
+  el.innerHTML = '⏳ Cargando respaldos...';
+  fbFS.collection('aleze_backups').orderBy('_backupTs', 'desc').limit(10).get()
+    .then(snap => {
+      if (snap.empty) { el.innerHTML = 'Sin respaldos disponibles aún.'; return; }
+      el.innerHTML = snap.docs.map(d => {
+        const ts = new Date(d.data()._backupTs).toLocaleString('es-PE');
+        const user = d.data()._backupUser || '?';
+        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:.35rem 0;border-bottom:1px solid var(--gray-100)"><span>📅 ' + ts + ' — ' + user + '</span><button type="button" class="btn btn-xs btn-danger" onclick="restaurarBackup(this.dataset.id)" data-id="' + d.id + '">↩️ Restaurar</button></div>';
+      }).join('');
+    })
+    .catch(e => { el.innerHTML = 'Error cargando respaldos.'; });
+}
+function restaurarBackup(id) {
+  if (!confirm('⚠️ ¿Restaurar este respaldo? Los datos actuales se reemplazarán.')) return;
+  fbFS.collection('aleze_backups').doc(id).get()
+    .then(doc => {
+      if (!doc.exists) { alert('Respaldo no encontrado.'); return; }
+      const data = doc.data();
+      delete data._backupTs; delete data._backupUser;
+      _fbLastWriteTs = Date.now();
+      _fbEscribiendo = true;
+      data._resetToken = true;
+      fbDocRef().set(data)
+        .then(() => {
+          setTimeout(() => { _fbEscribiendo = false; }, 300);
+          alert('✅ Respaldo restaurado correctamente.');
+          try { renderDashboard(); } catch(e) {}
+        })
+        .catch(e => { _fbEscribiendo = false; alert('Error al restaurar: ' + e.message); });
+    });
+}
+</script>
 <!-- ── PWA: Registro del Service Worker ── -->
 <script>
 if ('serviceWorker' in navigator) {
@@ -9250,6 +9689,13 @@ if ('serviceWorker' in navigator) {
       scope: '/minimarket-aleze/'
     }).then(function(reg) {
       console.log('[PWA] Service Worker registrado:', reg.scope);
+      reg.onupdatefound = function() {
+        reg.installing.onstatechange = function() {
+          if (this.state === 'installed' && navigator.serviceWorker.controller) {
+            window.location.reload();
+          }
+        };
+      };
     }).catch(function(err) {
       console.warn('[PWA] Error registrando SW:', err);
     });
