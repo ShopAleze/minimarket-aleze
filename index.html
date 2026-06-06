@@ -7420,11 +7420,12 @@ function fbGuardar() {
   _fbSaveTimer = setTimeout(() => {
     _fbEscribiendo = true;
     // Excluir productos y categorias — tienen su propio documento
+    // Excluir historialVentas — guardado por direct writes (procesarVenta, cobrarFiado)
     const payload = JSON.parse(JSON.stringify(DB));
     delete payload.productos;
     delete payload.categorias;
-    delete payload.promociones;
-    fbDocRef().set(payload, { merge: true })
+    delete payload.historialVentas;
+    fbDocRef().set(payload)
       .then(() => { setTimeout(() => { _fbEscribiendo = false; }, 300); })
       .catch(e => { _fbEscribiendo = false; console.warn('Firestore write error:', e); });
   }, 1200);
@@ -7476,8 +7477,17 @@ if (_fbSnapshotUnsub) { _fbSnapshotUnsub(); _fbSnapshotUnsub = null; }
     // Solo campos operativos (no productos/categorias que vienen de db_productos)
     const camposOp = ['ventas','clientes','fiados','mermas','movimientos',
                       'proveedores','promociones','caja','inventariosMensuales','historialVentas','pedidosOnline'];
-    // 'promociones' viene ahora de fbGuardarPromociones (update atómico) — se lee igual del snapshot
-    camposOp.forEach(k => { if (k in data && k in DB) DB[k] = data[k]; });
+    camposOp.forEach(k => {
+      if (!(k in data) || !(k in DB)) return;
+      if (k === 'promociones' && Array.isArray(data[k]) && Array.isArray(DB[k])) {
+        // Preservar promos locales no sincronizadas aún en Firebase
+        const incoming = data[k] || [];
+        const localOnly = DB.promociones.filter(p => !incoming.find(x => x.id === p.id));
+        DB.promociones = localOnly.length > 0 ? [...incoming, ...localOnly] : incoming;
+      } else {
+        DB[k] = data[k];
+      }
+    });
     if (data.config) DB.config = { ...DB.config, ...data.config };
     try { renderDashboard(); }    catch(e){}
     try { updateAlertCount(); }   catch(e){}
