@@ -6513,7 +6513,7 @@ function renderPromociones() {
   </tr>`).join('') || '<tr><td colspan="8" style="text-align:center;padding:1rem;color:var(--gray-400)">Sin promociones</td></tr>';
 }
 
-  function editarPromocion(id) {
+function editarPromocion(id) {
   editingPromoId = id;
   const pr = DB.promociones.find(x => x.id === id);
   document.getElementById('promo-modal-titulo').textContent = '✏️ Editar Promoción';
@@ -6522,10 +6522,29 @@ function renderPromociones() {
   document.getElementById('promo-tipo-sel').value = pr.tipo;
   document.getElementById('promo-prod1').value = pr.prod1||'';
   document.getElementById('promo-prod2').value = pr.prod2||'';
+  document.getElementById('promo-prod3').value = pr.prod3||'';
   document.getElementById('promo-cant1').value = pr.cant1||1;
   document.getElementById('promo-cant2').value = pr.cant2||1;
+  document.getElementById('promo-cant3').value = pr.cant3||1;
   document.getElementById('promo-desde').value = pr.desde;
   document.getElementById('promo-hasta').value = pr.hasta;
+  document.getElementById('promo-limite').value = pr.limite||0;
+  const vendidos = pr.vendidos||0;
+  const limite = pr.limite||0;
+  const dispVend = document.getElementById('promo-vendidos-display');
+  if (limite > 0) {
+    document.getElementById('promo-vendidos-num').textContent = vendidos;
+    document.getElementById('promo-limite-num').textContent = limite;
+    dispVend.style.display = '';
+  } else { dispVend.style.display = 'none'; }
+  const imgData = pr.imagen||'';
+  document.getElementById('promo-img-data').value = imgData;
+  document.getElementById('promo-img-preview').innerHTML = imgData
+    ? `<img src="${imgData}" style="width:100%;height:100%;object-fit:cover">` : '🎁';
+  document.getElementById('promo-img-file').value = '';
+  document.getElementById('promo-codigo').value = pr.codigo||'';
+  document.getElementById('promo-qr-container').style.display = 'none';
+  document.getElementById('promo-qr-preview').innerHTML = '';
   const margen = pr.precioOrig > 0 ? Math.round((pr.precioPromo/pr.precioOrig-1)*100) : 20;
   document.getElementById('promo-margen-num').value = Math.max(0,margen);
   document.getElementById('promo-margen-slider').value = Math.max(0,margen);
@@ -6694,7 +6713,7 @@ function guardarPromocion() {
 
   // Auto-crear categoría Promociones si no existe
   if (!DB.categorias.find(c => c.nombre === 'Promociones')) {
-    DB.categorias.push({ id: getId(), nombre: 'Promociones', emoji: '🏷️', imagen: null });
+    DB.categorias.unshift({ id: getId(), nombre: 'Promociones', emoji: '🏷️', imagen: null });
   }
   const catPromoId = DB.categorias.find(c => c.nombre === 'Promociones')?.id || null;
 
@@ -8889,10 +8908,9 @@ function tndFiltrar() {
     if (_tndCatActiva && p.cat != _tndCatActiva) return false;
     if (buscar && !(p.nombre||'').toLowerCase().includes(buscar)) return false;
     if (p.venc && p.venc < hoy) return false;
-    if (p.esCombo) {
-      // Pack: mostrar solo si promo activa y componentes con stock
-      const promo = (DB.promociones||[]).find(pr => pr.packProdId === p.id && pr.activa !== false && pr.hasta >= hoy);
-      if (!promo) return false;
+ if (p.esCombo) {
+      // Pack: mostrar si tiene componentes con stock disponible
+      if (!p.componentes || p.componentes.length === 0) return false;
     }
     return true;
   });
