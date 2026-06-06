@@ -7507,7 +7507,10 @@ if (_fbSnapshotUnsub) { _fbSnapshotUnsub(); _fbSnapshotUnsub = null; }
     if (!snapshot.exists) return;
     const data = snapshot.data();
     if (!data) return;
-    if (data.productos)  DB.productos  = data.productos;
+    if (data.productos) {
+  const localCombos = (DB.productos||[]).filter(p => p.esCombo && !data.productos.find(x => x.id === p.id));
+  DB.productos = [...data.productos, ...localCombos];
+}
     if (data.categorias) DB.categorias = data.categorias;
     if (data.config)     DB.config     = { ...DB.config, ...data.config };
     _fbProdCacheTs = Date.now();
