@@ -3322,7 +3322,7 @@ function renderPos() {
 function renderPosCategorias() {
   const wrap = document.getElementById('pos-categorias');
   wrap.innerHTML = `<span class="tag ${posFilterCat === '' ? 'active' : ''}" onclick="setPosFilter('')">🏪 Todos</span>`;
-const promoActivas = DB.promociones.filter(p => p.activa && p.hasta >= today());
+  const promoActivas = DB.promociones.filter(p => p.activa && p.hasta >= today());
   DB.categorias.forEach(c => {
     if (c.nombre === 'Promociones' && promoActivas.length === 0) return;
     const icon = c.imagen
@@ -3342,27 +3342,29 @@ function renderPosGrid(search = '') {
   const catPromo = DB.categorias.find(c => c.nombre === 'Promociones');
   const enCatPromo = catPromo && posFilterCat == catPromo.id;
 
-  let prods = DB.productos.filter(p => p.stock > 0 && !p.esCombo);
+  let prods = DB.productos.filter(p => {
+    if (p.esCombo) return p.stock > 0; // packs siempre visibles si stock > 0
+    return p.stock > 0;
+  });
   if (s) prods = prods.filter(p => p.nombre.toLowerCase().includes(s) || (p.codigo||'').includes(s));
-  if (posFilterCat && !enCatPromo) prods = prods.filter(p => p.cat == posFilterCat);
-  if (enCatPromo) prods = prods.filter(p => promoActivas.some(pr => pr.prod1==p.id || pr.prod2==p.id || pr.prod3==p.id));
+  if (posFilterCat && !enCatPromo) prods = prods.filter(p => !p.esCombo && p.cat == posFilterCat);
+  if (enCatPromo) prods = prods.filter(p => p.esCombo || promoActivas.some(pr => pr.prod1==p.id && !pr.prod2 && !pr.prod3));
+  if (!posFilterCat) prods = prods.filter(p => true); // Todos: muestra todo incluyendo combos
 
   document.getElementById('pos-grid').innerHTML = prods.map(p => {
-    const promo = promoActivas.find(pr => pr.prod1==p.id || pr.prod2==p.id || pr.prod3==p.id);
-    const esComboMulti = promo && (promo.prod2 || promo.prod3);
-    const precioMostrar = (!esComboMulti && promo) ? promo.precioPromo : p.precio;
-    const imgSrc = (esComboMulti && promo.imagen) ? promo.imagen : p.imagen;
-    const iconHtml = imgSrc
-      ? `<div style="width:46px;height:46px;margin:0 auto .3rem;border-radius:8px;overflow:hidden"><img src="${imgSrc}" style="width:100%;height:100%;object-fit:cover" /></div>`
+    const promo = !p.esCombo ? promoActivas.find(pr => pr.prod1==p.id && !pr.prod2 && !pr.prod3) : null;
+    const precioMostrar = promo ? promo.precioPromo : p.precio;
+    const iconHtml = p.imagen
+      ? `<div style="width:46px;height:46px;margin:0 auto .3rem;border-radius:8px;overflow:hidden"><img src="${p.imagen}" style="width:100%;height:100%;object-fit:cover" /></div>`
       : `<div class="p-icon">${getCatIcono(p.cat)}</div>`;
-    const promoTag = esComboMulti
+    const promoTag = p.esCombo
       ? `<span class="promo-tag" style="background:var(--accent)">COMBO</span>`
       : (promo ? '<span class="promo-tag">PROMO</span>' : '');
     return `<div class="product-card" onclick="addToCart(${p.id})">
       ${iconHtml}
       <div class="p-name">${p.nombre}</div>
       <div class="p-price">${sol(precioMostrar)} ${promoTag}</div>
-      <div class="p-stock">Stock: ${p.stock} ${p.unidad}</div>
+      <div class="p-stock">Stock: ${p.stock} ${p.unidad||'und'}</div>
     </div>`;
   }).join('') || '<p style="color:var(--gray-400);font-size:0.85rem;padding:1rem">Sin productos</p>';
 }
@@ -3372,13 +3374,27 @@ function filterPosProducts() { renderPosGrid(); }
 function addToCart(prodId) {
   const prod = DB.productos.find(p => p.id === prodId);
   if (!prod) return;
-  const promoActivas = DB.promociones.filter(p => p.activa && p.hasta >= today());
-  const promo = promoActivas.find(pr => pr.prod1 == prodId || pr.prod2 == prodId);
-  // 2-product combos: keep regular price, discount applied in calcTotal
-  // Single-product promos: apply promo price per unit
-  const esCombo2 = promo && promo.prod2;
-  const precio = (!esCombo2 && promo) ? promo.precioPromo : prod.precio;
 
+  // Pack multi-producto: verificar stock de componentes
+  if (prod.esCombo && prod.componentes) {
+    const sinStock = prod.componentes.filter(c => {
+      const cp = DB.productos.find(p => p.id === c.prodId);
+      return !cp || cp.stock < c.cant;
+    });
+    if (sinStock.length > 0) {
+      const nombres = sinStock.map(c => DB.productos.find(p=>p.id===c.prodId)?.nombre||'Producto').join(', ');
+      alert('Stock insuficiente para: ' + nombres); return;
+    }
+    const existing = cart.find(i => i.prodId === prodId);
+    if (existing) { existing.cant++; }
+    else { cart.push({ prodId, nombre: prod.nombre, precio: prod.precio, cant: 1, tipo: 'unidad', unidad: prod.unidad||'und', esCombo: true }); }
+    renderCart(); calcTotal(); return;
+  }
+
+  // Promo 1 producto o producto normal
+  const promoActivas = DB.promociones.filter(p => p.activa && p.hasta >= today());
+  const promo = promoActivas.find(pr => pr.prod1 == prodId && !pr.prod2 && !pr.prod3);
+  const precio = promo ? promo.precioPromo : prod.precio;
   const existing = cart.find(i => i.prodId === prodId);
   if (existing) {
     if (existing.cant >= prod.stock) { alert('Stock insuficiente'); return; }
@@ -3569,31 +3585,27 @@ function procesarVenta() {
   if (!DB.historialVentas) DB.historialVentas = [];
   DB.historialVentas.push({ ...venta, origen: 'pos', estado: 'completado', estadoStock: 'descontado' });
 
-// Actualizar stock
-  const promosYaProcesadas = new Set();
+  // Actualizar stock
   itemsConPrecioReal.forEach(item => {
-    if (item.enCombo) {
-      const promo = DB.promociones.find(p => p.activa && (p.prod1==item.prodId||p.prod2==item.prodId||p.prod3==item.prodId) && (p.prod2||p.prod3));
-      if (promo && !promosYaProcesadas.has(promo.id)) {
-        promosYaProcesadas.add(promo.id);
-        const sets = Math.min(
-          cart.find(i=>i.prodId==promo.prod1)?.cant||0,
-          promo.prod2 ? (cart.find(i=>i.prodId==promo.prod2)?.cant||0) : Infinity,
-          promo.prod3 ? (cart.find(i=>i.prodId==promo.prod3)?.cant||0) : Infinity
-        );
-        [['prod1','cant1'],['prod2','cant2'],['prod3','cant3']].forEach(([pk,ck]) => {
-          if (!promo[pk]) return;
-          const comp = DB.productos.find(p => p.id==promo[pk]);
-          if (comp) comp.stock = Math.max(0, comp.stock - (promo[ck]||1) * sets);
+    if (item.esCombo) {
+      const pack = DB.productos.find(p => p.id === item.prodId);
+      if (pack?.componentes) {
+        pack.componentes.forEach(c => {
+          const comp = DB.productos.find(p => p.id === c.prodId);
+          if (comp) comp.stock = Math.max(0, comp.stock - c.cant * item.cant);
         });
-        promo.vendidos = (promo.vendidos||0) + sets;
-        if (promo.limite > 0 && promo.vendidos >= promo.limite) promo.activa = false;
+      }
+      const promo = DB.promociones.find(p => p.packProdId === item.prodId);
+      if (promo) {
+        promo.vendidos = (promo.vendidos||0) + item.cant;
+        if (promo.limite > 0 && promo.vendidos >= promo.limite) { promo.activa = false; if (pack) pack.stock = 0; }
       }
     } else {
       const prod = DB.productos.find(p => p.id === item.prodId);
       if (prod) prod.stock = Math.max(0, prod.stock - item.cant);
     }
   });
+  _verificarStockPromos();
   // Caja: register always (ensureCajaAbierta abre si hace falta)
   ensureCajaAbierta();
   DB.caja.ingresos += total;
@@ -6488,7 +6500,7 @@ function renderPromociones() {
   document.getElementById('promo-tbody').innerHTML = DB.promociones.map(p => `<tr>
     <td><strong>${p.nombre}</strong></td>
     <td><span class="badge badge-${p.tipo==='combo'?'blue':'purple'}">${p.tipo}</span></td>
- <td style="font-size:0.8rem">${p.prod1nombre||''}${p.prod2nombre?' + '+p.prod2nombre:''}${p.prod3nombre?' + '+p.prod3nombre:''}</td>
+    <td style="font-size:0.8rem">${p.prod1nombre||''}${p.prod2nombre?' + '+p.prod2nombre:''}${p.prod3nombre?' + '+p.prod3nombre:''}</td>
     <td>${sol(p.precioOrig)}</td>
     <td style="color:var(--accent);font-weight:700">${sol(p.precioPromo)}</td>
     <td style="font-size:0.8rem">${formatDate(p.desde)} - ${formatDate(p.hasta)}</td>
@@ -6674,20 +6686,72 @@ function guardarPromocion() {
   const prod3 = prod3Id ? DB.productos.find(p => p.id === prod3Id) : null;
   const precioOrig = parseFloat(document.getElementById('promo-precio-orig').value) || 0;
   const precioPromo = parseFloat(document.getElementById('promo-precio-promo').value) || 0;
+  const cant1 = parseFloat(document.getElementById('promo-cant1').value)||1;
+  const cant2 = parseFloat(document.getElementById('promo-cant2').value)||1;
+  const cant3 = parseFloat(document.getElementById('promo-cant3').value)||1;
   if (!nombre || !prod1) { alert('Completa los campos obligatorios'); return; }
   if (precioPromo < (prod1?.costo||0) && !confirm('El precio promo está por debajo del costo. ¿Continuar?')) return;
+
+  // Auto-crear categoría Promociones si no existe
+  if (!DB.categorias.find(c => c.nombre === 'Promociones')) {
+    DB.categorias.push({ id: getId(), nombre: 'Promociones', emoji: '🏷️', imagen: null });
+  }
+  const catPromoId = DB.categorias.find(c => c.nombre === 'Promociones')?.id || null;
+
+  const esPackMulti = !!(prod2Id || prod3Id);
+  const costoReal = ((prod1?.costo||0)*cant1) + ((prod2?.costo||0)*cant2) + ((prod3?.costo||0)*cant3);
+  const imgData = document.getElementById('promo-img-data').value || null;
+  const codigoQR = document.getElementById('promo-codigo').value || null;
+
+  // Si es pack multi-producto: crear o actualizar producto pack en inventario
+  let packProdId = editingPromoId ? (DB.promociones.find(x=>x.id===editingPromoId)?.packProdId||null) : null;
+  if (esPackMulti) {
+    const componentes = [
+      { prodId: prod1Id, cant: cant1 },
+      ...(prod2Id ? [{ prodId: prod2Id, cant: cant2 }] : []),
+      ...(prod3Id ? [{ prodId: prod3Id, cant: cant3 }] : [])
+    ];
+    if (packProdId) {
+      // Actualizar producto pack existente
+      const packProd = DB.productos.find(p => p.id === packProdId);
+      if (packProd) {
+        packProd.nombre = nombre;
+        packProd.precio = precioPromo;
+        packProd.costo = costoReal;
+        packProd.imagen = imgData;
+        packProd.codigo = codigoQR || packProd.codigo;
+        packProd.componentes = componentes;
+        packProd.cat = catPromoId;
+        packProd.stock = 999;
+      } else {
+        packProdId = null; // producto fue eliminado, crear nuevo
+      }
+    }
+    if (!packProdId) {
+      // Crear nuevo producto pack
+      const newPack = {
+        id: getId(), nombre, precio: precioPromo, costo: costoReal,
+        stock: 999, stockMin: 0, unidad: 'und', tipo: 'unidad',
+        cat: catPromoId, imagen: imgData, codigo: codigoQR,
+        esCombo: true, componentes, venc: null, proveedor: null
+      };
+      DB.productos.push(newPack);
+      packProdId = newPack.id;
+    }
+    fbGuardarProductos();
+  }
+
   const data = {
     nombre, tipo: document.getElementById('promo-tipo-sel').value,
     prod1: prod1Id, prod1nombre: prod1?.nombre,
     prod2: prod2Id, prod2nombre: prod2?.nombre||null,
     prod3: prod3Id, prod3nombre: prod3?.nombre||null,
-    cant1: parseFloat(document.getElementById('promo-cant1').value)||1,
-    cant2: parseFloat(document.getElementById('promo-cant2').value)||1,
-    cant3: parseFloat(document.getElementById('promo-cant3').value)||1,
-    imagen: document.getElementById('promo-img-data').value || null,
-    codigo: document.getElementById('promo-codigo').value || null,
+    cant1, cant2, cant3,
+    imagen: imgData,
+    codigo: codigoQR,
     limite: parseInt(document.getElementById('promo-limite').value)||0,
     vendidos: editingPromoId ? (DB.promociones.find(x=>x.id===editingPromoId)?.vendidos||0) : 0,
+    packProdId: esPackMulti ? packProdId : null,
     precioOrig, precioPromo,
     desde: document.getElementById('promo-desde').value,
     hasta: document.getElementById('promo-hasta').value,
@@ -6699,24 +6763,68 @@ function guardarPromocion() {
   } else {
     DB.promociones.push({ id: getId(), ...data });
   }
- if (!DB.categorias.find(c => c.nombre === 'Promociones')) {
-    DB.categorias.push({ id: getId(), nombre: 'Promociones', emoji: '🏷️', imagen: null });
-  }
   fbGuardar();
   cerrarModal('modal-promocion');
   renderPromociones();
   try { renderPosCategorias(); } catch(e){}
   try { renderPosGrid(); } catch(e){}
   try { renderMobPosGrid(); } catch(e){}
+  try { _renderTienda(); } catch(e){}
 }
+// ── Auto-pausar promos cuando un componente llega a 0 ──
+function _verificarStockPromos() {
+  let cambios = false;
+  (DB.promociones||[]).forEach(promo => {
+    if (!promo.activa || !promo.packProdId) return;
+    const pack = DB.productos.find(p => p.id === promo.packProdId);
+    if (!pack?.componentes) return;
+    const sinStock = pack.componentes.some(c => {
+      const comp = DB.productos.find(p => p.id === c.prodId);
+      return !comp || comp.stock < c.cant;
+    });
+    if (sinStock) {
+      promo.activa = false;
+      pack.stock = 0;
+      cambios = true;
+    }
+  });
+  if (cambios) {
+    try { renderPosCategorias(); } catch(e){}
+    try { renderPosGrid(); } catch(e){}
+    try { renderMobPosGrid(); } catch(e){}
+  }
+}
+
 function togglePromo(id) {
   const p = DB.promociones.find(x => x.id === id);
-  if (p) { p.activa = !p.activa; fbGuardar(); }
+  if (!p) return;
+  p.activa = !p.activa;
+  if (p.packProdId) {
+    const pack = DB.productos.find(x => x.id === p.packProdId);
+    if (pack) { pack.stock = p.activa ? 999 : 0; fbGuardarProductos(); }
+  }
+  fbGuardar();
   renderPromociones();
+  try { renderPosCategorias(); } catch(e){}
   try { renderPosGrid(); } catch(e){}
   try { renderMobPosGrid(); } catch(e){}
+  try { _renderTienda(); } catch(e){}
 }
-function eliminarPromo(id) { if (!confirm('¿Eliminar?')) return; DB.promociones = DB.promociones.filter(p => p.id !== id); fbGuardar(); renderPromociones(); }
+function eliminarPromo(id) {
+  if (!confirm('¿Eliminar esta promoción?')) return;
+  const p = DB.promociones.find(x => x.id === id);
+  if (p?.packProdId) {
+    DB.productos = DB.productos.filter(x => x.id !== p.packProdId);
+    fbGuardarProductos();
+  }
+  DB.promociones = DB.promociones.filter(x => x.id !== id);
+  fbGuardar();
+  renderPromociones();
+  try { renderPosCategorias(); } catch(e){}
+  try { renderPosGrid(); } catch(e){}
+  try { renderMobPosGrid(); } catch(e){}
+  try { _renderTienda(); } catch(e){}
+}
 
 // ===================== COMBO SINERGIA (Punto 8) =====================
 function abrirModalComboSinergia() {
@@ -6942,14 +7050,13 @@ function renderMobPosGrid(prods) {
   if (!grid) return;
   const promoActivas = DB.promociones.filter(p => p.activa && p.hasta >= today());
   grid.innerHTML = prods.map(p => {
-    const promo = promoActivas.find(pr => pr.prod1 == p.id || pr.prod2 == p.id);
-    const esCombo2 = promo && promo.prod2;
-    const precio = (!esCombo2 && promo) ? promo.precioPromo : p.precio;
+    const promo = !p.esCombo ? promoActivas.find(pr => pr.prod1==p.id && !pr.prod2 && !pr.prod3) : null;
+    const precio = promo ? promo.precioPromo : p.precio;
     const stockBajo = p.stock <= p.stockMin;
     const iconHtml = p.imagen
       ? `<div style="width:44px;height:44px;margin:0 auto .25rem;border-radius:8px;overflow:hidden"><img src="${p.imagen}" style="width:100%;height:100%;object-fit:cover"/></div>`
       : `<div class="p-icon">${getCatIcono(p.cat)}</div>`;
-    const tag = esCombo2
+    const tag = p.esCombo
       ? `<span class="promo-tag" style="position:absolute;top:4px;right:4px;font-size:.6rem;background:var(--accent)">COMBO</span>`
       : promo ? `<span class="promo-tag" style="position:absolute;top:4px;right:4px;font-size:.6rem">PROMO</span>` : '';
     return `<div class="product-card${p.stock === 0 ? ' opacity-50' : ''}" onclick="mobAddToCart(${p.id})" style="${p.stock===0?'opacity:.45;pointer-events:none':''}">
@@ -6957,7 +7064,7 @@ function renderMobPosGrid(prods) {
       ${iconHtml}
       <div class="p-name">${p.nombre}</div>
       <div class="p-price" style="${stockBajo?'color:var(--danger)':''}">S/ ${precio.toFixed(2)}</div>
-      <div class="p-stock" style="${stockBajo?'color:var(--danger);font-weight:700':''}">Stock: ${p.stock} ${p.unidad}</div>
+      <div class="p-stock" style="${stockBajo?'color:var(--danger);font-weight:700':''}">Stock: ${p.stock} ${p.unidad||'und'}</div>
     </div>`;
   }).join('') || '<p style="color:var(--gray-400);text-align:center;padding:2rem;grid-column:1/-1">Sin productos</p>';
 }
@@ -6966,11 +7073,29 @@ function renderMobPosGrid(prods) {
 function mobAddToCart(prodId) {
   const prod = DB.productos.find(p => p.id === prodId);
   if (!prod || prod.stock === 0) return;
+
+  // Pack multi-producto: verificar stock de componentes
+  if (prod.esCombo && prod.componentes) {
+    const sinStock = prod.componentes.filter(c => {
+      const cp = DB.productos.find(p => p.id === c.prodId);
+      return !cp || cp.stock < c.cant;
+    });
+    if (sinStock.length > 0) {
+      const nombres = sinStock.map(c => DB.productos.find(p=>p.id===c.prodId)?.nombre||'Producto').join(', ');
+      alert('Stock insuficiente para: ' + nombres); return;
+    }
+    const existing = cart.find(i => i.prodId === prodId);
+    if (existing) { existing.cant++; }
+    else { cart.push({ prodId, nombre: prod.nombre, precio: prod.precio, cant: 1, tipo: 'unidad', unidad: prod.unidad||'und', esCombo: true }); }
+    mobRenderCart(); mobCalcTotal(); mobUpdateBar();
+    try { updatePosCartBadge(); } catch(e) {}
+    return;
+  }
+
+  // Promo 1 producto o producto normal
   const promoActivas = DB.promociones.filter(p => p.activa && p.hasta >= today());
-  const promo = promoActivas.find(pr => pr.prod1 == prodId || pr.prod2 == prodId);
-  // 2-product combos: use regular price — discount shown in total
-  const esCombo2 = promo && promo.prod2;
-  const precio = (!esCombo2 && promo) ? promo.precioPromo : prod.precio;
+  const promo = promoActivas.find(pr => pr.prod1 == prodId && !pr.prod2 && !pr.prod3);
+  const precio = promo ? promo.precioPromo : prod.precio;
   const existing = cart.find(i => i.prodId === prodId);
   if (existing) {
     if (existing.cant >= prod.stock) { alert('Stock insuficiente'); return; }
@@ -6978,10 +7103,7 @@ function mobAddToCart(prodId) {
   } else {
     cart.push({ prodId, nombre: prod.nombre, precio, cant: prod.tipo === 'granel' ? 0.5 : 1, tipo: prod.tipo, unidad: prod.unidad });
   }
-  mobRenderCart();
-  mobCalcTotal();
-  mobUpdateBar();
-  // Badge update — drawer NO se abre automáticamente (opción B)
+  mobRenderCart(); mobCalcTotal(); mobUpdateBar();
   try { updatePosCartBadge(); } catch(e) {}
 }
 
@@ -7108,31 +7230,27 @@ function mobProcesarVenta() {
     descuento: desc + comboDesc, descuentoManual: desc, descuentoCombo: comboDesc,
     total, metodo, clienteId
   };
-// Descontar stock
-  const promosYaProcesadasMob = new Set();
+  // Descontar stock
   itemsConPrecioReal.forEach(item => {
-    if (item.enCombo) {
-      const promo = DB.promociones.find(p => p.activa && (p.prod1==item.prodId||p.prod2==item.prodId||p.prod3==item.prodId) && (p.prod2||p.prod3));
-      if (promo && !promosYaProcesadasMob.has(promo.id)) {
-        promosYaProcesadasMob.add(promo.id);
-        const sets = Math.min(
-          cart.find(i=>i.prodId==promo.prod1)?.cant||0,
-          promo.prod2 ? (cart.find(i=>i.prodId==promo.prod2)?.cant||0) : Infinity,
-          promo.prod3 ? (cart.find(i=>i.prodId==promo.prod3)?.cant||0) : Infinity
-        );
-        [['prod1','cant1'],['prod2','cant2'],['prod3','cant3']].forEach(([pk,ck]) => {
-          if (!promo[pk]) return;
-          const comp = DB.productos.find(p => p.id==promo[pk]);
-          if (comp) comp.stock = Math.max(0, comp.stock - (promo[ck]||1) * sets);
+    if (item.esCombo) {
+      const pack = DB.productos.find(p => p.id === item.prodId);
+      if (pack?.componentes) {
+        pack.componentes.forEach(c => {
+          const comp = DB.productos.find(p => p.id === c.prodId);
+          if (comp) comp.stock = Math.max(0, comp.stock - c.cant * item.cant);
         });
-        promo.vendidos = (promo.vendidos||0) + sets;
-        if (promo.limite > 0 && promo.vendidos >= promo.limite) promo.activa = false;
+      }
+      const promo = DB.promociones.find(p => p.packProdId === item.prodId);
+      if (promo) {
+        promo.vendidos = (promo.vendidos||0) + item.cant;
+        if (promo.limite > 0 && promo.vendidos >= promo.limite) { promo.activa = false; if (pack) pack.stock = 0; }
       }
     } else {
       const prod = DB.productos.find(p => p.id === item.prodId);
       if (prod) prod.stock = Math.max(0, prod.stock - item.cant);
     }
   });
+  _verificarStockPromos();
   if (clienteId) {
     const cli = DB.clientes.find(c => c.id === clienteId);
     if (cli) { cli.total = (cli.total||0)+total; cli.puntos = (cli.puntos||0)+Math.floor(total); cli.compras=(cli.compras||0)+1; }
@@ -8337,31 +8455,26 @@ function confirmarEntregaPedido(id) {
     if (!confirm(confirmMsg)) return;
 
     // Descontar stock solo de items activos
-    const promosYaProcesadasOnline = new Set();
     (p.items||[]).filter(i=>i.cant>0&&!i.eliminado).forEach(item => {
-      if (item.enCombo) {
-        const promo = DB.promociones.find(pr => pr.activa && (pr.prod1==item.prodId||pr.prod2==item.prodId||pr.prod3==item.prodId) && (pr.prod2||pr.prod3));
-        if (promo && !promosYaProcesadasOnline.has(promo.id)) {
-          promosYaProcesadasOnline.add(promo.id);
-          const items = (p.items||[]).filter(i=>i.cant>0&&!i.eliminado);
-          const sets = Math.min(
-            items.find(i=>i.prodId==promo.prod1)?.cant||0,
-            promo.prod2 ? (items.find(i=>i.prodId==promo.prod2)?.cant||0) : Infinity,
-            promo.prod3 ? (items.find(i=>i.prodId==promo.prod3)?.cant||0) : Infinity
-          );
-          [['prod1','cant1'],['prod2','cant2'],['prod3','cant3']].forEach(([pk,ck]) => {
-            if (!promo[pk]) return;
-            const comp = DB.productos.find(x => x.id==promo[pk]);
-            if (comp) comp.stock = Math.max(0, comp.stock - (promo[ck]||1) * sets);
+      if (item.esCombo) {
+        const pack = DB.productos.find(x => x.id === item.prodId);
+        if (pack?.componentes) {
+          pack.componentes.forEach(c => {
+            const comp = DB.productos.find(x => x.id === c.prodId);
+            if (comp) comp.stock = Math.max(0, comp.stock - c.cant * item.cant);
           });
-          promo.vendidos = (promo.vendidos||0) + sets;
-          if (promo.limite > 0 && promo.vendidos >= promo.limite) promo.activa = false;
+        }
+        const promo = DB.promociones.find(pr => pr.packProdId === item.prodId);
+        if (promo) {
+          promo.vendidos = (promo.vendidos||0) + item.cant;
+          if (promo.limite > 0 && promo.vendidos >= promo.limite) { promo.activa = false; if (pack) pack.stock = 0; }
         }
       } else {
         const prod = DB.productos.find(x => x.id === item.prodId);
         if (prod) prod.stock = Math.max(0, prod.stock - item.cant);
       }
     });
+    _verificarStockPromos();
 
     // Registrar en ventas y historial
     const ventaOnline = {
@@ -8543,16 +8656,30 @@ function initTienda() {
 }
 
 function _getStockBadge(p) {
+  if (p.esCombo && p.componentes) {
+    const sinStock = p.componentes.some(c => {
+      const comp = DB.productos.find(x => x.id === c.prodId);
+      return !comp || comp.stock < c.cant;
+    });
+    if (sinStock) return '<span class="badge badge-red">Agotado</span>';
+    const bajoStock = p.componentes.some(c => {
+      const comp = DB.productos.find(x => x.id === c.prodId);
+      return comp && comp.stock <= (comp.stockMin||0) + c.cant;
+    });
+    if (bajoStock) return '<span class="badge badge-orange">Últimas unidades</span>';
+    return '<span class="badge badge-green">Disponible</span>';
+  }
   if (p.stock <= 0) return '<span class="badge badge-red">Agotado</span>';
   if (p.stock <= p.stockMin) return '<span class="badge badge-orange">Últimas unidades</span>';
   return '<span class="badge badge-green">Disponible</span>';
 }
 
 function _getPromoTienda(p) {
+  if (p.esCombo) return null; // packs son productos independientes, no necesitan promo lookup
   const hoy = today();
-  return (DB.promociones||[]).find(pr => pr.activa !== false && pr.hasta >= hoy && (
-    (pr.prod1 && parseInt(pr.prod1) === p.id) || (pr.prod2 && parseInt(pr.prod2) === p.id)
-  ));
+  return (DB.promociones||[]).find(pr => pr.activa !== false && pr.hasta >= hoy && !pr.prod2 && !pr.prod3 &&
+    (pr.prod1 && parseInt(pr.prod1) === p.id)
+  );
 }
 
 function _renderTienda() {
@@ -8741,8 +8868,11 @@ let _tndStep = 'cart'; // cart | datos | pago | confirmacion
 function tndRenderCats() {
   const el = document.getElementById('tnd-cats');
   if (!el) return;
+  const hoy = today();
+  const hayPromos = (DB.promociones||[]).some(p => p.activa !== false && p.hasta >= hoy);
   el.innerHTML = `<span class="tnd-cat-tag active" onclick="tndSetCat('')">Todos</span>` +
-    (DB.categorias||[]).map(c => `<span class="tnd-cat-tag" onclick="tndSetCat(${c.id})">${c.imagen ? `<img src="${c.imagen}" style="width:16px;height:16px;object-fit:cover;border-radius:3px;vertical-align:middle">` : c.emoji} ${c.nombre}</span>`).join('');
+    (DB.categorias||[]).filter(c => c.nombre !== 'Promociones' || hayPromos)
+    .map(c => `<span class="tnd-cat-tag" onclick="tndSetCat(${c.id})">${c.imagen ? `<img src="${c.imagen}" style="width:16px;height:16px;object-fit:cover;border-radius:3px;vertical-align:middle">` : c.emoji} ${c.nombre}</span>`).join('');
 }
 
 function tndSetCat(id) {
@@ -8758,33 +8888,42 @@ function tndFiltrar() {
   let prods = (DB.productos||[]).filter(p => {
     if (_tndCatActiva && p.cat != _tndCatActiva) return false;
     if (buscar && !(p.nombre||'').toLowerCase().includes(buscar)) return false;
-    if (p.venc && p.venc < hoy) return false; // ocultar productos vencidos
+    if (p.venc && p.venc < hoy) return false;
+    if (p.esCombo) {
+      // Pack: mostrar solo si promo activa y componentes con stock
+      const promo = (DB.promociones||[]).find(pr => pr.packProdId === p.id && pr.activa !== false && pr.hasta >= hoy);
+      if (!promo) return false;
+    }
     return true;
   });
 
   const grid = document.getElementById('tnd-grid');
   if (!grid) return;
   grid.innerHTML = prods.map(p => {
-    const agotado = p.stock <= 0;
+    const esCombo = !!p.esCombo;
+    let agotado = false;
+    if (esCombo && p.componentes) {
+      agotado = p.componentes.some(c => { const cp = DB.productos.find(x=>x.id===c.prodId); return !cp||cp.stock<c.cant; });
+    } else {
+      agotado = p.stock <= 0;
+    }
     const cat = (DB.categorias||[]).find(c => c.id === p.cat);
-    const icon = cat?.imagen
-      ? `<img src="${cat.imagen}" style="width:40px;height:40px;object-fit:cover;border-radius:8px">`
-      : (cat?.emoji || '📦');
+    const icon = p.imagen
+      ? `<img src="${p.imagen}" style="width:40px;height:40px;object-fit:cover;border-radius:8px">`
+      : (cat?.imagen ? `<img src="${cat.imagen}" style="width:40px;height:40px;object-fit:cover;border-radius:8px">` : (cat?.emoji || '📦'));
     const badge = _getStockBadge(p);
     const promo = _getPromoTienda(p);
     const precio = promo && promo.precioPromo ? promo.precioPromo : p.precio;
     const precioOrig = (promo && promo.precioPromo && promo.precioPromo < p.precio) ? p.precio : null;
-    const precioCat = p.costo ? Math.ceil(p.costo * (1 + ((DB.categorias||[]).find(c=>c.id===p.cat)?.margen||0)/100) * 10) / 10 : null;
-    const sugerido = precioCat && precioCat !== p.precio ? precioCat : null;
+    const comboTag = esCombo ? `<div class="tnd-prod-promo" style="background:#7C3AED">🎁 COMBO</div>` : (promo ? `<div class="tnd-prod-promo">🔥 ${promo.nombre||'Promo'}</div>` : '');
 
     return `<div class="tnd-prod-card ${agotado?'agotado':''}" onclick="${agotado?'':('tndAgregarCarrito('+p.id+')')}">
       <div class="tnd-prod-badge">${badge}</div>
-      ${promo ? `<div class="tnd-prod-promo">🔥 ${promo.nombre||'Promo'}</div>` : ''}
+      ${comboTag}
       <div class="tnd-prod-icon">${icon}</div>
       <div class="tnd-prod-name">${p.nombre}</div>
       ${precioOrig ? `<div class="tnd-prod-price-orig">S/ ${precioOrig.toFixed(2)}</div>` : ''}
       <div class="tnd-prod-price">S/ ${precio.toFixed(2)}</div>
-
       ${agotado ? '<div style="font-size:.75rem;color:#ef4444;margin-top:.25rem">Sin stock</div>' : ''}
     </div>`;
   }).join('') || '<p style="grid-column:1/-1;text-align:center;color:#9ca3af;padding:2rem">Sin productos que coincidan</p>';
@@ -8792,8 +8931,23 @@ function tndFiltrar() {
 
 function tndAgregarCarrito(prodId) {
   const p = DB.productos.find(x => x.id === prodId);
-  if (!p || p.stock <= 0) return;
+  if (!p) return;
   if (p.venc && p.venc < today()) { alert('Este producto ya no está disponible.'); tndFiltrar(); return; }
+
+  // Pack esCombo: verificar stock de componentes
+  if (p.esCombo && p.componentes) {
+    const sinStock = p.componentes.filter(c => {
+      const cp = DB.productos.find(x => x.id === c.prodId);
+      return !cp || cp.stock < c.cant;
+    });
+    if (sinStock.length > 0) { alert('Este pack no tiene stock disponible en este momento.'); return; }
+    const existing = _tiendaCart.find(i => i.prodId === prodId);
+    if (existing) { existing.cant++; }
+    else { _tiendaCart.push({ prodId, nombre: p.nombre, precio: p.precio, cant: 1, icon: '🎁', tipo: 'unidad', esCombo: true }); }
+    tndSaveCart(); tndUpdateCartBadge(); return;
+  }
+
+  if (p.stock <= 0) return;
   const promo = _getPromoTienda(p);
   const precio = promo && promo.precioPromo ? promo.precioPromo : p.precio;
   const cat = (DB.categorias||[]).find(c => c.id === p.cat);
@@ -8804,9 +8958,8 @@ function tndAgregarCarrito(prodId) {
   } else {
     _tiendaCart.push({ prodId, nombre: p.nombre, precio, cant: 1, icon: cat?.emoji||'📦', tipo: p.tipo });
   }
-  tndSaveCart(); // persistir en localStorage
+  tndSaveCart();
   tndUpdateCartBadge();
-  // Mini feedback
   const cards = document.querySelectorAll('.tnd-prod-card');
   cards.forEach(card => {
     if (card.onclick && card.getAttribute('onclick')?.includes(''+prodId)) {
