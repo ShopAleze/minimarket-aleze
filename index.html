@@ -7108,17 +7108,29 @@ function mobProcesarVenta() {
     descuento: desc + comboDesc, descuentoManual: desc, descuentoCombo: comboDesc,
     total, metodo, clienteId
   };
-  // Descontar stock
-  cart.forEach(item => {
-    const prod = DB.productos.find(p => p.id === item.prodId);
-    if (prod) {
-      prod.stock = Math.max(0, prod.stock - item.cant);
-      if (prod.esCombo && prod.componentes) {
-        prod.componentes.forEach(comp => {
-          const cp = DB.productos.find(x => x.id === comp.prodId);
-          if (cp) cp.stock = Math.max(0, cp.stock - comp.cant * item.cant);
+// Descontar stock
+  const promosYaProcesadasMob = new Set();
+  itemsConPrecioReal.forEach(item => {
+    if (item.enCombo) {
+      const promo = DB.promociones.find(p => p.activa && (p.prod1==item.prodId||p.prod2==item.prodId||p.prod3==item.prodId) && (p.prod2||p.prod3));
+      if (promo && !promosYaProcesadasMob.has(promo.id)) {
+        promosYaProcesadasMob.add(promo.id);
+        const sets = Math.min(
+          cart.find(i=>i.prodId==promo.prod1)?.cant||0,
+          promo.prod2 ? (cart.find(i=>i.prodId==promo.prod2)?.cant||0) : Infinity,
+          promo.prod3 ? (cart.find(i=>i.prodId==promo.prod3)?.cant||0) : Infinity
+        );
+        [['prod1','cant1'],['prod2','cant2'],['prod3','cant3']].forEach(([pk,ck]) => {
+          if (!promo[pk]) return;
+          const comp = DB.productos.find(p => p.id==promo[pk]);
+          if (comp) comp.stock = Math.max(0, comp.stock - (promo[ck]||1) * sets);
         });
+        promo.vendidos = (promo.vendidos||0) + sets;
+        if (promo.limite > 0 && promo.vendidos >= promo.limite) promo.activa = false;
       }
+    } else {
+      const prod = DB.productos.find(p => p.id === item.prodId);
+      if (prod) prod.stock = Math.max(0, prod.stock - item.cant);
     }
   });
   if (clienteId) {
@@ -8325,9 +8337,30 @@ function confirmarEntregaPedido(id) {
     if (!confirm(confirmMsg)) return;
 
     // Descontar stock solo de items activos
+    const promosYaProcesadasOnline = new Set();
     (p.items||[]).filter(i=>i.cant>0&&!i.eliminado).forEach(item => {
-      const prod = DB.productos.find(x => x.id === item.prodId);
-      if (prod) prod.stock = Math.max(0, prod.stock - item.cant);
+      if (item.enCombo) {
+        const promo = DB.promociones.find(pr => pr.activa && (pr.prod1==item.prodId||pr.prod2==item.prodId||pr.prod3==item.prodId) && (pr.prod2||pr.prod3));
+        if (promo && !promosYaProcesadasOnline.has(promo.id)) {
+          promosYaProcesadasOnline.add(promo.id);
+          const items = (p.items||[]).filter(i=>i.cant>0&&!i.eliminado);
+          const sets = Math.min(
+            items.find(i=>i.prodId==promo.prod1)?.cant||0,
+            promo.prod2 ? (items.find(i=>i.prodId==promo.prod2)?.cant||0) : Infinity,
+            promo.prod3 ? (items.find(i=>i.prodId==promo.prod3)?.cant||0) : Infinity
+          );
+          [['prod1','cant1'],['prod2','cant2'],['prod3','cant3']].forEach(([pk,ck]) => {
+            if (!promo[pk]) return;
+            const comp = DB.productos.find(x => x.id==promo[pk]);
+            if (comp) comp.stock = Math.max(0, comp.stock - (promo[ck]||1) * sets);
+          });
+          promo.vendidos = (promo.vendidos||0) + sets;
+          if (promo.limite > 0 && promo.vendidos >= promo.limite) promo.activa = false;
+        }
+      } else {
+        const prod = DB.productos.find(x => x.id === item.prodId);
+        if (prod) prod.stock = Math.max(0, prod.stock - item.cant);
+      }
     });
 
     // Registrar en ventas y historial
