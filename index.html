@@ -1175,7 +1175,6 @@ function _loadHtml5QrCode(cb) {
     <button type="button" class="btn-login" onclick="doLogin()">Ingresar</button>
     <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid #e5e7eb">
       <a href="#/tienda" onclick="initTienda();return false;" style="color:var(--primary);font-size:.85rem;font-weight:600;text-decoration:none">🛍️ Compra aquí →</a>
-      <div style="color:var(--gray-400);font-size:0.7rem;margin-top:0.5rem">v1.0.1</div>
     </div>
   </div>
 </div>
@@ -1597,9 +1596,6 @@ function _loadHtml5QrCode(cb) {
           <div class="page-title" style="margin:0">Clientes</div>
           <button type="button" class="btn btn-primary btn-sm" onclick="abrirModalCliente()">+ Nuevo Cliente</button>
         </div>
-        <div style="margin-bottom:.75rem">
-          <input type="text" class="form-control" id="cli-buscar" placeholder="🔍 Buscar cliente..." oninput="renderClientes()" style="max-width:300px"/>
-        </div>
         <div class="card" style="padding:0">
           <div class="table-wrap">
             <table>
@@ -1609,6 +1605,7 @@ function _loadHtml5QrCode(cb) {
           </div>
         </div>
       </div>
+
       <!-- FIADOS -->
       <div id="page-fiados" class="page">
         <div class="flex-between" style="margin-bottom:1rem">
@@ -1629,23 +1626,9 @@ function _loadHtml5QrCode(cb) {
             <div class="stat-value" id="fiados-mayor">S/ 0.00</div>
           </div>
         </div>
-       <div class="card" style="margin-bottom:1rem">
-          <div style="display:flex;gap:.75rem;flex-wrap:wrap;align-items:center">
-            <input type="date" class="form-control" id="fi-desde" style="width:150px" onchange="renderFiados()"/>
-            <input type="date" class="form-control" id="fi-hasta" style="width:150px" onchange="renderFiados()"/>
-            <select class="form-control" id="fi-estado" style="width:160px" onchange="renderFiados()">
-              <option value="">Todos</option>
-              <option value="pendiente">Con pendiente</option>
-              <option value="pagado">Pagados</option>
-            </select>
-            <select class="form-control" id="fi-cliente" style="width:180px" onchange="renderFiados()">
-              <option value="">Todos los clientes</option>
-            </select>
-            <button type="button" class="btn btn-outline btn-sm" onclick="limpiarFiltrosFiados()">🔄 Limpiar</button>
-          </div>
-        </div>
         <div id="fiados-list"></div>
       </div>
+
       <!-- CAJA -->
       <div id="page-caja" class="page">
         <div class="page-title">Control de Caja</div>
@@ -1708,6 +1691,7 @@ function _loadHtml5QrCode(cb) {
         <div class="flex-between" style="margin-bottom:1rem">
           <div class="page-title" style="margin:0">Promociones</div>
           <div style="display:flex;gap:.5rem">
+            <button type="button" class="btn btn-outline btn-sm" onclick="abrirModalComboSinergia()">🔗 Combo Sinergia</button>
             <button type="button" class="btn btn-primary btn-sm" onclick="abrirModalPromocion()">+ Nueva Promoción</button>
           </div>
         </div>
@@ -1787,12 +1771,6 @@ function _loadHtml5QrCode(cb) {
       <!-- CONFIGURACION -->
       <div id="page-configuracion" class="page">
         <div class="page-title">Configuración</div>
-        <div class="card" style="margin-bottom:1rem">
-          <div class="card-title">💾 Respaldo de datos</div>
-          <div style="font-size:.85rem;color:var(--gray-500);margin-bottom:.75rem">El sistema guarda un respaldo automático cada 30 minutos. Puedes restaurar manualmente si algo sale mal.</div>
-          <div id="backup-lista" style="margin-bottom:.75rem;font-size:.82rem"></div>
-          <button type="button" class="btn btn-outline btn-sm" onclick="verBackups()">🔍 Ver respaldos disponibles</button>
-        </div>
         <div class="grid-2">
           <div class="card">
             <div class="card-title">⚙️ Datos del negocio</div>
@@ -2199,89 +2177,43 @@ function _loadHtml5QrCode(cb) {
 </div>
 
 <!-- Modal Combo Sinergia (Punto 8) -->
-<div class="modal-overlay" id="modal-promocion">
+<div class="modal-overlay" id="modal-combo-sinergia">
   <div class="modal modal-lg">
     <div class="modal-header">
-      <h3 id="promo-modal-titulo">🏷️ Nueva Promoción</h3>
-      <button type="button" class="modal-close" onclick="cerrarModal('modal-promocion')">✕</button>
+      <h3>🔗 Crear Combo Sinergia</h3>
+      <button type="button" class="modal-close" onclick="cerrarModal('modal-combo-sinergia')">✕</button>
     </div>
+    <p style="font-size:.82rem;color:var(--gray-500);margin-bottom:1rem">El combo se crea como un <strong>nuevo producto</strong> en el inventario. Al venderse, descuenta unidades de cada producto individualmente.</p>
     <div class="grid-2">
       <div>
-        <div class="form-group"><label>Nombre de la promoción *</label><input type="text" class="form-control" id="promo-nombre" placeholder="Se sugiere automáticamente" /></div>
-        <div class="form-group"><label>Tipo</label>
-          <select class="form-control" id="promo-tipo-sel" onchange="onPromoTipoChange()">
-            <option value="descuento">Descuento directo %</option>
-            <option value="pack">Pack combinado</option>
-            <option value="2x1">2x1</option>
-            <option value="3x2">3x2</option>
-            <option value="precio">Precio especial</option>
-          </select>
-        </div>
-        <div class="form-group"><label>Producto 1 *</label><select class="form-control" id="promo-prod1" onchange="onPromoProductoChange()"></select></div>
-        <div class="form-group"><label>Cantidad producto 1</label><input type="number" class="form-control" id="promo-cant1" value="1" min="1" step="1" oninput="calcPromo()" /></div>
-        <div class="form-group" id="promo-prod2-wrap"><label>Producto 2 (opcional)</label><select class="form-control" id="promo-prod2" onchange="onPromoProductoChange()"><option value="">Sin segundo producto</option></select></div>
-      <div class="form-group" id="promo-cant2-wrap"><label>Cantidad producto 2</label><input type="number" class="form-control" id="promo-cant2" value="1" min="1" step="1" oninput="calcPromo()" /></div>
-        <div class="form-group" id="promo-prod3-wrap"><label>Producto 3 (opcional)</label><select class="form-control" id="promo-prod3" onchange="onPromoProductoChange()"><option value="">Sin tercer producto</option></select></div>
-        <div class="form-group" id="promo-cant3-wrap"><label>Cantidad producto 3</label><input type="number" class="form-control" id="promo-cant3" value="1" min="1" step="1" oninput="calcPromo()" /></div>
-        <div class="grid-2">
-          <div class="form-group"><label>Válido desde</label><input type="date" class="form-control" id="promo-desde" /></div>
-          <div class="form-group"><label>Válido hasta</label><input type="date" class="form-control" id="promo-hasta" /></div>
-        </div>
+        <div class="form-group"><label>Nombre del combo *</label><input type="text" class="form-control" id="combo-nombre" placeholder="Ej: Combo Gaseosa + Papas" /></div>
+        <div class="form-group"><label>Producto 1 *</label><select class="form-control" id="combo-prod1" onchange="calcCombo()"></select></div>
+        <div class="form-group"><label>Cantidad prod. 1</label><input type="number" class="form-control" id="combo-cant1" value="1" min="1" step="1" oninput="calcCombo()" /></div>
+        <div class="form-group"><label>Producto 2 *</label><select class="form-control" id="combo-prod2" onchange="calcCombo()"></select></div>
+        <div class="form-group"><label>Cantidad prod. 2</label><input type="number" class="form-control" id="combo-cant2" value="1" min="1" step="1" oninput="calcCombo()" /></div>
       </div>
       <div>
         <div style="background:var(--gray-50);border-radius:10px;padding:1rem;margin-bottom:.75rem">
           <div style="font-size:.8rem;font-weight:600;color:var(--gray-600);margin-bottom:.5rem">📊 Cálculo automático</div>
-          <div style="font-size:.82rem" id="promo-calc-detalle">Selecciona los productos para ver el cálculo</div>
+          <div style="font-size:.82rem" id="combo-calc-detalle">Selecciona los productos para ver el cálculo</div>
         </div>
         <div class="form-group">
-          <label>Margen de ganancia % <span style="font-size:.75rem;color:var(--gray-500)">(sobre costo)</span></label>
+          <label>Margen de ganancia combo % (15-25% sugerido)</label>
           <div style="display:flex;gap:.5rem;align-items:center">
-            <input type="range" id="promo-margen-slider" min="0" max="80" value="20" oninput="document.getElementById('promo-margen-num').value=this.value; calcPromo()" style="flex:1" />
-            <input type="number" id="promo-margen-num" class="form-control" value="20" min="0" max="80" style="width:70px" oninput="document.getElementById('promo-margen-slider').value=this.value; calcPromo()" />
+            <input type="range" id="combo-margen-slider" min="5" max="50" value="20" oninput="document.getElementById('combo-margen-num').value=this.value; calcCombo()" style="flex:1" />
+            <input type="number" id="combo-margen-num" class="form-control" value="20" min="5" max="50" style="width:70px" oninput="document.getElementById('combo-margen-slider').value=this.value; calcCombo()" />
             <span style="font-size:.82rem">%</span>
           </div>
         </div>
-        <div class="form-group"><label>Precio promocional final (S/) — editable</label><input type="number" class="form-control" id="promo-precio-promo" step="0.01" oninput="calcPromoDesdeManual()" /></div>
-        <div class="form-group"><label>Precio original (S/) — referencia</label><input type="number" class="form-control" id="promo-precio-orig" step="0.01" readonly style="background:var(--gray-50)" /></div>
-   <div id="promo-aviso" style="font-size:.78rem;color:var(--danger);margin-bottom:.5rem"></div>
-        <div class="form-group">
-          <label>📷 Imagen del pack (opcional)</label>
-          <div style="display:flex;gap:.75rem;align-items:flex-start;flex-wrap:wrap">
-            <div id="promo-img-preview" style="width:80px;height:80px;border:2px dashed var(--gray-300);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:2rem;background:var(--gray-50);overflow:hidden;flex-shrink:0">🎁</div>
-            <div style="flex:1;min-width:180px">
-              <input type="file" id="promo-img-file" accept="image/*" style="display:none" onchange="onPromoImgSelect(event)" />
-              <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('promo-img-file').click()" style="margin-bottom:.4rem;width:100%">📁 Seleccionar imagen</button>
-              <button type="button" class="btn btn-xs" onclick="limpiarImgPromo()" style="margin-top:.3rem;background:var(--danger-light);color:var(--danger)">✕ Quitar imagen</button>
-            </div>
-          </div>
-        <input type="hidden" id="promo-img-data" />
-        </div>
-        <div class="form-group">
-          <label>🔖 Código QR del pack</label>
-          <div style="display:flex;gap:.5rem;flex-wrap:wrap">
-            <input type="text" class="form-control" id="promo-codigo" placeholder="Se genera automáticamente al guardar" readonly style="flex:1;min-width:150px;background:var(--gray-50)" />
-            <button type="button" class="btn btn-outline btn-sm" onclick="generarQrPromo()" title="Generar QR para este pack">🔖 Generar QR</button>
-          </div>
-          <div id="promo-qr-container" style="margin-top:.75rem;display:none;border:1px dashed var(--gray-300);border-radius:8px;padding:.75rem;text-align:center;background:white">
-            <div style="font-size:.8rem;font-weight:700;color:var(--gray-700);margin-bottom:.5rem" id="promo-qr-nombre-label"></div>
-            <div id="promo-qr-preview" style="display:inline-block"></div>
-            <div style="font-size:.72rem;color:var(--gray-500);margin-top:.4rem">Escanea este QR desde el POS para agregar el pack al carrito</div>
-          </div>
-        </div>
+        <div class="form-group"><label>Precio combo final (S/) — editable</label><input type="number" class="form-control" id="combo-precio-final" step="0.1" /></div>
+        <div class="form-group"><label>Stock inicial del combo</label><input type="number" class="form-control" id="combo-stock" value="10" min="1" /></div>
+        <div class="form-group"><label>Vigencia hasta</label><input type="date" class="form-control" id="combo-hasta" /></div>
       </div>
     </div>
-    <div style="display:flex;gap:1rem;align-items:center;margin-top:1rem;flex-wrap:wrap">
-      <div class="form-group" style="margin:0;flex:1;min-width:180px">
-        <label>🔢 Límite de unidades (0 = sin límite)</label>
-        <input type="number" class="form-control" id="promo-limite" value="0" min="0" step="1" />
-      </div>
-      <div id="promo-vendidos-display" style="font-size:.82rem;color:var(--gray-500);min-width:120px;display:none">
-        📦 <span id="promo-vendidos-num">0</span> vendidos de <span id="promo-limite-num">0</span>
-      </div>
-    </div>
+    <div id="combo-aviso" style="font-size:.78rem;color:var(--danger);margin-bottom:.5rem"></div>
     <div style="display:flex;justify-content:flex-end;gap:.5rem;margin-top:1rem">
-      <button type="button" class="btn btn-outline" onclick="cerrarModal('modal-promocion')">Cancelar</button>
-      <button type="button" class="btn btn-primary" onclick="guardarPromocion()">Guardar Promoción</button>
+      <button type="button" class="btn btn-outline" onclick="cerrarModal('modal-combo-sinergia')">Cancelar</button>
+      <button type="button" class="btn btn-primary" onclick="guardarComboSinergia()">Crear combo en inventario</button>
     </div>
   </div>
 </div>
@@ -2301,7 +2233,41 @@ function _loadHtml5QrCode(cb) {
     </div>
   </div>
 </div>
-  
+
+<!-- Modal Promoción -->
+<div class="modal-overlay" id="modal-promocion">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h3>Nueva Promoción</h3>
+      <button type="button" class="modal-close" onclick="cerrarModal('modal-promocion')">✕</button>
+    </div>
+    <div class="form-group"><label>Nombre de la promoción *</label><input type="text" class="form-control" id="promo-nombre" /></div>
+    <div class="form-group"><label>Tipo</label>
+      <select class="form-control" id="promo-tipo-sel">
+        <option value="pack">Pack combinado</option><option value="descuento">Descuento directo %</option>
+        <option value="2x1">2x1</option><option value="3x2">3x2</option><option value="precio">Precio especial</option>
+      </select>
+    </div>
+    <div class="form-group"><label>Productos incluidos</label>
+      <select class="form-control" id="promo-prod1"></select>
+      <select class="form-control" id="promo-prod2" style="margin-top:0.5rem"><option value="">Segundo producto (opcional)</option></select>
+    </div>
+    <div class="grid-2">
+      <div class="form-group"><label>Precio original (S/)</label><input type="number" class="form-control" id="promo-precio-orig" step="0.01" oninput="calcPrecioPromo()" /></div>
+      <div class="form-group"><label>Precio promocional sugerido (S/)</label><input type="number" class="form-control" id="promo-precio-promo" step="0.01" /></div>
+    </div>
+    <div class="grid-2">
+      <div class="form-group"><label>Válido desde</label><input type="date" class="form-control" id="promo-desde" /></div>
+      <div class="form-group"><label>Válido hasta</label><input type="date" class="form-control" id="promo-hasta" /></div>
+    </div>
+    <div id="promo-aviso" style="font-size:0.8rem;color:var(--danger);margin-bottom:0.5rem"></div>
+    <div style="display:flex;justify-content:flex-end;gap:0.5rem;margin-top:1rem">
+      <button type="button" class="btn btn-outline" onclick="cerrarModal('modal-promocion')">Cancelar</button>
+      <button type="button" class="btn btn-primary" onclick="guardarPromocion()">Guardar Promoción</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal Cliente Rápido POS -->
 <div class="modal-overlay" id="modal-cli-rapido">
   <div class="modal"><div class="modal-header"><h3>👤 Cliente rápido</h3><button type="button" class="modal-close" onclick="cerrarModal('modal-cli-rapido')">✕</button></div>
@@ -2401,31 +2367,9 @@ function _loadHtml5QrCode(cb) {
 
 <!-- Modal Ver Boletas -->
 <div class="modal-overlay" id="modal-ver-boletas">
-  <div class="modal" style="max-width:680px">
-    <div class="modal-header">
-      <h3 id="vb-titulo">Boletas del proveedor</h3>
-      <button type="button" class="modal-close" onclick="cerrarModal('modal-ver-boletas')">✕</button>
-    </div>
-    <div style="display:flex;gap:.5rem;margin-bottom:.75rem">
-      <input type="text" class="form-control" id="bol-buscar" placeholder="Buscar por N° boleta, fecha, descripción..." oninput="filtrarBoletas()" />
-      <button type="button" class="btn btn-primary btn-sm" onclick="abrirAgregarBoleta()">+ Agregar</button>
-    </div>
-    <div id="bol-form" style="display:none;background:var(--gray-50);border-radius:8px;padding:.75rem;margin-bottom:.75rem">
-      <div class="grid-2">
-        <div class="form-group"><label>N° Boleta *</label><input type="text" class="form-control" id="bol-num" /></div>
-        <div class="form-group"><label>Fecha *</label><input type="date" class="form-control" id="bol-fecha" /></div>
-      </div>
-      <div class="grid-2">
-        <div class="form-group"><label>Monto (S/)</label><input type="number" class="form-control" id="bol-monto" step="0.01" /></div>
-        <div class="form-group"><label>URL imagen (opcional)</label><input type="text" class="form-control" id="bol-url" placeholder="Link Google Drive o foto" /></div>
-      </div>
-      <div class="form-group"><label>Descripción</label><input type="text" class="form-control" id="bol-desc" /></div>
-      <div style="display:flex;gap:.5rem;justify-content:flex-end">
-        <button type="button" class="btn btn-outline btn-sm" onclick="cerrarAgregarBoleta()">Cancelar</button>
-        <button type="button" class="btn btn-primary btn-sm" onclick="guardarBoleta()">Guardar boleta</button>
-      </div>
-    </div>
-    <div class="table-wrap"><table><thead><tr><th>N° Boleta</th><th>Fecha</th><th>Descripción</th><th>Monto</th><th>URL</th></tr></thead><tbody id="boletas-tbody"></tbody></table></div>
+  <div class="modal" style="max-width:680px"><div class="modal-header"><h3 id="vb-titulo">Boletas del proveedor</h3><button type="button" class="modal-close" onclick="cerrarModal('modal-ver-boletas')">✕</button></div>
+    <div class="form-group"><input type="text" class="form-control" id="bol-buscar" placeholder="Buscar por N° boleta, fecha, descripción..." oninput="filtrarBoletas()" /></div>
+    <div class="table-wrap"><table><thead><tr><th>N° Boleta</th><th>Fecha</th><th>Descripción</th><th>Monto</th><th>Archivo</th></tr></thead><tbody id="boletas-tbody"></tbody></table></div>
   </div>
 </div>
 <div class="modal-overlay" id="modal-ticket">
@@ -2921,18 +2865,7 @@ async function doLogin() {
     if (errEl) { errEl.style.display='block'; errEl.style.color='var(--danger)'; errEl.textContent='Usuario no configurado'; }
     return;
   }
-// ── PASO 1.5: Verificar versión ──
-  try {
-    const verSnap = await fbFS.collection('aleze').doc('version').get();
-    if (verSnap.exists) {
-      const requerida = verSnap.data().minVersion || '1.0.0';
-      if (APP_VERSION < requerida) {
-        if (btnEl) { btnEl.disabled = false; btnEl.textContent = 'Ingresar'; }
-        if (errEl) { errEl.style.display='block'; errEl.style.color='var(--danger)'; errEl.textContent='⚠️ Versión desactualizada. Cierra y vuelve a abrir la app para actualizar.'; }
-        return;
-      }
-    }
-  } catch(e) {}
+
   // ── PASO 2: Firebase Auth — única fuente de verdad ──
   if (btnEl) { btnEl.disabled = true; btnEl.textContent = '⏳ Verificando...'; }
 
@@ -2994,7 +2927,7 @@ async function doLogin() {
       console.warn('Error cargando datos en login, continuando con caché local:', e.message);
     }
   }
- fbPatchDB();
+
   // ── PASO 4: Estado de sesión — ahora que los datos están listos ──
   if (_loginIntervalo) { clearInterval(_loginIntervalo); _loginIntervalo = null; }
   if (errEl) errEl.style.display = 'none';
@@ -3026,16 +2959,14 @@ async function doLogin() {
   updateAlertCount();
 
   // ── PASO 6: Listener en tiempo real (DESPUÉS del render inicial) ──
-fbEscuchar();
-fbEscucharPedidosOnline();
-  if (currentRole === 'admin') iniciarBackupAutomatico();
+  fbEscucharPedidosOnline();
 }
 
 function doLogout() {
   // ── PASO 0: Reset total — ningún estado de sesión persiste ──
   resetAppState();
+
   // Detener listeners en tiempo real
-  if (_backupTimer) { clearInterval(_backupTimer); _backupTimer = null; }
   if (_pedidosOnlineUnsub) { _pedidosOnlineUnsub(); _pedidosOnlineUnsub = null; }
   if (_fbSnapshotUnsub)    { _fbSnapshotUnsub();    _fbSnapshotUnsub    = null; }
 
@@ -3209,7 +3140,7 @@ function renderDashboard() {
   const mes = getMesActual();
   // Use historialVentas as source of truth (reflects annulments/returns)
   const hvAll = DB.historialVentas || [];
-   const ventasHoy = hvAll.filter(v => v.fecha === hoy && v.estado !== 'anulado' && v.estado !== 'fiado' && v.origen !== 'pago_fiado');
+  const ventasHoy = hvAll.filter(v => v.fecha === hoy && v.estado !== 'anulado' && v.origen !== 'pago_fiado');
   const fiadosCobradosHoy = hvAll.filter(v => v.fecha === hoy && v.origen === 'pago_fiado').reduce((s,v) => s + (v.total||0), 0);
   const totalHoy = ventasHoy.reduce((s, v) => s + (v.total||0), 0);
   const txHoy = ventasHoy.length;
@@ -3226,13 +3157,7 @@ document.getElementById('dash-ventas').textContent = sol(totalHoy + fiadosCobrad
     const p=DB.productos.find(x=>x.id===m.prodId); return s+(p?p.costo*m.cant:0);
   },0);
   const gastosHoy = (DB_EXT.gastos||[]).filter(g=>g.fecha===hoy).reduce((s,g)=>s+g.monto,0);
-const costoFiadosHoy = hvAll.filter(v => v.fecha === hoy && v.origen === 'pago_fiado').reduce((s,v) => {
-    const fiado = DB.fiados.find(f => f.clienteId === v.clienteId && f.total > 0);
-    if (!fiado) return s;
-    const prop = Math.min(1, v.total / fiado.total);
-    return s + (fiado.items||[]).reduce((ss,i) => ss + ((i.costoUnitario||0) * i.cant * prop), 0);
-  }, 0);
-  document.getElementById('dash-rent').textContent = sol(totalHoy + fiadosCobradosHoy - costoHoy - costoFiadosHoy - gastosHoy - mermasHoy);
+  document.getElementById('dash-rent').textContent = sol(totalHoy - costoHoy - gastosHoy - mermasHoy);
 
   document.getElementById('dash-stock-bajo').textContent = DB.productos.filter(p => p.stock <= p.stockMin).length;
   document.getElementById('dash-vencimientos').textContent = DB.productos.filter(p => p.venc && diasHasta(p.venc) <= 7 && diasHasta(p.venc) >= 0).length;
@@ -3243,11 +3168,11 @@ const costoFiadosHoy = hvAll.filter(v => v.fecha === hoy && v.origen === 'pago_f
   document.getElementById('dash-capital-sub').textContent = sol(DB_EXT.capital.recuperado)+' / '+sol(DB_EXT.capital.total);
 
   // Panel financiero mensual
-const ventasMes = hvAll.filter(v=>v.fecha&&v.fecha.startsWith(mes)&&v.estado!=='anulado'&&v.estado!=='fiado').reduce((s,v)=>s+(v.total||0),0);
+  const ventasMes = hvAll.filter(v=>v.fecha&&v.fecha.startsWith(mes)&&v.estado!=='anulado').reduce((s,v)=>s+(v.total||0),0);
   const gastosMes = (DB_EXT.gastos||[]).filter(g=>g.fecha&&g.fecha.startsWith(mes)).reduce((s,g)=>s+g.monto,0);
   const sueldosMes = Object.values(DB_EXT.sueldos||{}).reduce((s,v)=>s+v,0);
   const gastosRec = (DB_EXT.gastosRec||[]).reduce((s,g)=>s+g.monto,0);
-const costoMes = hvAll.filter(v=>v.fecha&&v.fecha.startsWith(mes)&&v.estado!=='anulado'&&v.estado!=='fiado')
+  const costoMes = hvAll.filter(v=>v.fecha&&v.fecha.startsWith(mes)&&v.estado!=='anulado')
     .reduce((s,v)=>s+(v.items||[]).reduce((ss,i)=>{const p=DB.productos.find(x=>x.id===i.prodId);return ss+(p?p.costo*i.cant:0);},0),0);
   const mermasMes = (DB.mermas||[]).filter(m=>m.fecha&&m.fecha.startsWith(mes)).reduce((s,m)=>{
     const p=DB.productos.find(x=>x.id===m.prodId); return s+(p?p.costo*m.cant:0);
@@ -3322,11 +3247,7 @@ function renderPos() {
 function renderPosCategorias() {
   const wrap = document.getElementById('pos-categorias');
   wrap.innerHTML = `<span class="tag ${posFilterCat === '' ? 'active' : ''}" onclick="setPosFilter('')">🏪 Todos</span>`;
-  const promoActivas = DB.promociones.filter(p => p.activa && p.hasta >= today());
-  const hayPromosPOS = promoActivas.length > 0 || DB.productos.some(p => p.esCombo && p.stock > 0);
-  const catsOrdenadas = [...DB.categorias].sort((a,b) => a.nombre==='Promociones'?-1:b.nombre==='Promociones'?1:0);
-  catsOrdenadas.forEach(c => {
-    if (c.nombre === 'Promociones' && !hayPromosPOS) return;
+  DB.categorias.forEach(c => {
     const icon = c.imagen
       ? `<img src="${c.imagen}" style="width:16px;height:16px;object-fit:cover;border-radius:3px;vertical-align:middle;margin-right:3px"/>`
       : (c.emoji + ' ');
@@ -3340,32 +3261,27 @@ function renderPosGrid(search = '') {
   // Guard: no renderizar sin sesión activa
   if (!currentUser) return;
   const s = search || document.getElementById('pos-search')?.value.toLowerCase() || '';
-  const promoActivas = DB.promociones.filter(p => p.activa && p.hasta >= today());
-  const catPromo = DB.categorias.find(c => c.nombre === 'Promociones');
-  const enCatPromo = catPromo && posFilterCat == catPromo.id;
+  let prods = DB.productos.filter(p => p.stock > 0);
+  if (s) prods = prods.filter(p => p.nombre.toLowerCase().includes(s) || p.codigo.includes(s));
+  if (posFilterCat) prods = prods.filter(p => p.cat == posFilterCat);
 
-  let prods = DB.productos.filter(p => {
-    if (p.esCombo) return p.stock > 0; // packs siempre visibles si stock > 0
-    return p.stock > 0;
-  });
-  if (s) prods = prods.filter(p => p.nombre.toLowerCase().includes(s) || (p.codigo||'').includes(s));
-  if (posFilterCat && !enCatPromo) prods = prods.filter(p => !p.esCombo && p.cat == posFilterCat);
-  if (enCatPromo) prods = prods.filter(p => p.esCombo || promoActivas.some(pr => pr.prod1==p.id && !pr.prod2 && !pr.prod3));
+  const promoActivas = DB.promociones.filter(p => p.activa && p.hasta >= today());
 
   document.getElementById('pos-grid').innerHTML = prods.map(p => {
-    const promo = !p.esCombo ? promoActivas.find(pr => pr.prod1==p.id && !pr.prod2 && !pr.prod3) : null;
-    const precioMostrar = promo ? promo.precioPromo : p.precio;
+    const promo = promoActivas.find(pr => pr.prod1 == p.id || pr.prod2 == p.id);
+    const esCombo2 = promo && promo.prod2;
+    const precioMostrar = (!esCombo2 && promo) ? promo.precioPromo : p.precio;
     const iconHtml = p.imagen
       ? `<div style="width:46px;height:46px;margin:0 auto .3rem;border-radius:8px;overflow:hidden"><img src="${p.imagen}" style="width:100%;height:100%;object-fit:cover" /></div>`
       : `<div class="p-icon">${getCatIcono(p.cat)}</div>`;
-    const promoTag = p.esCombo
+    const promoTag = esCombo2
       ? `<span class="promo-tag" style="background:var(--accent)">COMBO</span>`
       : (promo ? '<span class="promo-tag">PROMO</span>' : '');
     return `<div class="product-card" onclick="addToCart(${p.id})">
       ${iconHtml}
       <div class="p-name">${p.nombre}</div>
       <div class="p-price">${sol(precioMostrar)} ${promoTag}</div>
-      <div class="p-stock">Stock: ${p.stock} ${p.unidad||'und'}</div>
+      <div class="p-stock">Stock: ${p.stock} ${p.unidad}</div>
     </div>`;
   }).join('') || '<p style="color:var(--gray-400);font-size:0.85rem;padding:1rem">Sin productos</p>';
 }
@@ -3375,35 +3291,13 @@ function filterPosProducts() { renderPosGrid(); }
 function addToCart(prodId) {
   const prod = DB.productos.find(p => p.id === prodId);
   if (!prod) return;
-
-  // Pack multi-producto: verificar stock de componentes
-  if (prod.esCombo && prod.componentes) {
-    const sinStock = prod.componentes.filter(c => {
-      const cp = DB.productos.find(p => p.id === c.prodId);
-      return !cp || cp.stock < c.cant;
-    });
-    if (sinStock.length > 0) {
-      const nombres = sinStock.map(c => DB.productos.find(p=>p.id===c.prodId)?.nombre||'Producto').join(', ');
-      alert('Stock insuficiente para: ' + nombres); return;
-    }
-    const promoPackDes = DB.promociones.find(p => p.packProdId === prodId);
-    if (promoPackDes && promoPackDes.limite > 0) {
-      const enCarrito = cart.find(i => i.prodId === prodId);
-      const cantCarrito = enCarrito ? enCarrito.cant : 0;
-      if ((promoPackDes.vendidos||0) + cantCarrito >= promoPackDes.limite) {
-        alert('Límite de esta promoción alcanzado (' + promoPackDes.limite + ' unidades)'); return;
-      }
-    }
-    const existing = cart.find(i => i.prodId === prodId);
-    if (existing) { existing.cant++; }
-    else { cart.push({ prodId, nombre: prod.nombre, precio: prod.precio, cant: 1, tipo: 'unidad', unidad: prod.unidad||'und', esCombo: true }); }
-    renderCart(); calcTotal(); return;
-  }
-
-  // Promo 1 producto o producto normal
   const promoActivas = DB.promociones.filter(p => p.activa && p.hasta >= today());
-  const promo = promoActivas.find(pr => pr.prod1 == prodId && !pr.prod2 && !pr.prod3);
-  const precio = promo ? promo.precioPromo : prod.precio;
+  const promo = promoActivas.find(pr => pr.prod1 == prodId || pr.prod2 == prodId);
+  // 2-product combos: keep regular price, discount applied in calcTotal
+  // Single-product promos: apply promo price per unit
+  const esCombo2 = promo && promo.prod2;
+  const precio = (!esCombo2 && promo) ? promo.precioPromo : prod.precio;
+
   const existing = cart.find(i => i.prodId === prodId);
   if (existing) {
     if (existing.cant >= prod.stock) { alert('Stock insuficiente'); return; }
@@ -3442,7 +3336,7 @@ function changeQty(i, delta) {
 }
 
 function removeItem(i) { cart.splice(i, 1); renderCart(); calcTotal(); }
-function clearCart() { cart = []; renderCart(); calcTotal(); document.getElementById('pos-search').value = ''; renderPosGrid(); try { renderPosCategorias(); } catch(e){} try { renderMobPosCats(); } catch(e){} try { updatePosCartBadge(); } catch(e){} try { mobUpdateBar(); } catch(e){} }
+function clearCart() { cart = []; renderCart(); calcTotal(); document.getElementById('pos-search').value = ''; renderPosGrid(); try { updatePosCartBadge(); } catch(e){} try { mobUpdateBar(); } catch(e){} }
 
 
 // ── Helper: get category icon (image if available, else emoji) ──
@@ -3459,29 +3353,24 @@ function getCatIcono(catId, size) {
 function aplicarPreciosProporcionales(cartRef, comboInfo) {
   const result = cartRef.map(i => ({ ...i }));
   if (!comboInfo || comboInfo.total === 0) return result;
-  const promoActivas = DB.promociones.filter(p => p.activa && p.hasta >= today() && (p.prod2 || p.prod3));
+  const promoActivas = DB.promociones.filter(p => p.activa && p.hasta >= today() && p.prod2);
   promoActivas.forEach(promo => {
     const idx1 = result.findIndex(i => i.prodId == promo.prod1);
-    const idx2 = promo.prod2 ? result.findIndex(i => i.prodId == promo.prod2) : -1;
-    const idx3 = promo.prod3 ? result.findIndex(i => i.prodId == promo.prod3) : -1;
-    if (idx1 < 0) return;
-    const sets = Math.min(result[idx1].cant, idx2>=0 ? result[idx2].cant : Infinity, idx3>=0 ? result[idx3].cant : Infinity);
+    const idx2 = result.findIndex(i => i.prodId == promo.prod2);
+    if (idx1 < 0 || idx2 < 0) return;
+    const sets = Math.min(result[idx1].cant, result[idx2].cant);
     if (sets <= 0) return;
     const p1 = DB.productos.find(p => p.id == promo.prod1);
-    const p2 = promo.prod2 ? DB.productos.find(p => p.id == promo.prod2) : null;
-    const p3 = promo.prod3 ? DB.productos.find(p => p.id == promo.prod3) : null;
+    const p2 = DB.productos.find(p => p.id == promo.prod2);
     const r1 = p1 ? p1.precio : result[idx1].precio;
-    const r2 = idx2>=0 ? (p2 ? p2.precio : result[idx2].precio) : 0;
-    const r3 = idx3>=0 ? (p3 ? p3.precio : result[idx3].precio) : 0;
-    const sumR = r1 + r2 + r3;
+    const r2 = p2 ? p2.precio : result[idx2].precio;
+    const sumR = r1 + r2;
     if (sumR === 0) return;
-    const blend = (base, comboP, cant) => Math.round((comboP * sets + base * (cant - sets)) / cant * 100) / 100;
     const comboP1 = Math.round((r1/sumR) * promo.precioPromo * 100) / 100;
-    const comboP2 = Math.round((r2/sumR) * promo.precioPromo * 100) / 100;
-    const comboP3 = Math.round((promo.precioPromo - comboP1 - comboP2) * 100) / 100;
+    const comboP2 = Math.round((promo.precioPromo - comboP1) * 100) / 100;
+    const blend = (base, comboP, cant) => Math.round((comboP * sets + base * (cant - sets)) / cant * 100) / 100;
     result[idx1] = { ...result[idx1], precio: blend(r1, comboP1, result[idx1].cant), precioOriginal: r1, enCombo: true };
-    if (idx2>=0) result[idx2] = { ...result[idx2], precio: blend(r2, comboP2, result[idx2].cant), precioOriginal: r2, enCombo: true };
-    if (idx3>=0) result[idx3] = { ...result[idx3], precio: blend(r3, comboP3, result[idx3].cant), precioOriginal: r3, enCombo: true };
+    result[idx2] = { ...result[idx2], precio: blend(r2, comboP2, result[idx2].cant), precioOriginal: r2, enCombo: true };
   });
   return result;
 }
@@ -3516,20 +3405,19 @@ function checkAutoAbrirCaja() {
 function calcComboDescuento(cartRef) {
   // Returns { total: number, lineas: [{nombre, sets, descuento}] }
   cartRef = cartRef || cart;
-  const promoActivas = DB.promociones.filter(p => p.activa && p.hasta >= today() && (p.prod2 || p.prod3));
+  const promoActivas = DB.promociones.filter(p => p.activa && p.hasta >= today() && p.prod2);
   let totalDesc = 0;
   const lineas = [];
   promoActivas.forEach(promo => {
     const item1 = cartRef.find(i => i.prodId == promo.prod1);
-    const item2 = promo.prod2 ? cartRef.find(i => i.prodId == promo.prod2) : null;
-    const item3 = promo.prod3 ? cartRef.find(i => i.prodId == promo.prod3) : null;
-    if (!item1) return;
-    const sets = Math.min(item1.cant, item2 ? item2.cant : Infinity, item3 ? item3.cant : Infinity);
+    const item2 = cartRef.find(i => i.prodId == promo.prod2);
+    if (!item1 || !item2) return;
+    const sets = Math.min(item1.cant, item2.cant);
     if (sets <= 0) return;
+    // Price without combo: sum of regular prices × sets
     const prod1 = DB.productos.find(p => p.id == promo.prod1);
-    const prod2 = promo.prod2 ? DB.productos.find(p => p.id == promo.prod2) : null;
-    const prod3 = promo.prod3 ? DB.productos.find(p => p.id == promo.prod3) : null;
-    const precioSinCombo = ((prod1?.precio||item1.precio) + (item2 ? (prod2?.precio||item2.precio) : 0) + (item3 ? (prod3?.precio||item3.precio) : 0)) * sets;
+    const prod2 = DB.productos.find(p => p.id == promo.prod2);
+    const precioSinCombo = ((prod1 ? prod1.precio : item1.precio) + (prod2 ? prod2.precio : item2.precio)) * sets;
     const precioConCombo = promo.precioPromo * sets;
     const descuento = Math.max(0, precioSinCombo - precioConCombo);
     if (descuento > 0) {
@@ -3565,10 +3453,8 @@ function calcTotal() {
 
 function updatePosClientes() {
   const sel = document.getElementById('pos-cliente');
-  const valorActual = sel.value;
   sel.innerHTML = '<option value="">Cliente anónimo</option>';
   DB.clientes.forEach(c => sel.innerHTML += `<option value="${c.id}">${c.nombre}</option>`);
-  if (valorActual) sel.value = valorActual;
   updateMobPosClientes();
 }
 
@@ -3595,27 +3481,19 @@ function procesarVenta() {
   DB.historialVentas.push({ ...venta, origen: 'pos', estado: 'completado', estadoStock: 'descontado' });
 
   // Actualizar stock
-  itemsConPrecioReal.forEach(item => {
-    if (item.esCombo) {
-      const pack = DB.productos.find(p => p.id === item.prodId);
-      if (pack?.componentes) {
-        pack.componentes.forEach(c => {
-          const comp = DB.productos.find(p => p.id === c.prodId);
-          if (comp) comp.stock = Math.max(0, comp.stock - c.cant * item.cant);
-        });
-      }
-      const promo = DB.promociones.find(p => p.packProdId === item.prodId);
-      if (promo) {
-        promo.vendidos = (promo.vendidos||0) + item.cant;
-        if (promo.limite > 0 && promo.vendidos >= promo.limite) { promo.activa = false; if (pack) pack.stock = 0; }
-      }
-    } else {
-      const prod = DB.productos.find(p => p.id === item.prodId);
-      if (prod) prod.stock = Math.max(0, prod.stock - item.cant);
+ cart.forEach(item => {
+    const prod = DB.productos.find(p => p.id === item.prodId);
+    if (prod) {
+        prod.stock = Math.max(0, prod.stock - item.cant);
+        if (prod.esCombo && prod.componentes) {
+            prod.componentes.forEach(comp => {
+                const cp = DB.productos.find(x => x.id === comp.prodId);
+                if (cp) cp.stock = Math.max(0, cp.stock - comp.cant * item.cant);
+            });
+        }
     }
-  });
-  _verificarStockPromos();
-  fbGuardarPromociones();
+});
+
   // Caja: register always (ensureCajaAbierta abre si hace falta)
   ensureCajaAbierta();
   DB.caja.ingresos += total;
@@ -3626,19 +3504,12 @@ function procesarVenta() {
     const cli = DB.clientes.find(c => c.id === clienteId);
     if (cli) { cli.compras = (cli.compras||0)+1; cli.total = (cli.total||0)+total; cli.puntos=(cli.puntos||0)+Math.floor(total); }
   }
-_fbLastWriteTs = Date.now();
-_fbEscribiendo = true;
-const _vPayload = JSON.parse(JSON.stringify(DB));
-delete _vPayload.productos; delete _vPayload.categorias;
-fbDocRef().set(_vPayload)
-  .then(() => { setTimeout(() => { _fbEscribiendo = false; }, 300); })
-  .catch(() => { _fbEscribiendo = false; });
-fbGuardarProductos();
+
+  fbGuardar(); fbGuardarProductos();
   try { renderDashboard(); } catch(e){}
   try { renderCaja(); } catch(e){}
   try { generarReporte(); } catch(e){}
   mostrarTicket(venta);
-  try { renderPosCategorias(); } catch(e){}
   clearCart();
   updateAlertCount();
 }
@@ -3654,15 +3525,10 @@ function cobrarFiado() {
   const total = Math.max(0, sub - desc - comboDesc);
   const itemsConPrecioReal = aplicarPreciosProporcionales(cart, comboInfo);
 
-const fiado = {
-    id: getId(), clienteId,
-    items: itemsConPrecioReal.map(i => {
-      const prod = DB.productos.find(p => p.id === i.prodId);
-      return { ...i, costoUnitario: prod ? prod.costo : 0 };
-    }),
+  const fiado = {
+    id: getId(), clienteId, items: itemsConPrecioReal,
     total, pagado: 0, fecha: today(), descuentoCombo: comboDesc, descuentoManual: desc
   };
-  
   DB.fiados.push(fiado);
   if (!DB.historialVentas) DB.historialVentas = [];
 DB.historialVentas.push({ ...fiado, origen: 'pos', estado: 'fiado', estadoStock: 'descontado' });
@@ -3677,14 +3543,8 @@ if (cli) { cli.deuda = (cli.deuda||0) + total; cli.compras = (cli.compras||0) + 
 
   ensureCajaAbierta();
   DB.movimientos.push({ tipo:'fiado', desc:'Fiado — ' + getClienteNombre(clienteId), monto:total, hora:nowTime(), fecha:today(), cajero:currentUser });
-_fbLastWriteTs = Date.now();
-_fbEscribiendo = true;
-const _vPayload = JSON.parse(JSON.stringify(DB));
-delete _vPayload.productos; delete _vPayload.categorias;
-fbDocRef().set(_vPayload)
-  .then(() => { setTimeout(() => { _fbEscribiendo = false; }, 300); })
-  .catch(() => { _fbEscribiendo = false; });
-fbGuardarProductos();
+
+  fbGuardar(); fbGuardarProductos();
   try { renderDashboard(); } catch(e){}
   try { renderCaja(); } catch(e){}
   alert('Fiado registrado para ' + getClienteNombre(clienteId) + ': ' + sol(total));
@@ -4498,18 +4358,6 @@ function eliminarProveedor(id) {
 }
 
 let editingBoletaProvId = null;
-  function abrirAgregarBoleta() {
-  document.getElementById('bol-form').style.display = 'block';
-  document.getElementById('bol-num').value = '';
-  document.getElementById('bol-fecha').value = today();
-  document.getElementById('bol-monto').value = '';
-  document.getElementById('bol-url').value = '';
-  document.getElementById('bol-desc').value = '';
-}
-
-function cerrarAgregarBoleta() {
-  document.getElementById('bol-form').style.display = 'none';
-}
 function verBoletas(provId) {
   editingBoletaProvId = provId;
   const p = DB.proveedores.find(x => x.id === provId);
@@ -4524,42 +4372,28 @@ function filtrarBoletas() {
   const filtradas = q ? boletas.filter(b => (b.num+b.fecha+b.desc).toLowerCase().includes(q)) : boletas;
   document.getElementById('boletas-tbody').innerHTML = filtradas.map(b => `<tr>
     <td>${b.num}</td><td>${formatDate(b.fecha)}</td><td>${b.desc||'-'}</td>
-    <td>${sol(b.monto||0)}</td><td>${b.url?`<a href="${b.url}" target="_blank" style="color:var(--primary)">🔗 Ver</a>`:'-'}</td>
+    <td>${sol(b.monto||0)}</td><td>${b.archivo?'📎 '+b.archivo:'-'}</td>
   </tr>`).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--gray-400);padding:1rem">Sin boletas registradas</td></tr>';
 }
 function guardarBoleta() {
-  const num = document.getElementById('bol-num').value.trim();
-  const fecha = document.getElementById('bol-fecha').value;
+  const num = document.getElementById('b2-num').value.trim();
+  const fecha = document.getElementById('b2-fecha').value;
   if (!num || !fecha) { alert('Ingresa número y fecha'); return; }
   const prov = DB.proveedores.find(x => x.id === editingBoletaProvId);
   if (!prov) return;
   if (!prov.boletas) prov.boletas = [];
-  prov.boletas.push({ num, fecha, monto: parseFloat(document.getElementById('bol-monto').value)||0, desc: document.getElementById('bol-desc').value, url: document.getElementById('bol-url').value.trim() });
+  prov.boletas.push({ num, fecha, monto: parseFloat(document.getElementById('b2-monto').value)||0, desc: document.getElementById('b2-desc').value, archivo: document.getElementById('b2-file').files[0]?.name||'' });
   fbGuardar();
-  cerrarAgregarBoleta();
+  cerrarModal('modal-boleta');
   renderProveedores();
-  filtrarBoletas();
+  if (document.getElementById('modal-ver-boletas').classList.contains('open')) filtrarBoletas();
 }
+
 // ===================== CLIENTES =====================
 let editingCliId = null;
 
-function verHistorialCliente(id) {
-  navigate('historial-ventas');
-  const el = document.getElementById('hv-buscar');
-  if (el) {
-    const c = DB.clientes.find(x => x.id === id);
-    el.value = c ? (c.alias || c.nombre) : '';
-    renderHistorialVentas();
-  }
-}
 function renderClientes() {
-  const buscar = (document.getElementById('cli-buscar')?.value || '').toLowerCase();
-  const lista = buscar ? DB.clientes.filter(c =>
-    (c.nombre||'').toLowerCase().includes(buscar) ||
-    (c.alias||'').toLowerCase().includes(buscar) ||
-    (c.tel||'').toLowerCase().includes(buscar)
-  ) : DB.clientes;
-  document.getElementById('cli-tbody').innerHTML = lista.map(c => `<tr>
+  document.getElementById('cli-tbody').innerHTML = DB.clientes.map(c => `<tr>
     <td><strong>${c.nombre}</strong></td>
     <td><span class="badge badge-blue">${c.alias||'-'}</span></td>
     <td>${c.tel||'-'}</td>
@@ -4568,7 +4402,6 @@ function renderClientes() {
     <td><strong>${sol(c.total||0)}</strong></td>
     <td style="color:${c.deuda>0?'var(--danger)':'var(--accent)'}"><strong>${c.deuda > 0 ? sol(c.deuda) : '✅ Al día'}</strong></td>
     <td style="white-space:nowrap">
- <button class="btn btn-outline btn-xs" onclick="verHistorialCliente(${c.id})">📋</button>
       <button class="btn btn-outline btn-xs" onclick="editarCliente(${c.id})">✏️ Editar</button>
       <button class="btn btn-xs" style="background:var(--danger-light);color:var(--danger)" onclick="eliminarCliente(${c.id})">🗑️</button>
     </td>
@@ -4622,54 +4455,25 @@ function eliminarCliente(id) {
 }
 
 // ===================== FIADOS =====================
-function limpiarFiltrosFiados() {
-  document.getElementById('fi-desde').value = '';
-  document.getElementById('fi-hasta').value = '';
-  document.getElementById('fi-estado').value = '';
-  document.getElementById('fi-cliente').value = '';
-  renderFiados();
-}
-
 function renderFiados() {
-  const desde     = document.getElementById('fi-desde')?.value || '';
-  const hasta     = document.getElementById('fi-hasta')?.value || '';
-  const estado    = document.getElementById('fi-estado')?.value || '';
-  const cliFilter = parseInt(document.getElementById('fi-cliente')?.value) || 0;
-
-  // Poblar selector de clientes
-  const selCli = document.getElementById('fi-cliente');
-  if (selCli) {
-    const valorActual = selCli.value;
-    selCli.innerHTML = '<option value="">Todos los clientes</option>';
-    const cidsConFiados = [...new Set(DB.fiados.map(f => f.clienteId))];
-    cidsConFiados.forEach(cid => {
-      const cli = DB.clientes.find(c => c.id === cid);
-      if (cli) selCli.innerHTML += `<option value="${cli.id}">${cli.alias||cli.nombre}</option>`;
-    });
-    selCli.value = valorActual;
-  }
-
   const porCliente = {};
   DB.fiados.forEach(f => {
     if (!porCliente[f.clienteId]) porCliente[f.clienteId] = [];
     porCliente[f.clienteId].push(f);
   });
-
-  let clienteIds = Object.keys(porCliente).map(Number);
-  if (cliFilter) clienteIds = clienteIds.filter(cid => cid === cliFilter);
-  if (estado === 'pendiente') clienteIds = clienteIds.filter(cid => porCliente[cid].some(f => (f.total - f.pagado) > 0));
-  if (estado === 'pagado') clienteIds = clienteIds.filter(cid => porCliente[cid].every(f => (f.total - f.pagado) <= 0));
-  if (desde || hasta) clienteIds = clienteIds.filter(cid => porCliente[cid].some(f => (!desde || f.fecha >= desde) && (!hasta || f.fecha <= hasta)));
-
+  const clienteIds = Object.keys(porCliente).map(Number);
   const totalDeuda = DB.fiados.reduce((s, f) => s + Math.max(0, f.total - f.pagado), 0);
-  const clientesConDeuda = [...new Set(DB.fiados.map(f => f.clienteId))].filter(cid => DB.fiados.filter(f => f.clienteId === cid).some(f => (f.total - f.pagado) > 0)).length;
-  const mayor = [...new Set(DB.fiados.map(f => f.clienteId))].reduce((m, cid) => { const d = DB.fiados.filter(f => f.clienteId === cid).reduce((s, f) => s + Math.max(0, f.total - f.pagado), 0); return Math.max(m, d); }, 0);
+  const clientesConDeuda = clienteIds.filter(cid => porCliente[cid].some(f => (f.total - f.pagado) > 0)).length;
+  const mayor = clienteIds.reduce((m, cid) => {
+    const d = porCliente[cid].reduce((s, f) => s + Math.max(0, f.total - f.pagado), 0);
+    return Math.max(m, d);
+  }, 0);
   document.getElementById('fiados-total').textContent = sol(totalDeuda);
   document.getElementById('fiados-clientes').textContent = clientesConDeuda;
   document.getElementById('fiados-mayor').textContent = sol(mayor);
 
   if (clienteIds.length === 0) {
-    document.getElementById('fiados-list').innerHTML = '<p style="color:var(--gray-500)">Sin fiados que coincidan con los filtros</p>';
+    document.getElementById('fiados-list').innerHTML = '<p style="color:var(--gray-500)">Sin fiados registrados</p>';
     return;
   }
 
@@ -4677,8 +4481,7 @@ function renderFiados() {
     const cli = DB.clientes.find(c => c.id === cid);
     const nombre = cli ? (cli.alias || cli.nombre) : 'Anónimo';
     const tel = cli ? cli.tel : '';
-    let fiados = porCliente[cid];
-    if (desde || hasta) fiados = fiados.filter(f => (!desde || f.fecha >= desde) && (!hasta || f.fecha <= hasta));
+    const fiados = porCliente[cid];
     const totalCli = fiados.reduce((s, f) => s + f.total, 0);
     const pagadoCli = fiados.reduce((s, f) => s + f.pagado, 0);
     const pendienteCli = totalCli - pagadoCli;
@@ -4696,10 +4499,7 @@ function renderFiados() {
           ${f.items.map(i => `${i.nombre} x${i.cant} = ${sol(i.precio*i.cant)}`).join(' · ')}
         </div>
         <div style="font-size:.72rem;color:var(--gray-500)">Total: ${sol(f.total)} | Pagado: ${sol(f.pagado)}</div>
-        <div style="display:flex;gap:.4rem;margin-top:.4rem;flex-wrap:wrap">
-          ${pend > 0 ? `<button class="btn btn-accent btn-xs" onclick="abrirPagoFiado(${f.id})">💰 Registrar pago</button>` : ''}
-     ${currentRole === 'admin' && pend > 0 ? `<button class="btn btn-xs" style="background:var(--danger-light);color:var(--danger)" onclick="confirmarEliminarFiado(${f.id})">🗑️ Eliminar</button>` : ''}
-        </div>
+        ${pend > 0 ? `<button class="btn btn-accent btn-xs" style="margin-top:.4rem" onclick="abrirPagoFiado(${f.id})">💰 Registrar pago</button>` : ''}
       </div>`;
     }).join('');
     return `<div class="fiado-card" style="margin-bottom:.75rem">
@@ -4717,219 +4517,14 @@ function renderFiados() {
           <span id="arr-${detalleId}" style="font-size:1.1rem;color:var(--gray-400)">▼</span>
         </div>
       </div>
-     <div id="${detalleId}" style="display:none;margin-top:.75rem">
-        <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;margin-bottom:.75rem;padding:.5rem;background:var(--gray-50);border-radius:8px">
-          <select class="form-control" id="fi-tipo-${cid}" style="width:150px;font-size:.78rem" onchange="renderDetalleFiado(${cid})">
-            <option value="todo">Todo</option>
-            <option value="pendiente">Solo pendientes</option>
-            <option value="pagado">Solo pagados</option>
-          </select>
-          <input type="date" class="form-control" id="fi-int-desde-${cid}" style="width:140px;font-size:.78rem" onchange="renderDetalleFiado(${cid})"/>
-          <input type="date" class="form-control" id="fi-int-hasta-${cid}" style="width:140px;font-size:.78rem" onchange="renderDetalleFiado(${cid})"/>
-          <button class="btn btn-outline btn-xs" onclick="limpiarFiltrosInternosFiado(${cid})">✕</button>
-        </div>
-        <div id="fi-detalle-content-${cid}">${detalle}</div>
-      </div>
-      <div style="margin-top:.5rem;padding-top:.5rem;border-top:1px solid var(--warning);text-align:right;display:flex;gap:.5rem;justify-content:flex-end">
-      <button class="btn btn-outline btn-sm" onclick="abrirPagoGlobal(${cid})">💳 Pago global</button>
-        <button class="btn btn-outline btn-sm" onclick="compartirResumenFiadoCliente(${cid})">💬 WhatsApp resumen</button>
+      <div id="${detalleId}" style="display:none;margin-top:.75rem">${detalle}</div>
+      <div style="margin-top:.5rem;padding-top:.5rem;border-top:1px solid var(--warning);text-align:right">
         <button class="btn btn-outline btn-sm" onclick="abrirHistorialCliente(${cid},event)">📋 Ver historial completo</button>
       </div>
     </div>`;
   }).join('');
 }
-  function limpiarFiltrosInternosFiado(cid) {
-  document.getElementById('fi-tipo-' + cid).value = 'todo';
-  document.getElementById('fi-int-desde-' + cid).value = '';
-  document.getElementById('fi-int-hasta-' + cid).value = '';
-  renderDetalleFiado(cid);
-}
-  
-function renderDetalleFiado(cid) {
-  const tipo  = document.getElementById('fi-tipo-' + cid)?.value || 'todo';
-  const desde = document.getElementById('fi-int-desde-' + cid)?.value || '';
-  const hasta = document.getElementById('fi-int-hasta-' + cid)?.value || '';
-  let fiados  = DB.fiados.filter(f => f.clienteId === cid);
-  if (desde) fiados = fiados.filter(f => f.fecha >= desde);
-  if (hasta) fiados = fiados.filter(f => f.fecha <= hasta);
-  if (tipo === 'pendiente') fiados = fiados.filter(f => (f.total - f.pagado) > 0);
-  if (tipo === 'pagado')    fiados = fiados.filter(f => (f.total - f.pagado) <= 0);
-  const html = fiados.map(f => {
-    const pend = f.total - f.pagado;
-    return `<div style="border-left:3px solid var(--warning);padding:.5rem .75rem;margin-bottom:.5rem;background:white;border-radius:0 6px 6px 0">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.3rem">
-        <span style="font-size:.75rem;color:var(--gray-500)">${formatDate(f.fecha)}</span>
-        <span style="font-size:.82rem;font-weight:700;color:${pend>0?'var(--danger)':'var(--accent)'}">
-          ${pend > 0 ? sol(pend)+' pendiente' : '✅ Pagado'}
-        </span>
-      </div>
-      <div style="font-size:.8rem;margin-bottom:.3rem">
-        ${f.items.map(i => `${i.nombre} x${i.cant} = ${sol(i.precio*i.cant)}`).join(' · ')}
-      </div>
-      <div style="font-size:.72rem;color:var(--gray-500)">Total: ${sol(f.total)} | Pagado: ${sol(f.pagado)}</div>
-      <div style="display:flex;gap:.4rem;margin-top:.4rem;flex-wrap:wrap">
-        ${pend > 0 ? `<button class="btn btn-accent btn-xs" onclick="abrirPagoFiado(${f.id})">💰 Registrar pago</button>` : ''}
-  ${currentRole === 'admin' && pend > 0 ? `<button class="btn btn-xs" style="background:var(--danger-light);color:var(--danger)" onclick="confirmarEliminarFiado(${f.id})">🗑️ Eliminar</button>` : ''}
-      </div>
-    </div>`;
-  }).join('') || '<p style="color:var(--gray-400);font-size:.82rem;padding:.5rem">Sin registros para los filtros seleccionados</p>';
-  document.getElementById('fi-detalle-content-' + cid).innerHTML = html;
-}
-function compartirResumenFiadoCliente(cid) {
-  const cli   = DB.clientes.find(c => c.id === cid);
-  const nombre = cli ? (cli.alias || cli.nombre) : 'Cliente';
-  const tel   = cli && cli.tel ? cli.tel.replace(/\s/g,'') : '';
-  const tipo  = document.getElementById('fi-tipo-' + cid)?.value || 'todo';
-  const desde = document.getElementById('fi-int-desde-' + cid)?.value || '';
-  const hasta = document.getElementById('fi-int-hasta-' + cid)?.value || '';
-  let fiados  = DB.fiados.filter(f => f.clienteId === cid);
-  if (desde) fiados = fiados.filter(f => f.fecha >= desde);
-  if (hasta) fiados = fiados.filter(f => f.fecha <= hasta);
-  if (tipo === 'pendiente') fiados = fiados.filter(f => (f.total - f.pagado) > 0);
-  if (tipo === 'pagado')    fiados = fiados.filter(f => (f.total - f.pagado) <= 0);
-  const totalPend = fiados.reduce((s, f) => s + Math.max(0, f.total - f.pagado), 0);
-  let msg = `Hola ${nombre}, su resumen de fiados en *Minimarket Aleze*:\n`;
-  if (desde || hasta) msg += `📅 Período: ${desde ? formatDate(desde) : 'inicio'} al ${hasta ? formatDate(hasta) : 'hoy'}\n`;
-  msg += '\n';
-  fiados.forEach(f => {
-    const pend = f.total - f.pagado;
-    msg += `📌 ${formatDate(f.fecha)}: ${f.items.map(i => i.nombre + ' x' + i.cant).join(', ')} → ${sol(f.total)}`;
-    msg += pend > 0 ? ` _(pendiente: ${sol(pend)})_\n` : ` ✅\n`;
-  });
-  msg += `\n*Total pendiente: ${sol(totalPend)}*\nGracias 🙏`;
-  const url = tel ? `https://wa.me/51${tel}?text=${encodeURIComponent(msg)}` : `https://wa.me/?text=${encodeURIComponent(msg)}`;
-  window.open(url, '_blank');
-}
-function abrirPagoGlobal(cid) {
-  const cli = DB.clientes.find(c => c.id === cid);
-  const nombre = cli ? (cli.alias || cli.nombre) : 'Cliente';
-  const pendienteTotal = DB.fiados.filter(f => f.clienteId === cid).reduce((s,f) => s + Math.max(0, f.total - f.pagado), 0);
-  if (pendienteTotal <= 0) { alert('Este cliente no tiene deuda pendiente.'); return; }
-  const monto = parseFloat(prompt(`Pago global para ${nombre}\nDeuda total: ${sol(pendienteTotal)}\n\nIngresa el monto a pagar:`));
-  if (!monto || isNaN(monto) || monto <= 0) return;
-  if (monto > pendienteTotal) { alert('El monto supera la deuda total de ' + sol(pendienteTotal)); return; }
-  ejecutarPagoGlobal(cid, monto);
-}
 
-function ejecutarPagoGlobal(cid, montoTotal) {
-  let saldo = montoTotal;
-  const fiados = DB.fiados.filter(f => f.clienteId === cid && (f.total - f.pagado) > 0).sort((a,b) => a.fecha < b.fecha ? -1 : a.fecha > b.fecha ? 1 : a.id - b.id);
-
-  fiados.forEach(f => {
-    if (saldo <= 0) return;
-    const pendFiado = f.total - f.pagado;
-    if (saldo >= pendFiado) {
-      // Cubre este fiado completo
-      if (!f.pagos) f.pagos = [];
-      f.pagos.push({ fecha: today(), hora: nowTime(), cajero: currentUser, monto: pendFiado, tipo: 'global' });
-      f.pagado += pendFiado;
-      saldo -= pendFiado;
-    } else {
-      // Pago parcial en este fiado — distribuir en items de menor a mayor
-      const itemsOrdenados = [...f.items].sort((a,b) => (a.precio*a.cant) - (b.precio*b.cant));
-      let saldoItem = saldo;
-      itemsOrdenados.forEach(i => {
-        if (saldoItem <= 0) return;
-        const pendItem = (i.precio * i.cant) - (i.pagado || 0);
-        if (pendItem <= 0) return;
-        if (saldoItem >= pendItem) {
-          i.pagado = (i.pagado || 0) + pendItem;
-          saldoItem -= pendItem;
-        } else {
-          i.pagado = (i.pagado || 0) + saldoItem;
-          saldoItem = 0;
-        }
-      });
-      if (!f.pagos) f.pagos = [];
-      f.pagos.push({ fecha: today(), hora: nowTime(), cajero: currentUser, monto: saldo, tipo: 'global' });
-      f.pagado += saldo;
-      saldo = 0;
-    }
-  });
-
-  // Actualizar deuda del cliente
-  const cli = DB.clientes.find(c => c.id === cid);
-  if (cli) cli.deuda = Math.max(0, cli.deuda - montoTotal);
-
-  // Registrar en caja — un solo movimiento
-  ensureCajaAbierta();
-  DB.caja.ingresos += montoTotal;
-  DB.movimientos.push({ tipo:'ingreso', desc:'Pago global fiado: ' + getClienteNombre(cid), monto: montoTotal, hora: nowTime(), fecha: today() });
-
-  // Registrar en historialVentas — un solo registro
-  if (!DB.historialVentas) DB.historialVentas = [];
-  DB.historialVentas.push({ id: getId(), fecha: today(), hora: nowTime(), origen: 'pago_fiado', estado: 'completado', clienteId: cid, total: montoTotal, cajero: currentUser });
-
-  fbGuardar();
-  renderFiados();
-  updateAlertCount();
-  try { renderDashboard(); } catch(e) {}
-  try { renderCaja(); } catch(e) {}
-  alert('✅ Pago global de ' + sol(montoTotal) + ' registrado correctamente.');
-}
-
-function confirmarEliminarFiado(id) {
-  const f = DB.fiados.find(x => x.id === id);
-  if (!f) return;
-  const pend = f.total - f.pagado;
-  const resp = prompt(`¿Cómo eliminar este fiado de ${sol(f.total)}?\n\n1 = ERROR DE REGISTRO (restaura stock)\n${pend > 0 ? '2 = PÉRDIDA/INCOBRABLE (registra en mermas)' : ''}\n\nEscribe 1${pend > 0 ? ' o 2' : ''}:`);
-  if (!resp) return;
-  if (resp.trim() === '1') {
-    f.items.forEach(i => { const prod = DB.productos.find(p => p.id === i.prodId); if (prod) prod.stock += i.cant; });
-    DB.fiados = DB.fiados.filter(x => x.id !== id);
-    const cli = DB.clientes.find(c => c.id === f.clienteId);
-    if (cli) cli.deuda = Math.max(0, cli.deuda - pend);
-    fbGuardar(); fbGuardarProductos();
-    renderFiados();
-    alert('✅ Fiado eliminado y stock restaurado.');
-  } else if (resp.trim() === '2' && pend > 0) {
-    f.items.forEach(i => {
-      const prod = DB.productos.find(p => p.id === i.prodId);
-      if (!prod) return;
-      const propPend = pend / f.total;
-      const cantMerma = Math.round(i.cant * propPend * 100) / 100;
-      if (cantMerma <= 0) return;
-      DB.mermas.push({ id: getId(), prodId: i.prodId, cant: cantMerma, motivo: 'Fiado incobrable', obs: 'Fiado #' + f.id + ' — ' + getClienteNombre(f.clienteId), fecha: today(), usuario: currentUser });
-      ensureCajaAbierta();
-      DB.caja.egresos = (DB.caja.egresos||0) + prod.costo * cantMerma;
-      DB.movimientos.push({ tipo:'egreso', desc:'Merma fiado: ' + prod.nombre, monto: prod.costo * cantMerma, hora: nowTime(), fecha: today(), usuario: currentUser });
-    });
-    DB.fiados = DB.fiados.filter(x => x.id !== id);
-    const cli = DB.clientes.find(c => c.id === f.clienteId);
-    if (cli) cli.deuda = Math.max(0, cli.deuda - pend);
-    fbGuardar(); fbGuardarProductos();
-    renderFiados(); try { renderMermas(); } catch(e) {}
-    alert('✅ Fiado eliminado y registrado como merma.');
-  } else {
-    alert('Opción no válida.');
-  }
-}
-
-function compartirResumenFiado(cid) {
-  const cli = DB.clientes.find(c => c.id === cid);
-  const nombre = cli ? (cli.alias || cli.nombre) : 'Cliente';
-  const tel = cli && cli.tel ? cli.tel.replace(/\s/g,'') : '';
-  const desde = document.getElementById('fi-desde')?.value || '';
-  const hasta = document.getElementById('fi-hasta')?.value || '';
-  const estado = document.getElementById('fi-estado')?.value || '';
-  let fiados = DB.fiados.filter(f => f.clienteId === cid);
-  if (desde) fiados = fiados.filter(f => f.fecha >= desde);
-  if (hasta) fiados = fiados.filter(f => f.fecha <= hasta);
-  if (estado === 'pendiente') fiados = fiados.filter(f => (f.total - f.pagado) > 0);
-  if (estado === 'pagado') fiados = fiados.filter(f => (f.total - f.pagado) <= 0);
-  const totalPend = fiados.reduce((s, f) => s + Math.max(0, f.total - f.pagado), 0);
-  let msg = `Hola ${nombre}, su resumen de fiados en *Minimarket Aleze*:\n`;
-  if (desde || hasta) msg += `📅 Período: ${desde ? formatDate(desde) : 'inicio'} al ${hasta ? formatDate(hasta) : 'hoy'}\n`;
-  msg += '\n';
-  fiados.forEach(f => {
-    const pend = f.total - f.pagado;
-    msg += `📌 ${formatDate(f.fecha)}: ${f.items.map(i => i.nombre + ' x' + i.cant).join(', ')} → ${sol(f.total)}`;
-    msg += pend > 0 ? ` _(pendiente: ${sol(pend)})_\n` : ` ✅\n`;
-  });
-  msg += `\n*Total pendiente: ${sol(totalPend)}*\nGracias 🙏`;
-  const url = tel ? `https://wa.me/51${tel}?text=${encodeURIComponent(msg)}` : `https://wa.me/?text=${encodeURIComponent(msg)}`;
-  window.open(url, '_blank');
-}
 function toggleFiadoDetalle(id) {
   const el = document.getElementById(id);
   const arr = document.getElementById('arr-' + id);
@@ -5204,8 +4799,9 @@ function updateCajaStats() {
   document.getElementById('caja-ingresos').textContent = sol(ingresos);
   document.getElementById('caja-egresos').textContent = sol(egresos);
   document.getElementById('caja-saldo').textContent = sol(DB.caja.inicial + ingresos - egresos);
-  document.getElementById('caja-mov-tbody').innerHTML = [...DB.movimientos].reverse().map(m => `<tr>
-    <td>${m.fecha ? m.fecha + ' ' : ''}${m.hora}</td>
+
+  document.getElementById('caja-mov-tbody').innerHTML = DB.movimientos.map(m => `<tr>
+    <td>${m.hora}</td>
     <td><span class="badge badge-${m.tipo==='ingreso'?'green':'red'}">${m.tipo}</span></td>
     <td>${m.desc}</td>
     <td style="color:${m.tipo==='ingreso'?'var(--accent)':'var(--danger)'};font-weight:700">${m.tipo==='ingreso'?'+':'-'}${sol(m.monto)}</td>
@@ -6019,7 +5615,7 @@ function renderFrecuentes() {
   const todos = [...DB.clientes].sort((a, b) => b.total - a.total);
   document.getElementById('ranking-table').innerHTML = `
     <div class="table-wrap"><table>
-    <thead><tr><th>#</th><th>Cliente</th><th>Alias</th><th>Consumo año</th><th>Nivel</th><th>Premio disponible</th><th></th></tr></thead>
+      <thead><tr><th>#</th><th>Cliente</th><th>Alias</th><th>Consumo año</th><th>Nivel</th><th>Premio disponible</th></tr></thead>
       <tbody>${todos.map((c, i) => {
         const nv = getNivel(c.total);
         const pct = nv ? Math.min(100, c.total / nv.umbral * 100) : Math.min(100, c.total / 100 * 100);
@@ -6032,8 +5628,7 @@ function renderFrecuentes() {
             <div class="progress-bar" style="margin-top:.3rem"><div class="progress-fill" style="background:var(--primary);width:${pct}%"></div></div>
           </td>
           <td>${nv ? `<span class="badge badge-gold">${nv.desc}</span>` : '<span class="badge badge-gray">Sin nivel aún</span>'}</td>
-         <td>${nv ? `<span style="color:var(--accent);font-weight:700">🎁 Hasta S/ ${nv.max}</span>` : '-'}</td>
-          <td><button class="btn btn-outline btn-xs" onclick="verHistorialCliente(${c.id})">📋</button></td>
+          <td>${nv ? `<span style="color:var(--accent);font-weight:700">🎁 Hasta S/ ${nv.max}</span>` : '-'}</td>
         </tr>`;
       }).join('')}</tbody>
     </table></div>`;
@@ -6511,7 +6106,7 @@ function renderPromociones() {
   document.getElementById('promo-tbody').innerHTML = DB.promociones.map(p => `<tr>
     <td><strong>${p.nombre}</strong></td>
     <td><span class="badge badge-${p.tipo==='combo'?'blue':'purple'}">${p.tipo}</span></td>
-    <td style="font-size:0.8rem">${p.prod1nombre||''}${p.prod2nombre?' + '+p.prod2nombre:''}${p.prod3nombre?' + '+p.prod3nombre:''}</td>
+    <td style="font-size:0.8rem">${p.prod1nombre||''}${p.prod2nombre?' + '+p.prod2nombre:''}</td>
     <td>${sol(p.precioOrig)}</td>
     <td style="color:var(--accent);font-weight:700">${sol(p.precioPromo)}</td>
     <td style="font-size:0.8rem">${formatDate(p.desde)} - ${formatDate(p.hasta)}</td>
@@ -6527,261 +6122,54 @@ function renderPromociones() {
 function editarPromocion(id) {
   editingPromoId = id;
   const pr = DB.promociones.find(x => x.id === id);
-  document.getElementById('promo-modal-titulo').textContent = '✏️ Editar Promoción';
-  _llenarSelectsPromo();
+  const prods = DB.productos;
+  ['promo-prod1','promo-prod2'].forEach((selId, idx) => {
+    const sel = document.getElementById(selId);
+    if (!sel) return;
+    sel.innerHTML = (idx===1?'<option value="">Sin segundo producto</option>':'') +
+      prods.map(p=>`<option value="${p.id}">${p.nombre} (${sol(p.precio)})</option>`).join('');
+  });
   document.getElementById('promo-nombre').value = pr.nombre;
   document.getElementById('promo-tipo-sel').value = pr.tipo;
   document.getElementById('promo-prod1').value = pr.prod1||'';
   document.getElementById('promo-prod2').value = pr.prod2||'';
-  document.getElementById('promo-prod3').value = pr.prod3||'';
-  document.getElementById('promo-cant1').value = pr.cant1||1;
-  document.getElementById('promo-cant2').value = pr.cant2||1;
-  document.getElementById('promo-cant3').value = pr.cant3||1;
+  document.getElementById('promo-precio-orig').value = pr.precioOrig;
+  document.getElementById('promo-precio-promo').value = pr.precioPromo;
   document.getElementById('promo-desde').value = pr.desde;
   document.getElementById('promo-hasta').value = pr.hasta;
-  document.getElementById('promo-limite').value = pr.limite||0;
-  const vendidos = pr.vendidos||0;
-  const limite = pr.limite||0;
-  const dispVend = document.getElementById('promo-vendidos-display');
-  if (limite > 0) {
-    document.getElementById('promo-vendidos-num').textContent = vendidos;
-    document.getElementById('promo-limite-num').textContent = limite;
-    dispVend.style.display = '';
-  } else { dispVend.style.display = 'none'; }
-  const imgData = pr.imagen||'';
-  document.getElementById('promo-img-data').value = imgData;
-  document.getElementById('promo-img-preview').innerHTML = imgData
-    ? `<img src="${imgData}" style="width:100%;height:100%;object-fit:cover">` : '🎁';
-  document.getElementById('promo-img-file').value = '';
-  document.getElementById('promo-codigo').value = pr.codigo||'';
-  document.getElementById('promo-qr-container').style.display = 'none';
-  document.getElementById('promo-qr-preview').innerHTML = '';
-  const margen = pr.precioOrig > 0 ? Math.round((pr.precioPromo/pr.precioOrig-1)*100) : 20;
-  document.getElementById('promo-margen-num').value = Math.max(0,margen);
-  document.getElementById('promo-margen-slider').value = Math.max(0,margen);
-  document.getElementById('promo-aviso').textContent = '';
-  calcPromo();
-  document.getElementById('promo-precio-promo').value = pr.precioPromo;
   abrirModal('modal-promocion');
 }
 
-function _llenarSelectsPromo() {
-  const prods = DB.productos.filter(p => !p.esCombo);
-  [['promo-prod1',0],['promo-prod2',1],['promo-prod3',2]].forEach(([selId, idx]) => {
-    const sel = document.getElementById(selId);
-    if (!sel) return;
-    sel.innerHTML = (idx>0?`<option value="">${idx===1?'Sin segundo producto':'Sin tercer producto'}</option>`:'') +
-      prods.map(p=>`<option value="${p.id}">${p.nombre} (${sol(p.precio)})</option>`).join('');
-  });
-}
-
-function onPromoTipoChange() { calcPromo(); }
-
-function onPromoImgSelect(e) {
-  const file = e.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = ev => {
-    const data = ev.target.result;
-    document.getElementById('promo-img-data').value = data;
-    const prev = document.getElementById('promo-img-preview');
-    prev.innerHTML = `<img src="${data}" style="width:100%;height:100%;object-fit:cover">`;
-  };
-  reader.readAsDataURL(file);
-}
-
-function limpiarImgPromo() {
-  document.getElementById('promo-img-data').value = '';
-  document.getElementById('promo-img-preview').innerHTML = '🎁';
-  document.getElementById('promo-img-file').value = '';
-}
-
-function generarQrPromo() {
-  const nombre = document.getElementById('promo-nombre').value.trim() || 'Pack';
-  const codigo = 'PROMO-' + Date.now();
-  document.getElementById('promo-codigo').value = codigo;
-  document.getElementById('promo-qr-nombre-label').textContent = nombre;
-  const cont = document.getElementById('promo-qr-preview');
-  cont.innerHTML = '';
-  new QRCode(cont, { text: codigo, width: 100, height: 100 });
-  document.getElementById('promo-qr-container').style.display = '';
-}
-
-function onPromoProductoChange() {
-  const p1Id = parseInt(document.getElementById('promo-prod1').value);
-  const p2Id = parseInt(document.getElementById('promo-prod2').value) || null;
-  const p3Id = parseInt(document.getElementById('promo-prod3').value) || null;
-  const p1 = DB.productos.find(p => p.id === p1Id);
-  const p2 = p2Id ? DB.productos.find(p => p.id === p2Id) : null;
-  const p3 = p3Id ? DB.productos.find(p => p.id === p3Id) : null;
-  if (p1) {
-    const nombreSugerido = [p1, p2, p3].filter(Boolean).map(p => p.nombre).join(' + ');
-    const campoNombre = document.getElementById('promo-nombre');
-    const valorActual = campoNombre.value;
-    const esSugerido = !valorActual || DB.productos.some(p => valorActual.includes(p.nombre));
-    if (esSugerido) campoNombre.value = 'Promo ' + nombreSugerido;
-  }
-  calcPromo();
-}
-
-function calcPromo() {
-  const p1Id = parseInt(document.getElementById('promo-prod1').value);
-  const p2Id = parseInt(document.getElementById('promo-prod2').value) || null;
-  const p3Id = parseInt(document.getElementById('promo-prod3').value) || null;
-  const cant1 = parseFloat(document.getElementById('promo-cant1').value) || 1;
-  const cant2 = parseFloat(document.getElementById('promo-cant2').value) || 1;
-  const cant3 = parseFloat(document.getElementById('promo-cant3').value) || 1;
-  const margen = parseFloat(document.getElementById('promo-margen-num').value) || 0;
-  const p1 = DB.productos.find(p => p.id === p1Id);
-  const p2 = p2Id ? DB.productos.find(p => p.id === p2Id) : null;
-  const p3 = p3Id ? DB.productos.find(p => p.id === p3Id) : null;
-  if (!p1) { document.getElementById('promo-calc-detalle').textContent = 'Selecciona los productos para ver el cálculo'; return; }
-  const costoTotal = (p1.costo * cant1) + (p2 ? p2.costo * cant2 : 0) + (p3 ? p3.costo * cant3 : 0);
-  const precioOrig = (p1.precio * cant1) + (p2 ? p2.precio * cant2 : 0) + (p3 ? p3.precio * cant3 : 0);
-  const precioSugerido = Math.ceil(costoTotal * (1 + margen / 100) * 10) / 10;
-  const ahorro = precioOrig - precioSugerido;
-  document.getElementById('promo-precio-orig').value = precioOrig.toFixed(2);
-  document.getElementById('promo-precio-promo').value = precioSugerido.toFixed(2);
-  document.getElementById('promo-calc-detalle').innerHTML = `
-    <div style="display:flex;justify-content:space-between"><span>${p1.nombre} x${cant1}:</span><span>Costo ${sol(p1.costo*cant1)} / Venta ${sol(p1.precio*cant1)}</span></div>
-    ${p2 ? `<div style="display:flex;justify-content:space-between"><span>${p2.nombre} x${cant2}:</span><span>Costo ${sol(p2.costo*cant2)} / Venta ${sol(p2.precio*cant2)}</span></div>` : ''}
-    ${p3 ? `<div style="display:flex;justify-content:space-between"><span>${p3.nombre} x${cant3}:</span><span>Costo ${sol(p3.costo*cant3)} / Venta ${sol(p3.precio*cant3)}</span></div>` : ''}
-    <div style="border-top:1px solid var(--gray-200);margin-top:.3rem;padding-top:.3rem">
-      <div style="display:flex;justify-content:space-between"><span>Costo total:</span><strong>${sol(costoTotal)}</strong></div>
-      <div style="display:flex;justify-content:space-between"><span>Precio individual sumado:</span><span style="text-decoration:line-through;color:var(--gray-400)">${sol(precioOrig)}</span></div>
-      <div style="display:flex;justify-content:space-between"><span>Precio promo (${margen}% margen):</span><strong style="color:var(--accent)">${sol(precioSugerido)}</strong></div>
-      <div style="display:flex;justify-content:space-between"><span>Ahorro cliente:</span><strong style="color:var(--primary)">${sol(ahorro)}</strong></div>
-    </div>`;
-  document.getElementById('promo-aviso').textContent = precioSugerido < costoTotal ? '⚠️ Precio por debajo del costo' : '';
-}
-
-function calcPromoDesdeManual() {
-  const precioOrig = parseFloat(document.getElementById('promo-precio-orig').value) || 0;
-  const precioPromo = parseFloat(document.getElementById('promo-precio-promo').value) || 0;
-  if (precioOrig > 0) {
-   const p1Id = parseInt(document.getElementById('promo-prod1').value);
-  const p2Id = parseInt(document.getElementById('promo-prod2').value) || null;
-  const cant1 = parseFloat(document.getElementById('promo-cant1').value) || 1;
-  const cant2 = parseFloat(document.getElementById('promo-cant2').value) || 1;
-  const p1 = DB.productos.find(p => p.id === p1Id);
-  const p2 = p2Id ? DB.productos.find(p => p.id === p2Id) : null;
-const p3Id = parseInt(document.getElementById('promo-prod3').value) || null;
-  const cant3 = parseFloat(document.getElementById('promo-cant3').value) || 1;
-  const p3 = p3Id ? DB.productos.find(p => p.id === p3Id) : null;
-  const costoReal = ((p1?.costo||0)*cant1) + ((p2?.costo||0)*cant2) + ((p3?.costo||0)*cant3);
-  if (costoReal > 0) {
-    const margenReal = Math.round((precioPromo / costoReal - 1) * 100);
-    document.getElementById('promo-margen-num').value = margenReal;
-    document.getElementById('promo-margen-slider').value = Math.max(0, margenReal);
-  }
-}
-}
 function abrirModalPromocion() {
   editingPromoId = null;
-  document.getElementById('promo-modal-titulo').textContent = '🏷️ Nueva Promoción';
-  _llenarSelectsPromo();
+  const prods = DB.productos;
+  ['promo-prod1','promo-prod2'].forEach((selId, idx) => {
+    const sel = document.getElementById(selId);
+    if (!sel) return;
+    sel.innerHTML = (idx===1?'<option value="">Sin segundo producto</option>':'') +
+      prods.map(p=>`<option value="${p.id}">${p.nombre} (${sol(p.precio)})</option>`).join('');
+  });
   const hoy = today(); const en7 = new Date(); en7.setDate(en7.getDate()+7);
   document.getElementById('promo-desde').value = hoy;
   document.getElementById('promo-hasta').value = en7.toISOString().split('T')[0];
-  document.getElementById('promo-nombre').value = '';
-  document.getElementById('promo-cant1').value = 1;
-  document.getElementById('promo-cant2').value = 1;
-  document.getElementById('promo-cant3').value = 1;
-  document.getElementById('promo-prod2').value = '';
-  document.getElementById('promo-prod3').value = '';
-  document.getElementById('promo-margen-num').value = 20;
-  document.getElementById('promo-margen-slider').value = 20;
-  document.getElementById('promo-precio-orig').value = '';
-  document.getElementById('promo-precio-promo').value = '';
-  document.getElementById('promo-calc-detalle').textContent = 'Selecciona los productos para ver el cálculo';
-  document.getElementById('promo-aviso').textContent = '';
-  document.getElementById('promo-limite').value = 0;
-  document.getElementById('promo-vendidos-display').style.display = 'none';
-  document.getElementById('promo-img-data').value = '';
-  document.getElementById('promo-img-preview').innerHTML = '🎁';
-  document.getElementById('promo-img-file').value = '';
-  document.getElementById('promo-codigo').value = '';
-  document.getElementById('promo-qr-container').style.display = 'none';
-  document.getElementById('promo-qr-preview').innerHTML = '';
+  ['promo-nombre','promo-precio-orig','promo-precio-promo'].forEach(id => document.getElementById(id).value = '');
   abrirModal('modal-promocion');
 }
-  
+
 function guardarPromocion() {
   const nombre = document.getElementById('promo-nombre').value.trim();
   const prod1Id = parseInt(document.getElementById('promo-prod1').value);
   const prod1 = DB.productos.find(p => p.id === prod1Id);
   const prod2Id = parseInt(document.getElementById('promo-prod2').value) || null;
   const prod2 = prod2Id ? DB.productos.find(p => p.id === prod2Id) : null;
-  const prod3Id = parseInt(document.getElementById('promo-prod3').value) || null;
-  const prod3 = prod3Id ? DB.productos.find(p => p.id === prod3Id) : null;
   const precioOrig = parseFloat(document.getElementById('promo-precio-orig').value) || 0;
   const precioPromo = parseFloat(document.getElementById('promo-precio-promo').value) || 0;
-  const cant1 = parseFloat(document.getElementById('promo-cant1').value)||1;
-  const cant2 = parseFloat(document.getElementById('promo-cant2').value)||1;
-  const cant3 = parseFloat(document.getElementById('promo-cant3').value)||1;
   if (!nombre || !prod1) { alert('Completa los campos obligatorios'); return; }
   if (precioPromo < (prod1?.costo||0) && !confirm('El precio promo está por debajo del costo. ¿Continuar?')) return;
-
-  // Auto-crear categoría Promociones si no existe
-  if (!DB.categorias.find(c => c.nombre === 'Promociones')) {
-    DB.categorias.unshift({ id: getId(), nombre: 'Promociones', emoji: '🏷️', imagen: null });
-  }
-  const catPromoId = DB.categorias.find(c => c.nombre === 'Promociones')?.id || null;
-
-  const esPackMulti = !!(prod2Id || prod3Id);
-  const costoReal = ((prod1?.costo||0)*cant1) + ((prod2?.costo||0)*cant2) + ((prod3?.costo||0)*cant3);
-  const imgData = document.getElementById('promo-img-data').value || null;
-  const codigoQR = document.getElementById('promo-codigo').value || null;
-
-  // Si es pack multi-producto: crear o actualizar producto pack en inventario
-  let packProdId = editingPromoId ? (DB.promociones.find(x=>x.id===editingPromoId)?.packProdId||null) : null;
-  if (esPackMulti) {
-    const componentes = [
-      { prodId: prod1Id, cant: cant1 },
-      ...(prod2Id ? [{ prodId: prod2Id, cant: cant2 }] : []),
-      ...(prod3Id ? [{ prodId: prod3Id, cant: cant3 }] : [])
-    ];
-    if (packProdId) {
-      // Actualizar producto pack existente
-      const packProd = DB.productos.find(p => p.id === packProdId);
-      if (packProd) {
-        packProd.nombre = nombre;
-        packProd.precio = precioPromo;
-        packProd.costo = costoReal;
-        packProd.imagen = imgData;
-        packProd.codigo = codigoQR || packProd.codigo;
-        packProd.componentes = componentes;
-        packProd.cat = catPromoId;
-        packProd.stock = 999;
-      } else {
-        packProdId = null; // producto fue eliminado, crear nuevo
-      }
-    }
-    if (!packProdId) {
-      // Crear nuevo producto pack
-      const newPack = {
-        id: getId(), nombre, precio: precioPromo, costo: costoReal,
-        stock: 999, stockMin: 0, unidad: 'und', tipo: 'unidad',
-        cat: catPromoId, imagen: imgData, codigo: codigoQR,
-        esCombo: true, componentes, venc: null, proveedor: null
-      };
-      DB.productos.push(newPack);
-      packProdId = newPack.id;
-    }
-    fbGuardarProductos();
-  }
-
   const data = {
     nombre, tipo: document.getElementById('promo-tipo-sel').value,
     prod1: prod1Id, prod1nombre: prod1?.nombre,
     prod2: prod2Id, prod2nombre: prod2?.nombre||null,
-    prod3: prod3Id, prod3nombre: prod3?.nombre||null,
-    cant1, cant2, cant3,
-    imagen: imgData,
-    codigo: codigoQR,
-    limite: parseInt(document.getElementById('promo-limite').value)||0,
-    vendidos: editingPromoId ? (DB.promociones.find(x=>x.id===editingPromoId)?.vendidos||0) : 0,
-    packProdId: esPackMulti ? packProdId : null,
     precioOrig, precioPromo,
     desde: document.getElementById('promo-desde').value,
     hasta: document.getElementById('promo-hasta').value,
@@ -6793,73 +6181,21 @@ function guardarPromocion() {
   } else {
     DB.promociones.push({ id: getId(), ...data });
   }
-  fbGuardar();
-  fbGuardarPromociones();
+ fbGuardar();
   cerrarModal('modal-promocion');
   renderPromociones();
-  try { renderPosCategorias(); } catch(e){}
   try { renderPosGrid(); } catch(e){}
   try { renderMobPosGrid(); } catch(e){}
-  try { _renderTienda(); } catch(e){}
-}
-// ── Auto-pausar promos cuando un componente llega a 0 ──
-function _verificarStockPromos() {
-  let cambios = false;
-  (DB.promociones||[]).forEach(promo => {
-    if (!promo.activa || !promo.packProdId) return;
-    const pack = DB.productos.find(p => p.id === promo.packProdId);
-    if (!pack?.componentes) return;
-    const sinStock = pack.componentes.some(c => {
-      const comp = DB.productos.find(p => p.id === c.prodId);
-      return !comp || comp.stock < c.cant;
-    });
-    if (sinStock) {
-      promo.activa = false;
-      pack.stock = 0;
-      cambios = true;
-    }
-  });
-  if (cambios) {
-    fbGuardarPromociones();
-    fbGuardarProductos();
-    try { renderPosCategorias(); } catch(e){}
-    try { renderPosGrid(); } catch(e){}
-    try { renderMobPosGrid(); } catch(e){}
-  }
 }
 
 function togglePromo(id) {
   const p = DB.promociones.find(x => x.id === id);
-  if (!p) return;
-  p.activa = !p.activa;
-  if (p.packProdId) {
-    const pack = DB.productos.find(x => x.id === p.packProdId);
-    if (pack) { pack.stock = p.activa ? 999 : 0; fbGuardarProductos(); }
-  }
-  fbGuardar();
-  fbGuardarPromociones();
+  if (p) { p.activa = !p.activa; fbGuardar(); }
   renderPromociones();
-  try { renderPosCategorias(); } catch(e){}
   try { renderPosGrid(); } catch(e){}
   try { renderMobPosGrid(); } catch(e){}
-  try { _renderTienda(); } catch(e){}
 }
-function eliminarPromo(id) {
-  if (!confirm('¿Eliminar esta promoción?')) return;
-  const p = DB.promociones.find(x => x.id === id);
-  if (p?.packProdId) {
-    DB.productos = DB.productos.filter(x => x.id !== p.packProdId);
-    fbGuardarProductos();
-  }
-  DB.promociones = DB.promociones.filter(x => x.id !== id);
-  fbGuardar();
-  fbGuardarPromociones();
-  renderPromociones();
-  try { renderPosCategorias(); } catch(e){}
-  try { renderPosGrid(); } catch(e){}
-  try { renderMobPosGrid(); } catch(e){}
-  try { _renderTienda(); } catch(e){}
-}
+function eliminarPromo(id) { if (!confirm('¿Eliminar?')) return; DB.promociones = DB.promociones.filter(p => p.id !== id); fbGuardar(); renderPromociones(); }
 
 // ===================== COMBO SINERGIA (Punto 8) =====================
 function abrirModalComboSinergia() {
@@ -7064,12 +6400,8 @@ function mobFilterPos() {
 function renderMobPosCats() {
   const el = document.getElementById('mob-pos-categorias');
   if (!el) return;
-  const promoActivas = DB.promociones.filter(p => p.activa && p.hasta >= today());
-  const hayPromosMob = promoActivas.length > 0 || DB.productos.some(p => p.esCombo && p.stock > 0);
-  const catsOrdenadas = [...DB.categorias].sort((a,b) => a.nombre==='Promociones'?-1:b.nombre==='Promociones'?1:0);
-  const cats = [{ id: '', emoji: '🏪', nombre: 'Todos', imagen: null }, ...catsOrdenadas];
+  const cats = [{ id: '', emoji: '🏪', nombre: 'Todos', imagen: null }, ...DB.categorias];
   el.innerHTML = cats.map(c => {
-    if (c.nombre === 'Promociones' && !hayPromosMob) return '';
     const icon = c.imagen
       ? `<img src="${c.imagen}" style="width:14px;height:14px;object-fit:cover;border-radius:2px;vertical-align:middle;margin-right:2px"/>`
       : (c.emoji + ' ');
@@ -7089,13 +6421,14 @@ function renderMobPosGrid(prods) {
   if (!grid) return;
   const promoActivas = DB.promociones.filter(p => p.activa && p.hasta >= today());
   grid.innerHTML = prods.map(p => {
-    const promo = !p.esCombo ? promoActivas.find(pr => pr.prod1==p.id && !pr.prod2 && !pr.prod3) : null;
-    const precio = promo ? promo.precioPromo : p.precio;
+    const promo = promoActivas.find(pr => pr.prod1 == p.id || pr.prod2 == p.id);
+    const esCombo2 = promo && promo.prod2;
+    const precio = (!esCombo2 && promo) ? promo.precioPromo : p.precio;
     const stockBajo = p.stock <= p.stockMin;
     const iconHtml = p.imagen
       ? `<div style="width:44px;height:44px;margin:0 auto .25rem;border-radius:8px;overflow:hidden"><img src="${p.imagen}" style="width:100%;height:100%;object-fit:cover"/></div>`
       : `<div class="p-icon">${getCatIcono(p.cat)}</div>`;
-    const tag = p.esCombo
+    const tag = esCombo2
       ? `<span class="promo-tag" style="position:absolute;top:4px;right:4px;font-size:.6rem;background:var(--accent)">COMBO</span>`
       : promo ? `<span class="promo-tag" style="position:absolute;top:4px;right:4px;font-size:.6rem">PROMO</span>` : '';
     return `<div class="product-card${p.stock === 0 ? ' opacity-50' : ''}" onclick="mobAddToCart(${p.id})" style="${p.stock===0?'opacity:.45;pointer-events:none':''}">
@@ -7103,7 +6436,7 @@ function renderMobPosGrid(prods) {
       ${iconHtml}
       <div class="p-name">${p.nombre}</div>
       <div class="p-price" style="${stockBajo?'color:var(--danger)':''}">S/ ${precio.toFixed(2)}</div>
-      <div class="p-stock" style="${stockBajo?'color:var(--danger);font-weight:700':''}">Stock: ${p.stock} ${p.unidad||'und'}</div>
+      <div class="p-stock" style="${stockBajo?'color:var(--danger);font-weight:700':''}">Stock: ${p.stock} ${p.unidad}</div>
     </div>`;
   }).join('') || '<p style="color:var(--gray-400);text-align:center;padding:2rem;grid-column:1/-1">Sin productos</p>';
 }
@@ -7112,37 +6445,11 @@ function renderMobPosGrid(prods) {
 function mobAddToCart(prodId) {
   const prod = DB.productos.find(p => p.id === prodId);
   if (!prod || prod.stock === 0) return;
-
-  // Pack multi-producto: verificar stock de componentes
-  if (prod.esCombo && prod.componentes) {
-    const sinStock = prod.componentes.filter(c => {
-      const cp = DB.productos.find(p => p.id === c.prodId);
-      return !cp || cp.stock < c.cant;
-    });
-    if (sinStock.length > 0) {
-      const nombres = sinStock.map(c => DB.productos.find(p=>p.id===c.prodId)?.nombre||'Producto').join(', ');
-      alert('Stock insuficiente para: ' + nombres); return;
-    }
-    const promoPackDesMob = DB.promociones.find(p => p.packProdId === prodId);
-    if (promoPackDesMob && promoPackDesMob.limite > 0) {
-      const enCarritoMob = cart.find(i => i.prodId === prodId);
-      const cantCarritoMob = enCarritoMob ? enCarritoMob.cant : 0;
-      if ((promoPackDesMob.vendidos||0) + cantCarritoMob >= promoPackDesMob.limite) {
-        alert('Límite de esta promoción alcanzado (' + promoPackDesMob.limite + ' unidades)'); return;
-      }
-    }
-    const existing = cart.find(i => i.prodId === prodId);
-    if (existing) { existing.cant++; }
-    else { cart.push({ prodId, nombre: prod.nombre, precio: prod.precio, cant: 1, tipo: 'unidad', unidad: prod.unidad||'und', esCombo: true }); }
-    mobRenderCart(); mobCalcTotal(); mobUpdateBar();
-    try { updatePosCartBadge(); } catch(e) {}
-    return;
-  }
-
-  // Promo 1 producto o producto normal
   const promoActivas = DB.promociones.filter(p => p.activa && p.hasta >= today());
-  const promo = promoActivas.find(pr => pr.prod1 == prodId && !pr.prod2 && !pr.prod3);
-  const precio = promo ? promo.precioPromo : prod.precio;
+  const promo = promoActivas.find(pr => pr.prod1 == prodId || pr.prod2 == prodId);
+  // 2-product combos: use regular price — discount shown in total
+  const esCombo2 = promo && promo.prod2;
+  const precio = (!esCombo2 && promo) ? promo.precioPromo : prod.precio;
   const existing = cart.find(i => i.prodId === prodId);
   if (existing) {
     if (existing.cant >= prod.stock) { alert('Stock insuficiente'); return; }
@@ -7150,7 +6457,10 @@ function mobAddToCart(prodId) {
   } else {
     cart.push({ prodId, nombre: prod.nombre, precio, cant: prod.tipo === 'granel' ? 0.5 : 1, tipo: prod.tipo, unidad: prod.unidad });
   }
-  mobRenderCart(); mobCalcTotal(); mobUpdateBar();
+  mobRenderCart();
+  mobCalcTotal();
+  mobUpdateBar();
+  // Badge update — drawer NO se abre automáticamente (opción B)
   try { updatePosCartBadge(); } catch(e) {}
 }
 
@@ -7239,14 +6549,8 @@ if (cli) { cli.deuda = (cli.deuda||0) + total; cli.compras = (cli.compras||0) + 
   // Always register movement with ensureCajaAbierta
   ensureCajaAbierta();
   DB.movimientos.push({ tipo:'fiado', desc:`Fiado — ${getClienteNombre(clienteId)}`, monto:total, hora:nowTime(), fecha:today(), cajero:currentUser });
-_fbLastWriteTs = Date.now();
-  _fbEscribiendo = true;
-const _vPayload = JSON.parse(JSON.stringify(DB));
-delete _vPayload.productos; delete _vPayload.categorias;
-fbDocRef().set(_vPayload)
-  .then(() => { setTimeout(() => { _fbEscribiendo = false; }, 300); })
-  .catch(() => { _fbEscribiendo = false; });
-fbGuardarProductos();
+
+  fbGuardar(); fbGuardarProductos();
   try { renderDashboard(); } catch(e){}
   try { renderCaja(); } catch(e){}
   alert('Fiado registrado para ' + getClienteNombre(clienteId) + ': ' + sol(total));
@@ -7278,27 +6582,18 @@ function mobProcesarVenta() {
     total, metodo, clienteId
   };
   // Descontar stock
-  itemsConPrecioReal.forEach(item => {
-    if (item.esCombo) {
-      const pack = DB.productos.find(p => p.id === item.prodId);
-      if (pack?.componentes) {
-        pack.componentes.forEach(c => {
-          const comp = DB.productos.find(p => p.id === c.prodId);
-          if (comp) comp.stock = Math.max(0, comp.stock - c.cant * item.cant);
+  cart.forEach(item => {
+    const prod = DB.productos.find(p => p.id === item.prodId);
+    if (prod) {
+      prod.stock = Math.max(0, prod.stock - item.cant);
+      if (prod.esCombo && prod.componentes) {
+        prod.componentes.forEach(comp => {
+          const cp = DB.productos.find(x => x.id === comp.prodId);
+          if (cp) cp.stock = Math.max(0, cp.stock - comp.cant * item.cant);
         });
       }
-      const promo = DB.promociones.find(p => p.packProdId === item.prodId);
-      if (promo) {
-        promo.vendidos = (promo.vendidos||0) + item.cant;
-        if (promo.limite > 0 && promo.vendidos >= promo.limite) { promo.activa = false; if (pack) pack.stock = 0; }
-      }
-    } else {
-      const prod = DB.productos.find(p => p.id === item.prodId);
-      if (prod) prod.stock = Math.max(0, prod.stock - item.cant);
     }
   });
-  _verificarStockPromos();
-  fbGuardarPromociones();
   if (clienteId) {
     const cli = DB.clientes.find(c => c.id === clienteId);
     if (cli) { cli.total = (cli.total||0)+total; cli.puntos = (cli.puntos||0)+Math.floor(total); cli.compras=(cli.compras||0)+1; }
@@ -7310,13 +6605,7 @@ function mobProcesarVenta() {
 
   if (!DB.historialVentas) DB.historialVentas = [];
   DB.historialVentas.push({ ...venta, origen:'pos', estado:'completado', estadoStock:'descontado' });
-  _fbLastWriteTs = Date.now();
-  _fbEscribiendo = true;
-  const _mobPayload = JSON.parse(JSON.stringify(DB));
-  delete _mobPayload.productos; delete _mobPayload.categorias;
-  fbDocRef().set(_mobPayload)
-    .then(() => { setTimeout(() => { _fbEscribiendo = false; }, 300); })
-    .catch(() => { _fbEscribiendo = false; });
+  fbGuardar();
   fbGuardarProductos();
   try { renderDashboard(); } catch(e){}
   try { renderCaja(); } catch(e){}
@@ -7362,7 +6651,7 @@ window.addEventListener('beforeunload', function(e) {
 //   • Flag _fbEscribiendo evita el loop escritura→listener→escritura
 //   • Debounce 1200ms agrupa operaciones rápidas en UNA sola escritura
 //   • Toda la DB en 1 documento Firestore → mínimo de operaciones posible
-const APP_VERSION = '1.0.1';
+
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyBXelkwsha7QzyOLxIbb4wP0ePEbSyi5IE",
   authDomain: "minimarket-aleze-400b5.firebaseapp.com",
@@ -7406,6 +6695,12 @@ appCheckInstance.activate(RECAPTCHA_SITE_KEY, true);
 
     fbFS  = firebase.firestore();
     fbAuth = firebase.auth(); // Firebase Authentication para seguridad Firestore
+    // Habilitar persistencia offline (cache local cuando no hay internet)
+    fbFS.enablePersistence({ synchronizeTabs: true })
+      .catch(e => {
+        if (e.code === 'failed-precondition') console.warn('Persistencia: múltiples pestañas abiertas');
+        else if (e.code === 'unimplemented') console.warn('Persistencia offline no disponible en este navegador');
+      });
     return true;
   } catch(e) {
     console.error('Firebase init error:', e);
@@ -7456,13 +6751,6 @@ function fbGuardar() {
   }, 1200);
 }
 
-// ── Guardar solo promociones en documento separado (update atómico) ──
-function fbGuardarPromociones() {
-  if (!fbFS) return;
-  fbDocRef().update({ promociones: JSON.parse(JSON.stringify(DB.promociones||[])) })
-    .catch(e => console.warn('Firestore promociones update error:', e));
-}
-
 // ── Guardar solo productos y categorias en documento separado ──
 // Se llama únicamente cuando el admin edita inventario/categorias
 function fbGuardarProductos() {
@@ -7490,7 +6778,7 @@ function fbGuardarProductos() {
 let _fbProdCacheTs = 0; // timestamp última carga de db_productos
 function fbEscuchar() {
   if (!fbFS) return;
-if (_fbSnapshotUnsub) { _fbSnapshotUnsub(); _fbSnapshotUnsub = null; }
+
   // Listener operaciones (ventas, caja, clientes, etc.)
   _fbSnapshotUnsub = fbDocRef().onSnapshot(snapshot => {
     if (_fbEscribiendo) return;
@@ -7502,17 +6790,7 @@ if (_fbSnapshotUnsub) { _fbSnapshotUnsub(); _fbSnapshotUnsub = null; }
     // Solo campos operativos (no productos/categorias que vienen de db_productos)
     const camposOp = ['ventas','clientes','fiados','mermas','movimientos',
                       'proveedores','promociones','caja','inventariosMensuales','historialVentas','pedidosOnline'];
-    camposOp.forEach(k => {
-      if (!(k in data) || !(k in DB)) return;
-      if (k === 'promociones' && Array.isArray(data[k]) && Array.isArray(DB[k])) {
-        // Preservar promos locales no sincronizadas aún en Firebase
-        const incoming = data[k] || [];
-        const localOnly = DB.promociones.filter(p => !incoming.find(x => x.id === p.id));
-        DB.promociones = localOnly.length > 0 ? [...incoming, ...localOnly] : incoming;
-      } else {
-        DB[k] = data[k];
-      }
-    });
+    camposOp.forEach(k => { if (k in data && k in DB) DB[k] = data[k]; });
     if (data.config) DB.config = { ...DB.config, ...data.config };
     try { renderDashboard(); }    catch(e){}
     try { updateAlertCount(); }   catch(e){}
@@ -7542,10 +6820,7 @@ if (_fbSnapshotUnsub) { _fbSnapshotUnsub(); _fbSnapshotUnsub = null; }
     if (!snapshot.exists) return;
     const data = snapshot.data();
     if (!data) return;
-    if (data.productos) {
-      const localCombos = (DB.productos||[]).filter(p => p.esCombo && !data.productos.find(x => x.id === p.id));
-      DB.productos = [...data.productos, ...localCombos];
-    }
+    if (data.productos)  DB.productos  = data.productos;
     if (data.categorias) DB.categorias = data.categorias;
     if (data.config)     DB.config     = { ...DB.config, ...data.config };
     _fbProdCacheTs = Date.now();
@@ -7667,6 +6942,7 @@ window.onload = async function() {
         _fbProdCacheTs = Date.now();
       } else if (esPrimeraVez) {
         _semillaDemo(hoy);
+        fbGuardar();
         fbGuardarProductos();
       }
 
@@ -7674,7 +6950,7 @@ window.onload = async function() {
         const ext = snapExt.data();
         Object.keys(ext).forEach(k => { if (k in DB_EXT) DB_EXT[k] = ext[k]; });
       }
-_fbLastWriteTs = Date.now();
+
       fbPatchDB();
       fbEscuchar();
       checkAutoAbrirCaja();
@@ -7714,10 +6990,10 @@ function renderHistorialVentas() {
   if (origen) lista = lista.filter(v => v.origen === origen);
   if (buscar) lista = lista.filter(v =>
     (v.cajero||'').toLowerCase().includes(buscar) ||
-(v.clienteNombre||getClienteNombre(v.clienteId)||'').toLowerCase().includes(buscar) ||
+    (v.clienteNombre||'').toLowerCase().includes(buscar) ||
     (v.items||[]).some(i => (i.nombre||'').toLowerCase().includes(buscar))
   );
-lista.sort((a,b) => (b.id || 0) > (a.id || 0) ? 1 : -1);
+  lista.sort((a,b) => (b.fecha+b.hora) > (a.fecha+a.hora) ? -1 : 1);
 
   const total = lista.reduce((s,v) => s+(v.total||0), 0);
   const completadas = lista.filter(v=>v.estado==='completado').length;
@@ -8176,7 +7452,7 @@ function renderPedidosOnline() {
   if (filtro) lista = lista.filter(p => p.estado === filtro);
   if (desde) lista = lista.filter(p => p.fecha >= desde);
   if (hasta) lista = lista.filter(p => p.fecha <= hasta);
-lista.sort((a,b) => (b.id || 0) > (a.id || 0) ? 1 : -1);
+  lista.sort((a,b) => (b.fecha+b.hora) > (a.fecha+a.hora) ? -1 : 1);
 
   const pendientes = DB.pedidosOnline.filter(p => p.estado === 'pendiente').length;
   const badge = document.getElementById('po-badge-pendiente');
@@ -8529,26 +7805,9 @@ function confirmarEntregaPedido(id) {
 
     // Descontar stock solo de items activos
     (p.items||[]).filter(i=>i.cant>0&&!i.eliminado).forEach(item => {
-      if (item.esCombo) {
-        const pack = DB.productos.find(x => x.id === item.prodId);
-        if (pack?.componentes) {
-          pack.componentes.forEach(c => {
-            const comp = DB.productos.find(x => x.id === c.prodId);
-            if (comp) comp.stock = Math.max(0, comp.stock - c.cant * item.cant);
-          });
-        }
-        const promo = DB.promociones.find(pr => pr.packProdId === item.prodId);
-        if (promo) {
-          promo.vendidos = (promo.vendidos||0) + item.cant;
-          if (promo.limite > 0 && promo.vendidos >= promo.limite) { promo.activa = false; if (pack) pack.stock = 0; }
-        }
-      } else {
-        const prod = DB.productos.find(x => x.id === item.prodId);
-        if (prod) prod.stock = Math.max(0, prod.stock - item.cant);
-      }
+      const prod = DB.productos.find(x => x.id === item.prodId);
+      if (prod) prod.stock = Math.max(0, prod.stock - item.cant);
     });
-    _verificarStockPromos();
-    fbGuardarPromociones();
 
     // Registrar en ventas y historial
     const ventaOnline = {
@@ -8730,30 +7989,16 @@ function initTienda() {
 }
 
 function _getStockBadge(p) {
-  if (p.esCombo && p.componentes) {
-    const sinStock = p.componentes.some(c => {
-      const comp = DB.productos.find(x => x.id === c.prodId);
-      return !comp || comp.stock < c.cant;
-    });
-    if (sinStock) return '<span class="badge badge-red">Agotado</span>';
-    const bajoStock = p.componentes.some(c => {
-      const comp = DB.productos.find(x => x.id === c.prodId);
-      return comp && comp.stock <= (comp.stockMin||0) + c.cant;
-    });
-    if (bajoStock) return '<span class="badge badge-orange">Últimas unidades</span>';
-    return '<span class="badge badge-green">Disponible</span>';
-  }
   if (p.stock <= 0) return '<span class="badge badge-red">Agotado</span>';
   if (p.stock <= p.stockMin) return '<span class="badge badge-orange">Últimas unidades</span>';
   return '<span class="badge badge-green">Disponible</span>';
 }
 
 function _getPromoTienda(p) {
-  if (p.esCombo) return null; // packs son productos independientes, no necesitan promo lookup
   const hoy = today();
-  return (DB.promociones||[]).find(pr => pr.activa !== false && pr.hasta >= hoy && !pr.prod2 && !pr.prod3 &&
-    (pr.prod1 && parseInt(pr.prod1) === p.id)
-  );
+  return (DB.promociones||[]).find(pr => pr.activa !== false && pr.hasta >= hoy && (
+    (pr.prod1 && parseInt(pr.prod1) === p.id) || (pr.prod2 && parseInt(pr.prod2) === p.id)
+  ));
 }
 
 function _renderTienda() {
@@ -8942,12 +8187,8 @@ let _tndStep = 'cart'; // cart | datos | pago | confirmacion
 function tndRenderCats() {
   const el = document.getElementById('tnd-cats');
   if (!el) return;
-  const hoy = today();
-  const hayPromosTnd = (DB.productos||[]).some(p => p.esCombo && p.stock > 0);
-  const catsTndOrdenadas = [...(DB.categorias||[])].sort((a,b) => a.nombre==='Promociones'?-1:b.nombre==='Promociones'?1:0);
   el.innerHTML = `<span class="tnd-cat-tag active" onclick="tndSetCat('')">Todos</span>` +
-    catsTndOrdenadas.filter(c => c.nombre !== 'Promociones' || hayPromosTnd)
-    .map(c => `<span class="tnd-cat-tag" onclick="tndSetCat(${c.id})">${c.imagen ? `<img src="${c.imagen}" style="width:16px;height:16px;object-fit:cover;border-radius:3px;vertical-align:middle">` : c.emoji} ${c.nombre}</span>`).join('');
+    (DB.categorias||[]).map(c => `<span class="tnd-cat-tag" onclick="tndSetCat(${c.id})">${c.imagen ? `<img src="${c.imagen}" style="width:16px;height:16px;object-fit:cover;border-radius:3px;vertical-align:middle">` : c.emoji} ${c.nombre}</span>`).join('');
 }
 
 function tndSetCat(id) {
@@ -8963,49 +8204,33 @@ function tndFiltrar() {
   let prods = (DB.productos||[]).filter(p => {
     if (_tndCatActiva && p.cat != _tndCatActiva) return false;
     if (buscar && !(p.nombre||'').toLowerCase().includes(buscar)) return false;
-    if (p.venc && p.venc < hoy) return false;
-    if (p.esCombo) {
-      // Pack: mostrar si tiene componentes definidos
-      if (!p.componentes || p.componentes.length === 0) return false;
-    }
-    // Filtro categoría Promociones: mostrar packs + promos individuales activas
-    const catPromoTnd = (DB.categorias||[]).find(c => c.nombre === 'Promociones');
-    if (_tndCatActiva && catPromoTnd && _tndCatActiva == catPromoTnd.id) {
-      if (!p.esCombo) {
-        const tienePromoInd = (DB.promociones||[]).some(pr => pr.activa !== false && pr.hasta >= hoy && pr.prod1==p.id && !pr.prod2 && !pr.prod3);
-        if (!tienePromoInd) return false;
-      }
-    }
+    if (p.venc && p.venc < hoy) return false; // ocultar productos vencidos
     return true;
   });
 
   const grid = document.getElementById('tnd-grid');
   if (!grid) return;
   grid.innerHTML = prods.map(p => {
-    const esCombo = !!p.esCombo;
-    let agotado = false;
-    if (esCombo && p.componentes) {
-      agotado = p.componentes.some(c => { const cp = DB.productos.find(x=>x.id===c.prodId); return !cp||cp.stock<c.cant; });
-    } else {
-      agotado = p.stock <= 0;
-    }
+    const agotado = p.stock <= 0;
     const cat = (DB.categorias||[]).find(c => c.id === p.cat);
-    const icon = p.imagen
-      ? `<img src="${p.imagen}" style="width:40px;height:40px;object-fit:cover;border-radius:8px">`
-      : (cat?.imagen ? `<img src="${cat.imagen}" style="width:40px;height:40px;object-fit:cover;border-radius:8px">` : (cat?.emoji || '📦'));
+    const icon = cat?.imagen
+      ? `<img src="${cat.imagen}" style="width:40px;height:40px;object-fit:cover;border-radius:8px">`
+      : (cat?.emoji || '📦');
     const badge = _getStockBadge(p);
     const promo = _getPromoTienda(p);
     const precio = promo && promo.precioPromo ? promo.precioPromo : p.precio;
     const precioOrig = (promo && promo.precioPromo && promo.precioPromo < p.precio) ? p.precio : null;
-    const comboTag = esCombo ? `<div class="tnd-prod-promo" style="background:#7C3AED">🎁 COMBO</div>` : (promo ? `<div class="tnd-prod-promo">🔥 ${promo.nombre||'Promo'}</div>` : '');
+    const precioCat = p.costo ? Math.ceil(p.costo * (1 + ((DB.categorias||[]).find(c=>c.id===p.cat)?.margen||0)/100) * 10) / 10 : null;
+    const sugerido = precioCat && precioCat !== p.precio ? precioCat : null;
 
     return `<div class="tnd-prod-card ${agotado?'agotado':''}" onclick="${agotado?'':('tndAgregarCarrito('+p.id+')')}">
       <div class="tnd-prod-badge">${badge}</div>
-      ${comboTag}
+      ${promo ? `<div class="tnd-prod-promo">🔥 ${promo.nombre||'Promo'}</div>` : ''}
       <div class="tnd-prod-icon">${icon}</div>
       <div class="tnd-prod-name">${p.nombre}</div>
       ${precioOrig ? `<div class="tnd-prod-price-orig">S/ ${precioOrig.toFixed(2)}</div>` : ''}
       <div class="tnd-prod-price">S/ ${precio.toFixed(2)}</div>
+
       ${agotado ? '<div style="font-size:.75rem;color:#ef4444;margin-top:.25rem">Sin stock</div>' : ''}
     </div>`;
   }).join('') || '<p style="grid-column:1/-1;text-align:center;color:#9ca3af;padding:2rem">Sin productos que coincidan</p>';
@@ -9013,23 +8238,8 @@ function tndFiltrar() {
 
 function tndAgregarCarrito(prodId) {
   const p = DB.productos.find(x => x.id === prodId);
-  if (!p) return;
+  if (!p || p.stock <= 0) return;
   if (p.venc && p.venc < today()) { alert('Este producto ya no está disponible.'); tndFiltrar(); return; }
-
-  // Pack esCombo: verificar stock de componentes
-  if (p.esCombo && p.componentes) {
-    const sinStock = p.componentes.filter(c => {
-      const cp = DB.productos.find(x => x.id === c.prodId);
-      return !cp || cp.stock < c.cant;
-    });
-    if (sinStock.length > 0) { alert('Este pack no tiene stock disponible en este momento.'); return; }
-    const existing = _tiendaCart.find(i => i.prodId === prodId);
-    if (existing) { existing.cant++; }
-    else { _tiendaCart.push({ prodId, nombre: p.nombre, precio: p.precio, cant: 1, icon: '🎁', tipo: 'unidad', esCombo: true }); }
-    tndSaveCart(); tndUpdateCartBadge(); return;
-  }
-
-  if (p.stock <= 0) return;
   const promo = _getPromoTienda(p);
   const precio = promo && promo.precioPromo ? promo.precioPromo : p.precio;
   const cat = (DB.categorias||[]).find(c => c.id === p.cat);
@@ -9040,8 +8250,9 @@ function tndAgregarCarrito(prodId) {
   } else {
     _tiendaCart.push({ prodId, nombre: p.nombre, precio, cant: 1, icon: cat?.emoji||'📦', tipo: p.tipo });
   }
-  tndSaveCart();
+  tndSaveCart(); // persistir en localStorage
   tndUpdateCartBadge();
+  // Mini feedback
   const cards = document.querySelectorAll('.tnd-prod-card');
   cards.forEach(card => {
     if (card.onclick && card.getAttribute('onclick')?.includes(''+prodId)) {
@@ -9387,12 +8598,11 @@ const RESET_CONFIG = {
       DB.fiados = [];
       DB.mermas = [];
       DB.movimientos = [];
-      DB.historialVentas = [];
       DB.caja = { abierta: false, inicial: 0, ingresos: 0, egresos: 0, turnoInicio: null, cajero: '' };
       DB.clientes.forEach(c => { c.compras = 0; c.total = 0; c.deuda = 0; });
       DB_EXT.gastos = [];
       DB_EXT.capital = { total: 0, cuota: 0, meta: 0, recuperado: 0, hist: [] };
-     const _payload = JSON.parse(JSON.stringify(DB)); delete _payload.productos; delete _payload.categorias; _payload._resetToken = true; _fbLastWriteTs = Date.now(); clearTimeout(_fbSaveTimer); _fbEscribiendo = true; fbDocRef().set(_payload, { merge: true }).then(() => { setTimeout(() => { _fbEscribiendo = false; }, 3000); }).catch(() => { _fbEscribiendo = false; });
+      fbGuardar(); fbGuardarExt();
       try { renderDashboard(); } catch(e) {}
       try { updateAlertCount(); } catch(e) {}
     }
@@ -10031,80 +9241,15 @@ function confirmarCategoriasNuevasExcel() {
   abrirModal('modal-excel-review');
 }
 </script>
-<script>
-// ===================== BACKUP AUTOMÁTICO =====================
-let _backupTimer = null;
 
-function iniciarBackupAutomatico() {
-  if (_backupTimer) clearInterval(_backupTimer);
-  _backupTimer = setInterval(() => {
-    if (!fbFS || !currentUser) return;
-    const ahora = new Date();
-    const key = 'backup_' + ahora.toISOString().replace(/[:.]/g, '-').substring(0, 16);
-    const payload = JSON.parse(JSON.stringify(DB));
-    delete payload.productos; delete payload.categorias;
-    payload._backupTs = ahora.toISOString();
-    payload._backupUser = currentUser;
-    fbFS.collection('aleze_backups').doc(key).set(payload)
-      .then(() => console.log('[Backup] Guardado:', key))
-      .catch(e => console.warn('[Backup] Error:', e));
-  }, 30 * 60 * 1000); // cada 30 minutos
-}
-
-function verBackups() {
-  if (!fbFS) return;
-  const el = document.getElementById('backup-lista');
-  el.innerHTML = '⏳ Cargando respaldos...';
-  fbFS.collection('aleze_backups').orderBy('_backupTs', 'desc').limit(10).get()
-    .then(snap => {
-      if (snap.empty) { el.innerHTML = 'Sin respaldos disponibles aún.'; return; }
-      el.innerHTML = snap.docs.map(d => {
-        const ts = new Date(d.data()._backupTs).toLocaleString('es-PE');
-        const user = d.data()._backupUser || '?';
-        return `<div style="display:flex;justify-content:space-between;align-items:center;padding:.35rem 0;border-bottom:1px solid var(--gray-100)">
-          <span>📅 ${ts} — ${user}</span>
-       <button type="button" class="btn btn-xs btn-danger" onclick="restaurarBackup(this.dataset.id)" data-id="${d.id}">↩️ Restaurar</button>
-        </div>`;
-      }).join('');
-    })
-    .catch(e => { el.innerHTML = 'Error cargando respaldos.'; });
-}
-
-function restaurarBackup(id) {
-  if (!confirm('⚠️ ¿Restaurar este respaldo? Los datos actuales se reemplazarán.')) return;
-  fbFS.collection('aleze_backups').doc(id).get()
-    .then(doc => {
-      if (!doc.exists) { alert('Respaldo no encontrado.'); return; }
-      const data = doc.data();
-      delete data._backupTs; delete data._backupUser;
-      _fbLastWriteTs = Date.now();
-      _fbEscribiendo = true;
-      data._resetToken = true;
-      fbDocRef().set(data)
-        .then(() => {
-          setTimeout(() => { _fbEscribiendo = false; }, 300);
-          alert('✅ Respaldo restaurado correctamente.');
-          try { renderDashboard(); } catch(e) {}
-        })
-        .catch(e => { _fbEscribiendo = false; alert('Error al restaurar: ' + e.message); });
-    });
-}
-  </script>
 <!-- ── PWA: Registro del Service Worker ── -->
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function() {
     navigator.serviceWorker.register('/minimarket-aleze/sw.js', {
       scope: '/minimarket-aleze/'
-   }).then(function(reg) {
+    }).then(function(reg) {
       console.log('[PWA] Service Worker registrado:', reg.scope);
-      reg.onupdatefound = function() {
-        reg.installing.onstatechange = function() {
-          if (this.state === 'installed' && navigator.serviceWorker.controller) {
-            window.location.reload();
-          }
-        };
-      };
     }).catch(function(err) {
       console.warn('[PWA] Error registrando SW:', err);
     });
