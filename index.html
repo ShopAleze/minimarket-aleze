@@ -7310,7 +7310,13 @@ function mobProcesarVenta() {
 
   if (!DB.historialVentas) DB.historialVentas = [];
   DB.historialVentas.push({ ...venta, origen:'pos', estado:'completado', estadoStock:'descontado' });
-  fbGuardar();
+  _fbLastWriteTs = Date.now();
+  _fbEscribiendo = true;
+  const _mobPayload = JSON.parse(JSON.stringify(DB));
+  delete _mobPayload.productos; delete _mobPayload.categorias;
+  fbDocRef().set(_mobPayload)
+    .then(() => { setTimeout(() => { _fbEscribiendo = false; }, 300); })
+    .catch(() => { _fbEscribiendo = false; });
   fbGuardarProductos();
   try { renderDashboard(); } catch(e){}
   try { renderCaja(); } catch(e){}
