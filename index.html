@@ -7447,11 +7447,9 @@ function fbGuardar() {
   _fbSaveTimer = setTimeout(() => {
     _fbEscribiendo = true;
     // Excluir productos y categorias — tienen su propio documento
-    // Excluir historialVentas — guardado por direct writes (procesarVenta, cobrarFiado)
     const payload = JSON.parse(JSON.stringify(DB));
     delete payload.productos;
     delete payload.categorias;
-    delete payload.historialVentas;
     fbDocRef().set(payload)
       .then(() => { setTimeout(() => { _fbEscribiendo = false; }, 300); })
       .catch(e => { _fbEscribiendo = false; console.warn('Firestore write error:', e); });
