@@ -3428,24 +3428,29 @@ function getCatIcono(catId, size) {
 function aplicarPreciosProporcionales(cartRef, comboInfo) {
   const result = cartRef.map(i => ({ ...i }));
   if (!comboInfo || comboInfo.total === 0) return result;
-  const promoActivas = DB.promociones.filter(p => p.activa && p.hasta >= today() && p.prod2);
+  const promoActivas = DB.promociones.filter(p => p.activa && p.hasta >= today() && (p.prod2 || p.prod3));
   promoActivas.forEach(promo => {
     const idx1 = result.findIndex(i => i.prodId == promo.prod1);
-    const idx2 = result.findIndex(i => i.prodId == promo.prod2);
-    if (idx1 < 0 || idx2 < 0) return;
-    const sets = Math.min(result[idx1].cant, result[idx2].cant);
+    const idx2 = promo.prod2 ? result.findIndex(i => i.prodId == promo.prod2) : -1;
+    const idx3 = promo.prod3 ? result.findIndex(i => i.prodId == promo.prod3) : -1;
+    if (idx1 < 0) return;
+    const sets = Math.min(result[idx1].cant, idx2>=0 ? result[idx2].cant : Infinity, idx3>=0 ? result[idx3].cant : Infinity);
     if (sets <= 0) return;
     const p1 = DB.productos.find(p => p.id == promo.prod1);
-    const p2 = DB.productos.find(p => p.id == promo.prod2);
+    const p2 = promo.prod2 ? DB.productos.find(p => p.id == promo.prod2) : null;
+    const p3 = promo.prod3 ? DB.productos.find(p => p.id == promo.prod3) : null;
     const r1 = p1 ? p1.precio : result[idx1].precio;
-    const r2 = p2 ? p2.precio : result[idx2].precio;
-    const sumR = r1 + r2;
+    const r2 = idx2>=0 ? (p2 ? p2.precio : result[idx2].precio) : 0;
+    const r3 = idx3>=0 ? (p3 ? p3.precio : result[idx3].precio) : 0;
+    const sumR = r1 + r2 + r3;
     if (sumR === 0) return;
-    const comboP1 = Math.round((r1/sumR) * promo.precioPromo * 100) / 100;
-    const comboP2 = Math.round((promo.precioPromo - comboP1) * 100) / 100;
     const blend = (base, comboP, cant) => Math.round((comboP * sets + base * (cant - sets)) / cant * 100) / 100;
+    const comboP1 = Math.round((r1/sumR) * promo.precioPromo * 100) / 100;
+    const comboP2 = Math.round((r2/sumR) * promo.precioPromo * 100) / 100;
+    const comboP3 = Math.round((promo.precioPromo - comboP1 - comboP2) * 100) / 100;
     result[idx1] = { ...result[idx1], precio: blend(r1, comboP1, result[idx1].cant), precioOriginal: r1, enCombo: true };
-    result[idx2] = { ...result[idx2], precio: blend(r2, comboP2, result[idx2].cant), precioOriginal: r2, enCombo: true };
+    if (idx2>=0) result[idx2] = { ...result[idx2], precio: blend(r2, comboP2, result[idx2].cant), precioOriginal: r2, enCombo: true };
+    if (idx3>=0) result[idx3] = { ...result[idx3], precio: blend(r3, comboP3, result[idx3].cant), precioOriginal: r3, enCombo: true };
   });
   return result;
 }
