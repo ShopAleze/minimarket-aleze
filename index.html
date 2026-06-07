@@ -3350,7 +3350,7 @@ function renderPosGrid(search = '') {
   // Guard: no renderizar sin sesión activa
   if (!currentUser) return;
   const s = search || document.getElementById('pos-search')?.value.toLowerCase() || '';
-  let prods = DB.productos.filter(p => p.stock > 0);
+ let prods = DB.productos.filter(p => p.stock > 0 && (!p.esCombo || p.promoActiva === true));
   if (s) prods = prods.filter(p => p.nombre.toLowerCase().includes(s) || p.codigo.includes(s));
   if (posFilterCat) prods = prods.filter(p => p.cat == posFilterCat);
 
@@ -6517,7 +6517,7 @@ function renderPromociones() {
   document.getElementById('promo-tbody').innerHTML = DB.promociones.map(p => `<tr>
     <td><strong>${p.nombre}</strong></td>
     <td><span class="badge badge-${p.tipo==='combo'?'blue':'purple'}">${p.tipo}</span></td>
-    <td style="font-size:0.8rem">${p.prod1nombre||''}${p.prod2nombre?' + '+p.prod2nombre:''}</td>
+ <td style="font-size:0.8rem">${p.prod1nombre||''}${p.prod2nombre?' + '+p.prod2nombre:''}${p.prod3nombre?' + '+p.prod3nombre:''}</td>
     <td>${sol(p.precioOrig)}</td>
     <td style="color:var(--accent);font-weight:700">${sol(p.precioPromo)}</td>
     <td style="font-size:0.8rem">${formatDate(p.desde)} - ${formatDate(p.hasta)}</td>
@@ -6721,7 +6721,7 @@ function guardarPromocion() {
     let catPromo = DB.categorias.find(c => c.nombre === 'Promociones');
     if (!catPromo) {
       catPromo = { id: getId(), nombre: 'Promociones', emoji: '🏷️', margen: 0, imagen: '' };
-      DB.categorias.push(catPromo);
+     DB.categorias.unshift(catPromo);
     }
     packProdId = getId();
     packCodigo = 'PROMO-' + packProdId;
@@ -6786,7 +6786,13 @@ function guardarPromocion() {
 
 function togglePromo(id) {
   const p = DB.promociones.find(x => x.id === id);
-  if (p) { p.activa = !p.activa; fbGuardar(); }
+  if (!p) return;
+  p.activa = !p.activa;
+  if (p.packProdId) {
+    const prodPack = DB.productos.find(x => x.id === p.packProdId);
+    if (prodPack) { prodPack.promoActiva = p.activa; fbGuardarProductos(); }
+  }
+  fbGuardar();
   renderPromociones();
   try { renderPosGrid(); } catch(e) {}
   try { renderMobPosGrid(); } catch(e) {}
@@ -6928,7 +6934,7 @@ function mobSelectCat(catId, el) {
 }
 
 function renderMobPosGrid(prods) {
-  prods = prods || DB.productos.filter(p => p.stock > 0);
+ prods = prods || DB.productos.filter(p => p.stock > 0 && (!p.esCombo || p.promoActiva === true));
   const grid = document.getElementById('mob-pos-grid');
   if (!grid) return;
   const promoActivas = DB.promociones.filter(p => p.activa && p.hasta >= today());
