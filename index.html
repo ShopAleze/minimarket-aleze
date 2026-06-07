@@ -6919,7 +6919,10 @@ function mobFilterPos() {
 function renderMobPosCats() {
   const el = document.getElementById('mob-pos-categorias');
   if (!el) return;
-  const cats = [{ id: '', emoji: '🏪', nombre: 'Todos', imagen: null }, ...DB.categorias];
+  const catPromo = DB.categorias.find(c => c.nombre === 'Promociones');
+  const otrosCats = DB.categorias.filter(c => c.nombre !== 'Promociones');
+  const catsOrdenadas = catPromo ? [catPromo, ...otrosCats] : otrosCats;
+  const cats = [{ id: '', emoji: '🏪', nombre: 'Todos', imagen: null }, ...catsOrdenadas];
   el.innerHTML = cats.map(c => {
     const icon = c.imagen
       ? `<img src="${c.imagen}" style="width:14px;height:14px;object-fit:cover;border-radius:2px;vertical-align:middle;margin-right:2px"/>`
@@ -6967,11 +6970,18 @@ prods = prods || DB.productos.filter(p => p.stock > 0 && (!p.esCombo || p.promoA
 function mobAddToCart(prodId) {
   const prod = DB.productos.find(p => p.id === prodId);
   if (!prod || prod.stock === 0) return;
+  if (prod.esCombo && prod.componentes) {
+    for (const comp of prod.componentes) {
+      const cp = DB.productos.find(x => x.id === comp.prodId);
+      if (!cp || cp.stock < comp.cant) {
+        alert(`Stock insuficiente de "${cp?.nombre || 'componente'}" para armar este pack`);
+        return;
+      }
+    }
+  }
   const promoActivas = DB.promociones.filter(p => p.activa && p.hasta >= today());
-  const promo = promoActivas.find(pr => pr.prod1 == prodId || pr.prod2 == prodId);
-  // 2-product combos: use regular price — discount shown in total
-  const esCombo2 = promo && promo.prod2;
-  const precio = (!esCombo2 && promo) ? promo.precioPromo : prod.precio;
+  const promo = promoActivas.find(pr => !pr.packProdId && pr.prod1 == prodId && !pr.prod2);
+  const precio = promo ? promo.precioPromo : prod.precio;
   const existing = cart.find(i => i.prodId === prodId);
   if (existing) {
     if (existing.cant >= prod.stock) { alert('Stock insuficiente'); return; }
