@@ -6579,7 +6579,10 @@ function calcPromo() {
 }
 
 function calcPromoDesdeManual() {
-  const costoTotal = parseFloat(document.getElementById('promo-precio-orig').value) || 0;
+  const ids = ['promo-prod1','promo-prod2','promo-prod3']
+    .map(id => parseInt(document.getElementById(id)?.value) || null);
+  const prods = ids.map(id => id ? DB.productos.find(p => p.id === id) : null).filter(Boolean);
+  const costoTotal = prods.reduce((s, p) => s + p.costo, 0);
   const precioPromo = parseFloat(document.getElementById('promo-precio-promo').value) || 0;
   if (costoTotal > 0) {
     const margenReal = Math.round((precioPromo / costoTotal - 1) * 100);
