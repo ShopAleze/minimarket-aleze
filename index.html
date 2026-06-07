@@ -6520,83 +6520,276 @@ function renderPromociones() {
   </tr>`).join('') || '<tr><td colspan="8" style="text-align:center;padding:1rem;color:var(--gray-400)">Sin promociones</td></tr>';
 }
 
-function editarPromocion(id) {
-  editingPromoId = id;
-  const pr = DB.promociones.find(x => x.id === id);
-  const prods = DB.productos;
-  ['promo-prod1','promo-prod2'].forEach((selId, idx) => {
+  function _llenarSelectsPromo() {
+  const prods = DB.productos.filter(p => !p.esCombo);
+  ['promo-prod1','promo-prod2','promo-prod3'].forEach((selId, idx) => {
     const sel = document.getElementById(selId);
     if (!sel) return;
-    sel.innerHTML = (idx===1?'<option value="">Sin segundo producto</option>':'') +
-      prods.map(p=>`<option value="${p.id}">${p.nombre} (${sol(p.precio)})</option>`).join('');
+    sel.innerHTML = (idx > 0 ? `<option value="">— Sin producto ${idx+1} —</option>` : '') +
+      prods.map(p => `<option value="${p.id}">${p.nombre} (${sol(p.precio)})</option>`).join('');
   });
-  document.getElementById('promo-nombre').value = pr.nombre;
-  document.getElementById('promo-tipo-sel').value = pr.tipo;
-  document.getElementById('promo-prod1').value = pr.prod1||'';
-  document.getElementById('promo-prod2').value = pr.prod2||'';
-  document.getElementById('promo-precio-orig').value = pr.precioOrig;
-  document.getElementById('promo-precio-promo').value = pr.precioPromo;
-  document.getElementById('promo-desde').value = pr.desde;
-  document.getElementById('promo-hasta').value = pr.hasta;
-  abrirModal('modal-promocion');
+}
+
+function onPromoProductoChange() {
+  const ids = ['promo-prod1','promo-prod2','promo-prod3']
+    .map(id => parseInt(document.getElementById(id)?.value) || null);
+  const prods = ids.map(id => id ? DB.productos.find(p => p.id === id) : null);
+  const nombreActual = document.getElementById('promo-nombre').value;
+  const nombreSugerido = 'Promo ' + prods.filter(Boolean).map(p => p.nombre).join(' + ');
+  if (!nombreActual || nombreActual.startsWith('Promo ')) {
+    document.getElementById('promo-nombre').value = nombreSugerido;
+  }
+  calcPromo();
+}
+
+function calcPromo() {
+  const ids = ['promo-prod1','promo-prod2','promo-prod3']
+    .map(id => parseInt(document.getElementById(id)?.value) || null);
+  const prods = ids.map(id => id ? DB.productos.find(p => p.id === id) : null).filter(Boolean);
+  if (!prods.length) {
+    document.getElementById('promo-calc-detalle').textContent = 'Selecciona al menos un producto';
+    return;
+  }
+  const margen = parseFloat(document.getElementById('promo-margen-num').value) || 0;
+  const costoTotal = prods.reduce((s, p) => s + p.costo, 0);
+  const precioOrig = prods.reduce((s, p) => s + p.precio, 0);
+  const precioSugerido = Math.ceil(costoTotal * (1 + margen / 100) * 10) / 10;
+  const ahorro = precioOrig - precioSugerido;
+  document.getElementById('promo-precio-orig').value = precioOrig.toFixed(2);
+  document.getElementById('promo-precio-promo').value = precioSugerido.toFixed(2);
+  document.getElementById('promo-calc-detalle').innerHTML =
+    prods.map(p => `<div style="display:flex;justify-content:space-between"><span>${p.nombre} x1:</span><span>Costo ${sol(p.costo)} / Venta ${sol(p.precio)}</span></div>`).join('') +
+    `<div style="border-top:1px solid var(--gray-200);margin-top:.3rem;padding-top:.3rem">
+      <div style="display:flex;justify-content:space-between"><span>Costo total:</span><strong>${sol(costoTotal)}</strong></div>
+      <div style="display:flex;justify-content:space-between"><span>Precio sumado:</span><span style="text-decoration:line-through;color:var(--gray-400)">${sol(precioOrig)}</span></div>
+      <div style="display:flex;justify-content:space-between"><span>Precio oferta (${margen}% margen):</span><strong style="color:var(--accent)">${sol(precioSugerido)}</strong></div>
+      <div style="display:flex;justify-content:space-between"><span>Ahorro cliente:</span><strong style="color:var(--primary)">${sol(ahorro > 0 ? ahorro : 0)}</strong></div>
+    </div>`;
+  document.getElementById('promo-aviso').textContent = precioSugerido < costoTotal ? '⚠️ Precio por debajo del costo' : '';
+}
+
+function calcPromoDesdeManual() {
+  const costoTotal = parseFloat(document.getElementById('promo-precio-orig').value) || 0;
+  const precioPromo = parseFloat(document.getElementById('promo-precio-promo').value) || 0;
+  if (costoTotal > 0) {
+    const margenReal = Math.round((precioPromo / costoTotal - 1) * 100);
+    document.getElementById('promo-margen-num').value = margenReal;
+    document.getElementById('promo-margen-slider').value = Math.max(0, margenReal);
+  }
+}
+
+function onPromoImgSelect(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    const img = new Image();
+    img.onload = function() {
+      const canvas = document.createElement('canvas');
+      canvas.width = 128; canvas.height = 128;
+      const ctx = canvas.getContext('2d');
+      const scale = Math.max(128/img.width, 128/img.height);
+      const sw = 128/scale, sh = 128/scale;
+      const sx = (img.width-sw)/2, sy = (img.height-sh)/2;
+      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, 128, 128);
+      const data = canvas.toDataURL('image/webp', 0.78);
+      document.getElementById('promo-img-data').value = data;
+      const preview = document.getElementById('promo-img-preview');
+      if (preview) preview.innerHTML = `<img src="${data}" style="width:100%;height:100%;object-fit:cover;border-radius:8px"/>`;
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function limpiarImgPromo() {
+  document.getElementById('promo-img-data').value = '';
+  document.getElementById('promo-img-file').value = '';
+  const preview = document.getElementById('promo-img-preview');
+  if (preview) { preview.innerHTML = '🏷️'; preview.style.fontSize = '1.8rem'; }
+}
+
+function imprimirQrPromo() {
+  const codigo = document.getElementById('promo-qr-codigo')?.value || '';
+  const nombre = document.getElementById('promo-nombre').value || 'Promo';
+  if (!codigo) return;
+  const win = window.open('', '_blank');
+  win.document.write(`<!DOCTYPE html><html><head><title>QR ${nombre}</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>
+    </head><body style="text-align:center;padding:20px">
+    <h3>${nombre}</h3><div id="qr"></div>
+    <script>new QRCode(document.getElementById('qr'),{text:'${codigo}',width:200,height:200});<\/script>
+    <br><button onclick="window.print()">🖨️ Imprimir</button>
+    </body></html>`);
+  win.document.close();
 }
 
 function abrirModalPromocion() {
   editingPromoId = null;
-  const prods = DB.productos;
-  ['promo-prod1','promo-prod2'].forEach((selId, idx) => {
-    const sel = document.getElementById(selId);
-    if (!sel) return;
-    sel.innerHTML = (idx===1?'<option value="">Sin segundo producto</option>':'') +
-      prods.map(p=>`<option value="${p.id}">${p.nombre} (${sol(p.precio)})</option>`).join('');
-  });
-  const hoy = today(); const en7 = new Date(); en7.setDate(en7.getDate()+7);
+  document.getElementById('promo-modal-titulo').textContent = '🏷️ Nueva Promoción / Combo';
+  _llenarSelectsPromo();
+  const hoy = today();
+  const en7 = new Date(); en7.setDate(en7.getDate()+7);
   document.getElementById('promo-desde').value = hoy;
   document.getElementById('promo-hasta').value = en7.toISOString().split('T')[0];
-  ['promo-nombre','promo-precio-orig','promo-precio-promo'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('promo-nombre').value = '';
+  document.getElementById('promo-margen-num').value = 20;
+  document.getElementById('promo-margen-slider').value = 20;
+  document.getElementById('promo-precio-orig').value = '';
+  document.getElementById('promo-precio-promo').value = '';
+  document.getElementById('promo-calc-detalle').textContent = 'Selecciona al menos un producto';
+  document.getElementById('promo-aviso').textContent = '';
+  document.getElementById('promo-limite').value = 100;
+  document.getElementById('promo-img-data').value = '';
+  document.getElementById('promo-img-file').value = '';
+  const preview = document.getElementById('promo-img-preview');
+  if (preview) { preview.innerHTML = '🏷️'; preview.style.fontSize = '1.8rem'; }
+  document.getElementById('promo-qr-wrap').style.display = 'none';
+  abrirModal('modal-promocion');
+}
+
+function editarPromocion(id) {
+  editingPromoId = id;
+  const pr = DB.promociones.find(x => x.id === id);
+  document.getElementById('promo-modal-titulo').textContent = '✏️ Editar Promoción';
+  _llenarSelectsPromo();
+  document.getElementById('promo-nombre').value = pr.nombre;
+  document.getElementById('promo-tipo-sel').value = pr.tipo;
+  document.getElementById('promo-prod1').value = pr.prod1 || '';
+  document.getElementById('promo-prod2').value = pr.prod2 || '';
+  document.getElementById('promo-prod3').value = pr.prod3 || '';
+  document.getElementById('promo-desde').value = pr.desde;
+  document.getElementById('promo-hasta').value = pr.hasta;
+  document.getElementById('promo-limite').value = pr.limite || 100;
+  const margen = pr.precioOrig > 0 ? Math.round((pr.precioPromo/pr.precioOrig-1)*100) : 20;
+  document.getElementById('promo-margen-num').value = Math.max(0, margen);
+  document.getElementById('promo-margen-slider').value = Math.max(0, margen);
+  document.getElementById('promo-aviso').textContent = '';
+  calcPromo();
+  document.getElementById('promo-precio-promo').value = pr.precioPromo;
+  const imgData = pr.imagen || '';
+  document.getElementById('promo-img-data').value = imgData;
+  const preview = document.getElementById('promo-img-preview');
+  if (imgData && preview) {
+    preview.innerHTML = `<img src="${imgData}" style="width:100%;height:100%;object-fit:cover;border-radius:8px"/>`;
+  }
+  if (pr.packProdId) {
+    document.getElementById('promo-qr-wrap').style.display = 'block';
+    document.getElementById('promo-qr-label').textContent = pr.nombre;
+    const el = document.getElementById('promo-qr-preview');
+    if (el) { el.innerHTML = ''; new QRCode(el, {text: pr.packCodigo||pr.packProdId.toString(), width:120, height:120}); }
+  } else {
+    document.getElementById('promo-qr-wrap').style.display = 'none';
+  }
   abrirModal('modal-promocion');
 }
 
 function guardarPromocion() {
   const nombre = document.getElementById('promo-nombre').value.trim();
-  const prod1Id = parseInt(document.getElementById('promo-prod1').value);
-  const prod1 = DB.productos.find(p => p.id === prod1Id);
+  const prod1Id = parseInt(document.getElementById('promo-prod1').value) || null;
   const prod2Id = parseInt(document.getElementById('promo-prod2').value) || null;
+  const prod3Id = parseInt(document.getElementById('promo-prod3').value) || null;
+  const prod1 = prod1Id ? DB.productos.find(p => p.id === prod1Id) : null;
   const prod2 = prod2Id ? DB.productos.find(p => p.id === prod2Id) : null;
+  const prod3 = prod3Id ? DB.productos.find(p => p.id === prod3Id) : null;
   const precioOrig = parseFloat(document.getElementById('promo-precio-orig').value) || 0;
   const precioPromo = parseFloat(document.getElementById('promo-precio-promo').value) || 0;
-  if (!nombre || !prod1) { alert('Completa los campos obligatorios'); return; }
-  if (precioPromo < (prod1?.costo||0) && !confirm('El precio promo está por debajo del costo. ¿Continuar?')) return;
+  const limite = parseInt(document.getElementById('promo-limite').value) || 0;
+  const imagen = document.getElementById('promo-img-data').value || '';
+  const tipo = document.getElementById('promo-tipo-sel').value;
+  if (!nombre || !prod1Id) { alert('Completa nombre y producto 1'); return; }
+  const costoTotal = (prod1?.costo||0) + (prod2?.costo||0) + (prod3?.costo||0);
+  if (precioPromo < costoTotal && !confirm('El precio oferta está por debajo del costo. ¿Continuar?')) return;
+  const espack = tipo === 'pack' && (prod2Id || prod3Id);
+  let packProdId = editingPromoId ? (DB.promociones.find(x=>x.id===editingPromoId)?.packProdId || null) : null;
+  let packCodigo = editingPromoId ? (DB.promociones.find(x=>x.id===editingPromoId)?.packCodigo || null) : null;
+  if (espack && !packProdId) {
+    // Crear categoría Promociones si no existe
+    let catPromo = DB.categorias.find(c => c.nombre === 'Promociones');
+    if (!catPromo) {
+      catPromo = { id: getId(), nombre: 'Promociones', emoji: '🏷️', margen: 0, imagen: '' };
+      DB.categorias.push(catPromo);
+    }
+    packProdId = getId();
+    packCodigo = 'PROMO-' + packProdId;
+    const componentes = [
+      { prodId: prod1Id, cant: 1 },
+      ...(prod2Id ? [{ prodId: prod2Id, cant: 1 }] : []),
+      ...(prod3Id ? [{ prodId: prod3Id, cant: 1 }] : [])
+    ];
+    DB.productos.push({
+      id: packProdId, nombre, cat: catPromo.id,
+      tipo: 'combo', unidad: 'und',
+      costo: costoTotal, precio: precioPromo,
+      stock: 999, stockMin: 0, venc: '',
+      codigo: packCodigo, prov: null,
+      esCombo: true, componentes, imagen
+    });
+    fbGuardarProductos();
+    // Mostrar QR
+    document.getElementById('promo-qr-wrap').style.display = 'block';
+    document.getElementById('promo-qr-label').textContent = nombre;
+    const el = document.getElementById('promo-qr-preview');
+    if (el) { el.innerHTML = ''; new QRCode(el, { text: packCodigo, width: 120, height: 120 }); }
+  } else if (espack && packProdId) {
+    // Actualizar producto pack existente
+    const prodPack = DB.productos.find(p => p.id === packProdId);
+    if (prodPack) {
+      prodPack.nombre = nombre;
+      prodPack.precio = precioPromo;
+      prodPack.costo = costoTotal;
+      prodPack.imagen = imagen;
+      prodPack.componentes = [
+        { prodId: prod1Id, cant: 1 },
+        ...(prod2Id ? [{ prodId: prod2Id, cant: 1 }] : []),
+        ...(prod3Id ? [{ prodId: prod3Id, cant: 1 }] : [])
+      ];
+      fbGuardarProductos();
+    }
+  }
   const data = {
-    nombre, tipo: document.getElementById('promo-tipo-sel').value,
-    prod1: prod1Id, prod1nombre: prod1?.nombre,
-    prod2: prod2Id, prod2nombre: prod2?.nombre||null,
+    nombre, tipo,
+    prod1: prod1Id, prod1nombre: prod1?.nombre || null,
+    prod2: prod2Id, prod2nombre: prod2?.nombre || null,
+    prod3: prod3Id, prod3nombre: prod3?.nombre || null,
     precioOrig, precioPromo,
     desde: document.getElementById('promo-desde').value,
     hasta: document.getElementById('promo-hasta').value,
-    activa: true
+    activa: true, limite, vendidos: 0,
+    imagen, packProdId, packCodigo
   };
   if (editingPromoId) {
     const idx = DB.promociones.findIndex(x => x.id === editingPromoId);
-    if (idx>=0) DB.promociones[idx] = { ...DB.promociones[idx], ...data };
+    if (idx >= 0) DB.promociones[idx] = { ...DB.promociones[idx], ...data };
   } else {
     DB.promociones.push({ id: getId(), ...data });
   }
- fbGuardar();
+  fbGuardar();
   cerrarModal('modal-promocion');
   renderPromociones();
-  try { renderPosGrid(); } catch(e){}
-  try { renderMobPosGrid(); } catch(e){}
+  try { renderPosGrid(); } catch(e) {}
+  try { renderMobPosGrid(); } catch(e) {}
 }
 
 function togglePromo(id) {
   const p = DB.promociones.find(x => x.id === id);
   if (p) { p.activa = !p.activa; fbGuardar(); }
   renderPromociones();
-  try { renderPosGrid(); } catch(e){}
-  try { renderMobPosGrid(); } catch(e){}
+  try { renderPosGrid(); } catch(e) {}
+  try { renderMobPosGrid(); } catch(e) {}
 }
-function eliminarPromo(id) { if (!confirm('¿Eliminar?')) return; DB.promociones = DB.promociones.filter(p => p.id !== id); fbGuardar(); renderPromociones(); }
+
+function eliminarPromo(id) {
+  if (!confirm('¿Eliminar?')) return;
+  const p = DB.promociones.find(x => x.id === id);
+  if (p && p.packProdId) {
+    DB.productos = DB.productos.filter(x => x.id !== p.packProdId);
+    fbGuardarProductos();
+  }
+  DB.promociones = DB.promociones.filter(x => x.id !== id);
+  fbGuardar();
+  renderPromociones();
+}
   
 // Premio en POS visible sin interrumpir (Punto 7)
 function actualizarPremioAlertPOS() {
