@@ -1710,7 +1710,6 @@ function _loadHtml5QrCode(cb) {
         <div class="flex-between" style="margin-bottom:1rem">
           <div class="page-title" style="margin:0">Promociones</div>
           <div style="display:flex;gap:.5rem">
-            <button type="button" class="btn btn-outline btn-sm" onclick="abrirModalComboSinergia()">🔗 Combo Sinergia</button>
             <button type="button" class="btn btn-primary btn-sm" onclick="abrirModalPromocion()">+ Nueva Promoción</button>
           </div>
         </div>
@@ -2201,48 +2200,6 @@ function _loadHtml5QrCode(cb) {
   </div>
 </div>
 
-<!-- Modal Combo Sinergia (Punto 8) -->
-<div class="modal-overlay" id="modal-combo-sinergia">
-  <div class="modal modal-lg">
-    <div class="modal-header">
-      <h3>🔗 Crear Combo Sinergia</h3>
-      <button type="button" class="modal-close" onclick="cerrarModal('modal-combo-sinergia')">✕</button>
-    </div>
-    <p style="font-size:.82rem;color:var(--gray-500);margin-bottom:1rem">El combo se crea como un <strong>nuevo producto</strong> en el inventario. Al venderse, descuenta unidades de cada producto individualmente.</p>
-    <div class="grid-2">
-      <div>
-        <div class="form-group"><label>Nombre del combo *</label><input type="text" class="form-control" id="combo-nombre" placeholder="Ej: Combo Gaseosa + Papas" /></div>
-        <div class="form-group"><label>Producto 1 *</label><select class="form-control" id="combo-prod1" onchange="calcCombo()"></select></div>
-        <div class="form-group"><label>Cantidad prod. 1</label><input type="number" class="form-control" id="combo-cant1" value="1" min="1" step="1" oninput="calcCombo()" /></div>
-        <div class="form-group"><label>Producto 2 *</label><select class="form-control" id="combo-prod2" onchange="calcCombo()"></select></div>
-        <div class="form-group"><label>Cantidad prod. 2</label><input type="number" class="form-control" id="combo-cant2" value="1" min="1" step="1" oninput="calcCombo()" /></div>
-      </div>
-      <div>
-        <div style="background:var(--gray-50);border-radius:10px;padding:1rem;margin-bottom:.75rem">
-          <div style="font-size:.8rem;font-weight:600;color:var(--gray-600);margin-bottom:.5rem">📊 Cálculo automático</div>
-          <div style="font-size:.82rem" id="combo-calc-detalle">Selecciona los productos para ver el cálculo</div>
-        </div>
-        <div class="form-group">
-          <label>Margen de ganancia combo % (15-25% sugerido)</label>
-          <div style="display:flex;gap:.5rem;align-items:center">
-            <input type="range" id="combo-margen-slider" min="5" max="50" value="20" oninput="document.getElementById('combo-margen-num').value=this.value; calcCombo()" style="flex:1" />
-            <input type="number" id="combo-margen-num" class="form-control" value="20" min="5" max="50" style="width:70px" oninput="document.getElementById('combo-margen-slider').value=this.value; calcCombo()" />
-            <span style="font-size:.82rem">%</span>
-          </div>
-        </div>
-        <div class="form-group"><label>Precio combo final (S/) — editable</label><input type="number" class="form-control" id="combo-precio-final" step="0.1" /></div>
-        <div class="form-group"><label>Stock inicial del combo</label><input type="number" class="form-control" id="combo-stock" value="10" min="1" /></div>
-        <div class="form-group"><label>Vigencia hasta</label><input type="date" class="form-control" id="combo-hasta" /></div>
-      </div>
-    </div>
-    <div id="combo-aviso" style="font-size:.78rem;color:var(--danger);margin-bottom:.5rem"></div>
-    <div style="display:flex;justify-content:flex-end;gap:.5rem;margin-top:1rem">
-      <button type="button" class="btn btn-outline" onclick="cerrarModal('modal-combo-sinergia')">Cancelar</button>
-      <button type="button" class="btn btn-primary" onclick="guardarComboSinergia()">Crear combo en inventario</button>
-    </div>
-  </div>
-</div>
-
 <!-- Modal actualizar precios de categoría uno a uno -->
 <div class="modal-overlay" id="modal-cat-update-precios">
   <div class="modal modal-lg">
@@ -2259,40 +2216,103 @@ function _loadHtml5QrCode(cb) {
   </div>
 </div>
 
-<!-- Modal Promoción -->
+<!-- Modal Promoción Unificado -->
 <div class="modal-overlay" id="modal-promocion">
   <div class="modal modal-lg">
     <div class="modal-header">
-      <h3>Nueva Promoción</h3>
+      <h3 id="promo-modal-titulo">🏷️ Nueva Promoción / Combo</h3>
       <button type="button" class="modal-close" onclick="cerrarModal('modal-promocion')">✕</button>
     </div>
-    <div class="form-group"><label>Nombre de la promoción *</label><input type="text" class="form-control" id="promo-nombre" /></div>
-    <div class="form-group"><label>Tipo</label>
-      <select class="form-control" id="promo-tipo-sel">
-        <option value="pack">Pack combinado</option><option value="descuento">Descuento directo %</option>
-        <option value="2x1">2x1</option><option value="3x2">3x2</option><option value="precio">Precio especial</option>
-      </select>
-    </div>
-    <div class="form-group"><label>Productos incluidos</label>
-      <select class="form-control" id="promo-prod1"></select>
-      <select class="form-control" id="promo-prod2" style="margin-top:0.5rem"><option value="">Segundo producto (opcional)</option></select>
-    </div>
     <div class="grid-2">
-      <div class="form-group"><label>Precio original (S/)</label><input type="number" class="form-control" id="promo-precio-orig" step="0.01" oninput="calcPrecioPromo()" /></div>
-      <div class="form-group"><label>Precio promocional sugerido (S/)</label><input type="number" class="form-control" id="promo-precio-promo" step="0.01" /></div>
+      <div>
+        <div class="form-group">
+          <label>Nombre *</label>
+          <input type="text" class="form-control" id="promo-nombre" placeholder="Se sugiere al elegir productos" />
+        </div>
+        <div class="form-group">
+          <label>Tipo</label>
+          <select class="form-control" id="promo-tipo-sel" onchange="calcPromo()">
+            <option value="descuento">Descuento directo</option>
+            <option value="pack">Pack 2-3 productos</option>
+            <option value="2x1">2x1</option>
+            <option value="3x2">3x2</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Producto 1 *</label>
+          <select class="form-control" id="promo-prod1" onchange="onPromoProductoChange()"></select>
+        </div>
+        <div class="form-group">
+          <label>Producto 2 <span style="color:var(--gray-400)">(opcional)</span></label>
+          <select class="form-control" id="promo-prod2" onchange="onPromoProductoChange()">
+            <option value="">— Sin segundo producto —</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Producto 3 <span style="color:var(--gray-400)">(opcional)</span></label>
+          <select class="form-control" id="promo-prod3" onchange="onPromoProductoChange()">
+            <option value="">— Sin tercer producto —</option>
+          </select>
+        </div>
+        <div class="grid-2">
+          <div class="form-group"><label>Válido desde</label><input type="date" class="form-control" id="promo-desde" /></div>
+          <div class="form-group"><label>Válido hasta</label><input type="date" class="form-control" id="promo-hasta" /></div>
+        </div>
+        <div class="form-group">
+          <label>Límite de unidades <span style="font-size:.75rem;color:var(--gray-400)">(pausa automática al llegar)</span></label>
+          <input type="number" class="form-control" id="promo-limite" value="100" min="1" step="1" />
+        </div>
+      </div>
+      <div>
+        <div style="background:var(--gray-50);border-radius:10px;padding:1rem;margin-bottom:.75rem">
+          <div style="font-size:.8rem;font-weight:600;color:var(--gray-600);margin-bottom:.5rem">📊 Cálculo automático</div>
+          <div style="font-size:.82rem" id="promo-calc-detalle">Selecciona al menos un producto</div>
+        </div>
+        <div class="form-group">
+          <label>Margen de ganancia %</label>
+          <div style="display:flex;gap:.5rem;align-items:center">
+            <input type="range" id="promo-margen-slider" min="0" max="80" value="20"
+              oninput="document.getElementById('promo-margen-num').value=this.value; calcPromo()" style="flex:1" />
+            <input type="number" id="promo-margen-num" class="form-control" value="20" min="0" max="80"
+              style="width:70px" oninput="document.getElementById('promo-margen-slider').value=this.value; calcPromo()" />
+            <span style="font-size:.82rem">%</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Precio oferta final (S/) — editable</label>
+          <input type="number" class="form-control" id="promo-precio-promo" step="0.01" oninput="calcPromoDesdeManual()" />
+        </div>
+        <div class="form-group">
+          <label>Precio normal referencia (S/)</label>
+          <input type="number" class="form-control" id="promo-precio-orig" step="0.01" readonly style="background:var(--gray-50)" />
+        </div>
+        <div id="promo-aviso" style="font-size:.78rem;color:var(--danger);margin-bottom:.5rem"></div>
+        <div class="form-group">
+          <label>📷 Imagen del combo (opcional)</label>
+          <div style="display:flex;gap:.75rem;align-items:flex-start">
+            <div id="promo-img-preview" style="width:64px;height:64px;border:2px dashed var(--gray-300);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.8rem;background:var(--gray-50);overflow:hidden;flex-shrink:0">🏷️</div>
+            <div style="flex:1">
+              <input type="file" id="promo-img-file" accept="image/*" style="display:none" onchange="onPromoImgSelect(event)" />
+              <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('promo-img-file').click()" style="width:100%;margin-bottom:.3rem">📁 Seleccionar imagen</button>
+              <button type="button" class="btn btn-xs" onclick="limpiarImgPromo()" style="background:var(--danger-light);color:var(--danger);width:100%">✕ Quitar imagen</button>
+            </div>
+          </div>
+          <input type="hidden" id="promo-img-data" />
+        </div>
+        <div id="promo-qr-wrap" style="display:none;margin-top:.5rem;border:1px dashed var(--gray-300);border-radius:8px;padding:.75rem;text-align:center;background:white">
+          <div style="font-size:.8rem;font-weight:700;color:var(--gray-700);margin-bottom:.5rem" id="promo-qr-label"></div>
+          <div id="promo-qr-preview"></div>
+          <button type="button" class="btn btn-outline btn-xs" style="margin-top:.5rem" onclick="imprimirQrPromo()">🖨️ Imprimir QR</button>
+        </div>
+      </div>
     </div>
-    <div class="grid-2">
-      <div class="form-group"><label>Válido desde</label><input type="date" class="form-control" id="promo-desde" /></div>
-      <div class="form-group"><label>Válido hasta</label><input type="date" class="form-control" id="promo-hasta" /></div>
-    </div>
-    <div id="promo-aviso" style="font-size:0.8rem;color:var(--danger);margin-bottom:0.5rem"></div>
-    <div style="display:flex;justify-content:flex-end;gap:0.5rem;margin-top:1rem">
+    <div style="display:flex;justify-content:flex-end;gap:.5rem;margin-top:1rem">
       <button type="button" class="btn btn-outline" onclick="cerrarModal('modal-promocion')">Cancelar</button>
       <button type="button" class="btn btn-primary" onclick="guardarPromocion()">Guardar Promoción</button>
     </div>
   </div>
 </div>
-
+  
 <!-- Modal Cliente Rápido POS -->
 <div class="modal-overlay" id="modal-cli-rapido">
   <div class="modal"><div class="modal-header"><h3>👤 Cliente rápido</h3><button type="button" class="modal-close" onclick="cerrarModal('modal-cli-rapido')">✕</button></div>
@@ -6577,102 +6597,7 @@ function togglePromo(id) {
   try { renderMobPosGrid(); } catch(e){}
 }
 function eliminarPromo(id) { if (!confirm('¿Eliminar?')) return; DB.promociones = DB.promociones.filter(p => p.id !== id); fbGuardar(); renderPromociones(); }
-
-// ===================== COMBO SINERGIA (Punto 8) =====================
-function abrirModalComboSinergia() {
-  const prods = DB.productos.filter(p => p.stock > 0 && !p.esCombo);
-  ['combo-prod1','combo-prod2'].forEach(selId => {
-    document.getElementById(selId).innerHTML = prods.map(p =>
-      `<option value="${p.id}">${p.nombre} — ${sol(p.precio)} (stock: ${p.stock})</option>`).join('');
-  });
-  document.getElementById('combo-nombre').value = '';
-  document.getElementById('combo-cant1').value = 1;
-  document.getElementById('combo-cant2').value = 1;
-  document.getElementById('combo-margen-slider').value = 20;
-  document.getElementById('combo-margen-num').value = 20;
-  document.getElementById('combo-stock').value = 10;
-  document.getElementById('combo-aviso').textContent = '';
-  const en30 = new Date(); en30.setDate(en30.getDate()+30);
-  document.getElementById('combo-hasta').value = en30.toISOString().split('T')[0];
-  calcCombo();
-  abrirModal('modal-combo-sinergia');
-}
-
-function calcCombo() {
-  const p1Id = parseInt(document.getElementById('combo-prod1').value);
-  const p2Id = parseInt(document.getElementById('combo-prod2').value);
-  const cant1 = parseFloat(document.getElementById('combo-cant1').value) || 1;
-  const cant2 = parseFloat(document.getElementById('combo-cant2').value) || 1;
-  const margen = parseFloat(document.getElementById('combo-margen-num').value) || 20;
-  const p1 = DB.productos.find(x => x.id === p1Id);
-  const p2 = DB.productos.find(x => x.id === p2Id);
-  if (!p1 || !p2) return;
-  const costoTotal = (p1.costo*cant1)+(p2.costo*cant2);
-  const precioSumado = (p1.precio*cant1)+(p2.precio*cant2);
-  const precioCombo = Math.ceil(costoTotal*(1+margen/100)*10)/10;
-  const ahorro = precioSumado - precioCombo;
-  document.getElementById('combo-calc-detalle').innerHTML = `
-    <div style="display:flex;flex-direction:column;gap:.3rem;font-size:.82rem">
-      <div class="flex-between"><span>${p1.nombre} x${cant1}:</span><span>Costo ${sol(p1.costo*cant1)} / Venta ${sol(p1.precio*cant1)}</span></div>
-      <div class="flex-between"><span>${p2.nombre} x${cant2}:</span><span>Costo ${sol(p2.costo*cant2)} / Venta ${sol(p2.precio*cant2)}</span></div>
-      <div style="border-top:1px solid var(--gray-200);padding-top:.3rem" class="flex-between"><span>Costo total:</span><strong>${sol(costoTotal)}</strong></div>
-      <div class="flex-between"><span>Precio individual sumado:</span><span style="text-decoration:line-through;color:var(--gray-400)">${sol(precioSumado)}</span></div>
-      <div class="flex-between"><span>Precio combo (${margen}% margen):</span><strong style="color:var(--accent)">${sol(precioCombo)}</strong></div>
-      <div class="flex-between"><span>Ahorro cliente:</span><strong style="color:var(--primary)">${sol(ahorro>0?ahorro:0)}</strong></div>
-    </div>`;
-  document.getElementById('combo-precio-final').value = precioCombo.toFixed(2);
-  if (!document.getElementById('combo-nombre').value)
-    document.getElementById('combo-nombre').value = `Combo ${p1.nombre} + ${p2.nombre}`;
-  document.getElementById('combo-aviso').textContent = precioCombo < costoTotal ? '⚠️ Precio por debajo del costo total' : '';
-}
-
-function guardarComboSinergia() {
-  const nombre = document.getElementById('combo-nombre').value.trim();
-  const p1Id = parseInt(document.getElementById('combo-prod1').value);
-  const p2Id = parseInt(document.getElementById('combo-prod2').value);
-  const cant1 = parseFloat(document.getElementById('combo-cant1').value)||1;
-  const cant2 = parseFloat(document.getElementById('combo-cant2').value)||1;
-  const precio = parseFloat(document.getElementById('combo-precio-final').value)||0;
-  const stock = parseInt(document.getElementById('combo-stock').value)||1;
-  const hasta = document.getElementById('combo-hasta').value;
-  if (!nombre||!p1Id||!p2Id) { alert('Completa todos los campos'); return; }
-  if (p1Id===p2Id) { alert('Selecciona dos productos diferentes'); return; }
-  const p1=DB.productos.find(x=>x.id===p1Id);
-  const p2=DB.productos.find(x=>x.id===p2Id);
-  const costoTotal=(p1.costo*cant1)+(p2.costo*cant2);
-  if (precio<costoTotal&&!confirm('Precio bajo el costo. ¿Continuar?')) return;
-  const comboId = getId();
-  DB.productos.push({
-    id:comboId, nombre, cat:p1.cat, tipo:'combo', unidad:'und',
-    costo:costoTotal, precio, stock, stockMin:2, venc:hasta,
-    codigo:'9'+comboId.toString().slice(-11), prov:null,
-    esCombo:true, componentes:[{prodId:p1Id,cant:cant1},{prodId:p2Id,cant:cant2}]
-  });
-  DB.promociones.push({
-    id:getId(), nombre, tipo:'combo',
-    prod1:p1Id, prod1nombre:p1.nombre, prod2:p2Id, prod2nombre:p2.nombre,
-    precioOrig:(p1.precio*cant1)+(p2.precio*cant2), precioPromo:precio,
-    desde:today(), hasta, activa:true
-  });
-  fbGuardarProductos();
-  cerrarModal('modal-combo-sinergia');
-  renderInvTable();
-  alert(`✅ Combo "${nombre}" creado.\nAl venderse descuenta: ${cant1} de ${p1.nombre} y ${cant2} de ${p2.nombre}`);
-}
-
-// Interceptar addToCart para combos
-const _addToCartOrig = addToCart;
-window.addToCart = function(prodId) {
-  const prod = DB.productos.find(p=>p.id===prodId);
-  if (prod&&prod.esCombo&&prod.componentes) {
-    for (const comp of prod.componentes) {
-      const cp=DB.productos.find(x=>x.id===comp.prodId);
-      if (!cp||cp.stock<comp.cant) { alert(`Stock insuficiente de "${cp?.nombre||'componente'}" para armar el combo`); return; }
-    }
-  }
-  _addToCartOrig(prodId);
-};
-
+  
 // Premio en POS visible sin interrumpir (Punto 7)
 function actualizarPremioAlertPOS() {
   const cliId = parseInt(document.getElementById('pos-cliente').value)||null;
