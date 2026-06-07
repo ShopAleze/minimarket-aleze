@@ -3380,6 +3380,16 @@ function filterPosProducts() { renderPosGrid(); }
 function addToCart(prodId) {
   const prod = DB.productos.find(p => p.id === prodId);
   if (!prod) return;
+  // Validar stock de componentes si es combo pack
+  if (prod.esCombo && prod.componentes) {
+    for (const comp of prod.componentes) {
+      const cp = DB.productos.find(x => x.id === comp.prodId);
+      if (!cp || cp.stock < comp.cant) {
+        alert(`Stock insuficiente de "${cp?.nombre || 'componente'}" para armar este pack`);
+        return;
+      }
+    }
+  }
   const promoActivas = DB.promociones.filter(p => p.activa && p.hasta >= today());
   const promo = promoActivas.find(pr => pr.prod1 == prodId || pr.prod2 == prodId);
   // 2-product combos: keep regular price, discount applied in calcTotal
