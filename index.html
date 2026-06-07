@@ -3378,12 +3378,26 @@ function renderPosGrid(search = '') {
       <div class="p-price">${sol(precioMostrar)} ${promoTag}</div>
       <div class="p-stock">Stock: ${p.stock} ${p.unidad}</div>
     </div>`;
-  }).join('') || '<p style="color:var(--gray-400);font-size:0.85rem;padding:1rem">Sin productos</p>';
-  // 2-product combos: keep regular price, discount applied in calcTotal
-  // Single-product promos: apply promo price per unit
-  const esCombo2 = promo && promo.prod2;
-  const precio = (!esCombo2 && promo) ? promo.precioPromo : prod.precio;
+}).join('') || '<p style="color:var(--gray-400);font-size:0.85rem;padding:1rem">Sin productos</p>';
+}
 
+function filterPosProducts() { renderPosGrid(); }
+
+function addToCart(prodId) {
+  const prod = DB.productos.find(p => p.id === prodId);
+  if (!prod) return;
+  if (prod.esCombo && prod.componentes) {
+    for (const comp of prod.componentes) {
+      const cp = DB.productos.find(x => x.id === comp.prodId);
+      if (!cp || cp.stock < comp.cant) {
+        alert(`Stock insuficiente de "${cp?.nombre || 'componente'}" para armar este pack`);
+        return;
+      }
+    }
+  }
+  const promoActivas = DB.promociones.filter(p => p.activa && p.hasta >= today());
+  const promo = promoActivas.find(pr => !pr.packProdId && pr.prod1 == prodId && !pr.prod2);
+  const precio = promo ? promo.precioPromo : prod.precio;
   const existing = cart.find(i => i.prodId === prodId);
   if (existing) {
     if (existing.cant >= prod.stock) { alert('Stock insuficiente'); return; }
