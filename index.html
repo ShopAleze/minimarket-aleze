@@ -3335,8 +3335,12 @@ function renderPos() {
 
 function renderPosCategorias() {
   const wrap = document.getElementById('pos-categorias');
-  wrap.innerHTML = `<span class="tag ${posFilterCat === '' ? 'active' : ''}" onclick="setPosFilter('')">🏪 Todos</span>`;
-  DB.categorias.forEach(c => {
+wrap.innerHTML = `<span class="tag ${posFilterCat === '' ? 'active' : ''}" onclick="setPosFilter('')">🏪 Todos</span>`;
+  // Promociones siempre primero
+  const catPromo = DB.categorias.find(c => c.nombre === 'Promociones');
+  const otrosCats = DB.categorias.filter(c => c.nombre !== 'Promociones');
+  const catsOrdenadas = catPromo ? [catPromo, ...otrosCats] : otrosCats;
+  catsOrdenadas.forEach(c => {
     const icon = c.imagen
       ? `<img src="${c.imagen}" style="width:16px;height:16px;object-fit:cover;border-radius:3px;vertical-align:middle;margin-right:3px"/>`
       : (c.emoji + ' ');
