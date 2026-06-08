@@ -3646,9 +3646,17 @@ function cobrarFiado() {
   if (!DB.historialVentas) DB.historialVentas = [];
 DB.historialVentas.push({ ...fiado, origen: 'pos', estado: 'fiado', estadoStock: 'descontado' });
 
-  cart.forEach(item => {
+cart.forEach(item => {
     const prod = DB.productos.find(p => p.id === item.prodId);
-    if (prod) prod.stock = Math.max(0, prod.stock - item.cant);
+    if (prod) {
+      if (!prod.esCombo) prod.stock = Math.max(0, prod.stock - item.cant);
+      if (prod.esCombo && prod.componentes) {
+        prod.componentes.forEach(comp => {
+          const cp = DB.productos.find(x => x.id === comp.prodId);
+          if (cp) cp.stock = Math.max(0, cp.stock - comp.cant * item.cant);
+        });
+      }
+    }
   });
 
   const cli = DB.clientes.find(c => c.id === clienteId);
