@@ -3583,6 +3583,7 @@ function procesarVenta() {
   DB.historialVentas.push({ ...venta, origen: 'pos', estado: 'completado', estadoStock: 'descontado' });
 
 // Actualizar stock
+  _fbLastWriteProdTs = Date.now();
  cart.forEach(item => {
     const prod = DB.productos.find(p => p.id === item.prodId);
     if (prod) {
@@ -3633,7 +3634,6 @@ function cobrarFiado() {
   const comboDesc = comboInfo.total;
   const total = Math.max(0, sub - desc - comboDesc);
   const itemsConPrecioReal = aplicarPreciosProporcionales(cart, comboInfo);
-
   const fiado = {
     id: getId(), clienteId,
     items: itemsConPrecioReal.map(i => {
@@ -3645,7 +3645,8 @@ function cobrarFiado() {
   DB.fiados.push(fiado);
   if (!DB.historialVentas) DB.historialVentas = [];
 DB.historialVentas.push({ ...fiado, origen: 'pos', estado: 'fiado', estadoStock: 'descontado' });
-cart.forEach(item => {
+_fbLastWriteProdTs = Date.now();
+  cart.forEach(item => {
     const prod = DB.productos.find(p => p.id === item.prodId);
     if (prod) {
       if (!prod.esCombo) prod.stock = Math.max(0, prod.stock - item.cant);
@@ -7059,6 +7060,7 @@ DB.fiados.push(fiado);
   DB.historialVentas.push({ ...fiado, origen: 'pos', estado: 'fiado', estadoStock: 'descontado' });
 
 // Descontar stock
+  _fbLastWriteProdTs = Date.now();
   cart.forEach(item => {
     const prod = DB.productos.find(p => p.id === item.prodId);
     if (prod) {
@@ -7118,7 +7120,8 @@ function mobProcesarVenta() {
     descuento: desc + comboDesc, descuentoManual: desc, descuentoCombo: comboDesc,
     total, metodo, clienteId
   };
-  // Descontar stock
+// Descontar stock
+  _fbLastWriteProdTs = Date.now();
   cart.forEach(item => {
     const prod = DB.productos.find(p => p.id === item.prodId);
     if (prod) {
