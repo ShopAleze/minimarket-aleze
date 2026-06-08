@@ -7075,11 +7075,18 @@ function mobCobrarFiado() {
 DB.fiados.push(fiado);
   if (!DB.historialVentas) DB.historialVentas = [];
   DB.historialVentas.push({ ...fiado, origen: 'pos', estado: 'fiado', estadoStock: 'descontado' });
-
-  // Descontar stock
+// Descontar stock
   cart.forEach(item => {
     const prod = DB.productos.find(p => p.id === item.prodId);
-    if (prod) prod.stock = Math.max(0, prod.stock - item.cant);
+    if (prod) {
+      if (!prod.esCombo) prod.stock = Math.max(0, prod.stock - item.cant);
+      if (prod.esCombo && prod.componentes) {
+        prod.componentes.forEach(comp => {
+          const cp = DB.productos.find(x => x.id === comp.prodId);
+          if (cp) cp.stock = Math.max(0, cp.stock - comp.cant * item.cant);
+        });
+      }
+    }
   });
 
   // Actualizar deuda del cliente
@@ -8347,10 +8354,18 @@ function confirmarEntregaPedido(id) {
 
     if (!confirm(confirmMsg)) return;
 
-    // Descontar stock solo de items activos
+// Descontar stock solo de items activos
     (p.items||[]).filter(i=>i.cant>0&&!i.eliminado).forEach(item => {
       const prod = DB.productos.find(x => x.id === item.prodId);
-      if (prod) prod.stock = Math.max(0, prod.stock - item.cant);
+      if (prod) {
+        if (!prod.esCombo) prod.stock = Math.max(0, prod.stock - item.cant);
+        if (prod.esCombo && prod.componentes) {
+          prod.componentes.forEach(comp => {
+            const cp = DB.productos.find(x => x.id === comp.prodId);
+            if (cp) cp.stock = Math.max(0, cp.stock - comp.cant * item.cant);
+          });
+        }
+      }
     });
 
     // Registrar en ventas y historial
