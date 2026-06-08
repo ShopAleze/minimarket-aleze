@@ -1709,8 +1709,7 @@ function _loadHtml5QrCode(cb) {
       <div id="page-promociones" class="page">
         <div class="flex-between" style="margin-bottom:1rem">
           <div class="page-title" style="margin:0">Promociones</div>
-          <div style="display:flex;gap:.5rem">
-            <button type="button" class="btn btn-outline btn-sm" onclick="abrirModalComboSinergia()">🔗 Combo Sinergia</button>
+          <div style="display:flex;gap:.5rem">    
             <button type="button" class="btn btn-primary btn-sm" onclick="abrirModalPromocion()">+ Nueva Promoción</button>
           </div>
         </div>
@@ -2200,47 +2199,6 @@ function _loadHtml5QrCode(cb) {
     </div>
   </div>
 </div>
-
-<!-- Modal Combo Sinergia (Punto 8) -->
-<div class="modal-overlay" id="modal-combo-sinergia">
-  <div class="modal modal-lg">
-    <div class="modal-header">
-      <h3>🔗 Crear Combo Sinergia</h3>
-      <button type="button" class="modal-close" onclick="cerrarModal('modal-combo-sinergia')">✕</button>
-    </div>
-    <p style="font-size:.82rem;color:var(--gray-500);margin-bottom:1rem">El combo se crea como un <strong>nuevo producto</strong> en el inventario. Al venderse, descuenta unidades de cada producto individualmente.</p>
-    <div class="grid-2">
-      <div>
-        <div class="form-group"><label>Nombre del combo *</label><input type="text" class="form-control" id="combo-nombre" placeholder="Ej: Combo Gaseosa + Papas" /></div>
-        <div class="form-group"><label>Producto 1 *</label><select class="form-control" id="combo-prod1" onchange="calcCombo()"></select></div>
-        <div class="form-group"><label>Cantidad prod. 1</label><input type="number" class="form-control" id="combo-cant1" value="1" min="1" step="1" oninput="calcCombo()" /></div>
-        <div class="form-group"><label>Producto 2 *</label><select class="form-control" id="combo-prod2" onchange="calcCombo()"></select></div>
-        <div class="form-group"><label>Cantidad prod. 2</label><input type="number" class="form-control" id="combo-cant2" value="1" min="1" step="1" oninput="calcCombo()" /></div>
-      </div>
-      <div>
-        <div style="background:var(--gray-50);border-radius:10px;padding:1rem;margin-bottom:.75rem">
-          <div style="font-size:.8rem;font-weight:600;color:var(--gray-600);margin-bottom:.5rem">📊 Cálculo automático</div>
-          <div style="font-size:.82rem" id="combo-calc-detalle">Selecciona los productos para ver el cálculo</div>
-        </div>
-        <div class="form-group">
-          <label>Margen de ganancia combo % (15-25% sugerido)</label>
-          <div style="display:flex;gap:.5rem;align-items:center">
-            <input type="range" id="combo-margen-slider" min="5" max="50" value="20" oninput="document.getElementById('combo-margen-num').value=this.value; calcCombo()" style="flex:1" />
-            <input type="number" id="combo-margen-num" class="form-control" value="20" min="5" max="50" style="width:70px" oninput="document.getElementById('combo-margen-slider').value=this.value; calcCombo()" />
-            <span style="font-size:.82rem">%</span>
-          </div>
-        </div>
-        <div class="form-group"><label>Precio combo final (S/) — editable</label><input type="number" class="form-control" id="combo-precio-final" step="0.1" /></div>
-        <div class="form-group"><label>Stock inicial del combo</label><input type="number" class="form-control" id="combo-stock" value="10" min="1" /></div>
-        <div class="form-group"><label>Vigencia hasta</label><input type="date" class="form-control" id="combo-hasta" /></div>
-      </div>
-    </div>
-    <div id="combo-aviso" style="font-size:.78rem;color:var(--danger);margin-bottom:.5rem"></div>
-    <div style="display:flex;justify-content:flex-end;gap:.5rem;margin-top:1rem">
-      <button type="button" class="btn btn-outline" onclick="cerrarModal('modal-combo-sinergia')">Cancelar</button>
-      <button type="button" class="btn btn-primary" onclick="guardarComboSinergia()">Crear combo en inventario</button>
-    </div>
-  </div>
 </div>
 
 <!-- Modal actualizar precios de categoría uno a uno -->
@@ -6825,88 +6783,6 @@ function togglePromo(id) {
   try { renderMobPosGrid(); } catch(e){}
 }
 function eliminarPromo(id) { if (!confirm('¿Eliminar?')) return; DB.promociones = DB.promociones.filter(p => p.id !== id); fbGuardar(); renderPromociones(); }
-
-// ===================== COMBO SINERGIA (Punto 8) =====================
-function abrirModalComboSinergia() {
-  const prods = DB.productos.filter(p => p.stock > 0 && !p.esCombo);
-  ['combo-prod1','combo-prod2'].forEach(selId => {
-    document.getElementById(selId).innerHTML = prods.map(p =>
-      `<option value="${p.id}">${p.nombre} — ${sol(p.precio)} (stock: ${p.stock})</option>`).join('');
-  });
-  document.getElementById('combo-nombre').value = '';
-  document.getElementById('combo-cant1').value = 1;
-  document.getElementById('combo-cant2').value = 1;
-  document.getElementById('combo-margen-slider').value = 20;
-  document.getElementById('combo-margen-num').value = 20;
-  document.getElementById('combo-stock').value = 10;
-  document.getElementById('combo-aviso').textContent = '';
-  const en30 = new Date(); en30.setDate(en30.getDate()+30);
-  document.getElementById('combo-hasta').value = en30.toISOString().split('T')[0];
-  calcCombo();
-  abrirModal('modal-combo-sinergia');
-}
-
-function calcCombo() {
-  const p1Id = parseInt(document.getElementById('combo-prod1').value);
-  const p2Id = parseInt(document.getElementById('combo-prod2').value);
-  const cant1 = parseFloat(document.getElementById('combo-cant1').value) || 1;
-  const cant2 = parseFloat(document.getElementById('combo-cant2').value) || 1;
-  const margen = parseFloat(document.getElementById('combo-margen-num').value) || 20;
-  const p1 = DB.productos.find(x => x.id === p1Id);
-  const p2 = DB.productos.find(x => x.id === p2Id);
-  if (!p1 || !p2) return;
-  const costoTotal = (p1.costo*cant1)+(p2.costo*cant2);
-  const precioSumado = (p1.precio*cant1)+(p2.precio*cant2);
-  const precioCombo = Math.ceil(costoTotal*(1+margen/100)*10)/10;
-  const ahorro = precioSumado - precioCombo;
-  document.getElementById('combo-calc-detalle').innerHTML = `
-    <div style="display:flex;flex-direction:column;gap:.3rem;font-size:.82rem">
-      <div class="flex-between"><span>${p1.nombre} x${cant1}:</span><span>Costo ${sol(p1.costo*cant1)} / Venta ${sol(p1.precio*cant1)}</span></div>
-      <div class="flex-between"><span>${p2.nombre} x${cant2}:</span><span>Costo ${sol(p2.costo*cant2)} / Venta ${sol(p2.precio*cant2)}</span></div>
-      <div style="border-top:1px solid var(--gray-200);padding-top:.3rem" class="flex-between"><span>Costo total:</span><strong>${sol(costoTotal)}</strong></div>
-      <div class="flex-between"><span>Precio individual sumado:</span><span style="text-decoration:line-through;color:var(--gray-400)">${sol(precioSumado)}</span></div>
-      <div class="flex-between"><span>Precio combo (${margen}% margen):</span><strong style="color:var(--accent)">${sol(precioCombo)}</strong></div>
-      <div class="flex-between"><span>Ahorro cliente:</span><strong style="color:var(--primary)">${sol(ahorro>0?ahorro:0)}</strong></div>
-    </div>`;
-  document.getElementById('combo-precio-final').value = precioCombo.toFixed(2);
-  if (!document.getElementById('combo-nombre').value)
-    document.getElementById('combo-nombre').value = `Combo ${p1.nombre} + ${p2.nombre}`;
-  document.getElementById('combo-aviso').textContent = precioCombo < costoTotal ? '⚠️ Precio por debajo del costo total' : '';
-}
-
-function guardarComboSinergia() {
-  const nombre = document.getElementById('combo-nombre').value.trim();
-  const p1Id = parseInt(document.getElementById('combo-prod1').value);
-  const p2Id = parseInt(document.getElementById('combo-prod2').value);
-  const cant1 = parseFloat(document.getElementById('combo-cant1').value)||1;
-  const cant2 = parseFloat(document.getElementById('combo-cant2').value)||1;
-  const precio = parseFloat(document.getElementById('combo-precio-final').value)||0;
-  const stock = parseInt(document.getElementById('combo-stock').value)||1;
-  const hasta = document.getElementById('combo-hasta').value;
-  if (!nombre||!p1Id||!p2Id) { alert('Completa todos los campos'); return; }
-  if (p1Id===p2Id) { alert('Selecciona dos productos diferentes'); return; }
-  const p1=DB.productos.find(x=>x.id===p1Id);
-  const p2=DB.productos.find(x=>x.id===p2Id);
-  const costoTotal=(p1.costo*cant1)+(p2.costo*cant2);
-  if (precio<costoTotal&&!confirm('Precio bajo el costo. ¿Continuar?')) return;
-  const comboId = getId();
-  DB.productos.push({
-    id:comboId, nombre, cat:p1.cat, tipo:'combo', unidad:'und',
-    costo:costoTotal, precio, stock, stockMin:2, venc:hasta,
-    codigo:'9'+comboId.toString().slice(-11), prov:null,
-    esCombo:true, componentes:[{prodId:p1Id,cant:cant1},{prodId:p2Id,cant:cant2}]
-  });
-  DB.promociones.push({
-    id:getId(), nombre, tipo:'combo',
-    prod1:p1Id, prod1nombre:p1.nombre, prod2:p2Id, prod2nombre:p2.nombre,
-    precioOrig:(p1.precio*cant1)+(p2.precio*cant2), precioPromo:precio,
-    desde:today(), hasta, activa:true
-  });
-  fbGuardarProductos();
-  cerrarModal('modal-combo-sinergia');
-  renderInvTable();
-  alert(`✅ Combo "${nombre}" creado.\nAl venderse descuenta: ${cant1} de ${p1.nombre} y ${cant2} de ${p2.nombre}`);
-}
 
 // Interceptar addToCart para combos
 const _addToCartOrig = addToCart;
