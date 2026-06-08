@@ -6739,7 +6739,7 @@ function guardarPromocion() {
       ...(prod2Id ? [{ prodId: prod2Id, cant: 1 }] : []),
       ...(prod3Id ? [{ prodId: prod3Id, cant: 1 }] : [])
     ];
-    DB.productos.push({
+   DB.productos.push({
       id: packProdId, nombre, cat: catPromo.id,
       tipo: 'combo', unidad: 'und',
       costo: costoTotal, precio: precioPromo,
@@ -6747,6 +6747,7 @@ function guardarPromocion() {
       codigo: packCodigo, prov: null,
       esCombo: true, componentes, imagen, promoActiva: true
     });
+    _fbEscribiendo = true;
     fbGuardarProductos();
     document.getElementById('promo-qr-wrap').style.display = 'block';
     document.getElementById('promo-qr-label').textContent = nombre;
