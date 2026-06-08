@@ -3562,6 +3562,7 @@ function procesarVenta() {
   const clienteId = parseInt(document.getElementById('pos-cliente').value) || null;
 
   // Items with proportional combo prices for accurate margin reporting
+  
   const itemsConPrecioReal = aplicarPreciosProporcionales(cart, comboInfo);
 
   const venta = {
@@ -3573,7 +3574,7 @@ function procesarVenta() {
   if (!DB.historialVentas) DB.historialVentas = [];
   DB.historialVentas.push({ ...venta, origen: 'pos', estado: 'completado', estadoStock: 'descontado' });
 
-  // Actualizar stock
+// Actualizar stock
  cart.forEach(item => {
     const prod = DB.productos.find(p => p.id === item.prodId);
     if (prod) {
@@ -3586,8 +3587,8 @@ function procesarVenta() {
         }
     }
 });
-
   // Caja: register always (ensureCajaAbierta abre si hace falta)
+  
   ensureCajaAbierta();
   DB.caja.ingresos += total;
   DB.movimientos.push({ tipo:'ingreso', desc:`Venta #${venta.id} (${metodo})`, monto:total, hora:nowTime(), fecha:today(), cajero:currentUser });
@@ -3636,10 +3637,17 @@ function cobrarFiado() {
   DB.fiados.push(fiado);
   if (!DB.historialVentas) DB.historialVentas = [];
 DB.historialVentas.push({ ...fiado, origen: 'pos', estado: 'fiado', estadoStock: 'descontado' });
-
-  cart.forEach(item => {
+cart.forEach(item => {
     const prod = DB.productos.find(p => p.id === item.prodId);
-    if (prod) prod.stock = Math.max(0, prod.stock - item.cant);
+    if (prod) {
+      if (!prod.esCombo) prod.stock = Math.max(0, prod.stock - item.cant);
+      if (prod.esCombo && prod.componentes) {
+        prod.componentes.forEach(comp => {
+          const cp = DB.productos.find(x => x.id === comp.prodId);
+          if (cp) cp.stock = Math.max(0, cp.stock - comp.cant * item.cant);
+        });
+      }
+    }
   });
 
   const cli = DB.clientes.find(c => c.id === clienteId);
@@ -3647,7 +3655,7 @@ if (cli) { cli.deuda = (cli.deuda||0) + total; cli.compras = (cli.compras||0) + 
 
   ensureCajaAbierta();
   DB.movimientos.push({ tipo:'fiado', desc:'Fiado — ' + getClienteNombre(clienteId), monto:total, hora:nowTime(), fecha:today(), cajero:currentUser });
-
+  
   _fbLastWriteTs = Date.now();
   _fbEscribiendo = true;
   const _vPayload = JSON.parse(JSON.stringify(DB));
@@ -7041,10 +7049,18 @@ DB.fiados.push(fiado);
   if (!DB.historialVentas) DB.historialVentas = [];
   DB.historialVentas.push({ ...fiado, origen: 'pos', estado: 'fiado', estadoStock: 'descontado' });
 
-  // Descontar stock
+// Descontar stock
   cart.forEach(item => {
     const prod = DB.productos.find(p => p.id === item.prodId);
-    if (prod) prod.stock = Math.max(0, prod.stock - item.cant);
+    if (prod) {
+      if (!prod.esCombo) prod.stock = Math.max(0, prod.stock - item.cant);
+      if (prod.esCombo && prod.componentes) {
+        prod.componentes.forEach(comp => {
+          const cp = DB.productos.find(x => x.id === comp.prodId);
+          if (cp) cp.stock = Math.max(0, cp.stock - comp.cant * item.cant);
+        });
+      }
+    }
   });
 
   // Actualizar deuda del cliente
@@ -7097,7 +7113,7 @@ function mobProcesarVenta() {
   cart.forEach(item => {
     const prod = DB.productos.find(p => p.id === item.prodId);
     if (prod) {
-      prod.stock = Math.max(0, prod.stock - item.cant);
+      if (!prod.esCombo) prod.stock = Math.max(0, prod.stock - item.cant);
       if (prod.esCombo && prod.componentes) {
         prod.componentes.forEach(comp => {
           const cp = DB.productos.find(x => x.id === comp.prodId);
@@ -8315,7 +8331,15 @@ function confirmarEntregaPedido(id) {
     // Descontar stock solo de items activos
     (p.items||[]).filter(i=>i.cant>0&&!i.eliminado).forEach(item => {
       const prod = DB.productos.find(x => x.id === item.prodId);
-      if (prod) prod.stock = Math.max(0, prod.stock - item.cant);
+      if (prod) {
+        if (!prod.esCombo) prod.stock = Math.max(0, prod.stock - item.cant);
+        if (prod.esCombo && prod.componentes) {
+          prod.componentes.forEach(comp => {
+            const cp = DB.productos.find(x => x.id === comp.prodId);
+            if (cp) cp.stock = Math.max(0, cp.stock - comp.cant * item.cant);
+          });
+        }
+      }
     });
 
     // Registrar en ventas y historial
