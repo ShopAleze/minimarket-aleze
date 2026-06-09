@@ -2157,18 +2157,59 @@ function _loadHtml5QrCode(cb) {
 
 <!-- Modal Proveedor -->
 <div class="modal-overlay" id="modal-proveedor">
-  <div class="modal">
+  <div class="modal" style="max-width:720px">
     <div class="modal-header">
       <h3 id="prov-modal-titulo">Nuevo Proveedor</h3>
       <button type="button" class="modal-close" onclick="cerrarModal('modal-proveedor')">✕</button>
     </div>
-    <div class="form-group"><label>Nombre / Empresa *</label><input type="text" class="form-control" id="prov-nombre" /></div>
-    <div class="form-group"><label>Contacto</label><input type="text" class="form-control" id="prov-contacto" /></div>
-    <div class="form-group"><label>Teléfono</label><input type="text" class="form-control" id="prov-tel" /></div>
-    <div class="form-group"><label>Productos que provee</label><input type="text" class="form-control" id="prov-productos" placeholder="Ej: Gaseosas, snacks..." /></div>
-    <div style="display:flex;justify-content:flex-end;gap:0.5rem;margin-top:1rem">
+    <div class="grid-2">
+      <div class="form-group"><label>Nombre / Empresa *</label><input type="text" class="form-control" id="prov-nombre" /></div>
+      <div class="form-group"><label>Contacto (persona)</label><input type="text" class="form-control" id="prov-contacto" /></div>
+    </div>
+    <div class="grid-2">
+      <div class="form-group"><label>Número de contacto</label><input type="text" class="form-control" id="prov-tel" /></div>
+      <div class="form-group"><label>Productos que provee</label><input type="text" class="form-control" id="prov-productos" placeholder="Ej: Gaseosas, snacks..." /></div>
+    </div>
+    <div style="display:flex;justify-content:flex-end;gap:0.5rem;margin-bottom:.75rem">
       <button type="button" class="btn btn-outline" onclick="cerrarModal('modal-proveedor')">Cancelar</button>
-      <button type="button" class="btn btn-primary" onclick="guardarProveedor()">Guardar</button>
+      <button type="button" class="btn btn-primary" onclick="guardarProveedor()">Guardar proveedor</button>
+    </div>
+    <div id="prov-boletas-seccion" style="display:none;border-top:2px solid var(--gray-200);padding-top:.75rem">
+      <div style="font-weight:700;font-size:.88rem;margin-bottom:.5rem">📄 Boletas registradas</div>
+      <div id="bol-form" style="display:none;background:var(--gray-50);border-radius:8px;padding:.75rem;margin-bottom:.75rem">
+        <div class="grid-2">
+          <div class="form-group"><label>N° Boleta *</label><input type="text" class="form-control" id="bol-num" /></div>
+          <div class="form-group"><label>Fecha de compra *</label><input type="date" class="form-control" id="bol-fecha" /></div>
+        </div>
+        <div class="grid-2">
+          <div class="form-group"><label>Importe total (S/)</label><input type="number" class="form-control" id="bol-monto" step="0.01" /></div>
+          <div class="form-group"><label>URL Drive (acceso directo)</label><input type="text" class="form-control" id="bol-url" placeholder="Link Google Drive..." /></div>
+        </div>
+        <div class="form-group"><label>Descripción</label><input type="text" class="form-control" id="bol-desc" /></div>
+        <div style="display:flex;gap:.5rem;justify-content:flex-end">
+          <button type="button" class="btn btn-outline btn-sm" onclick="cerrarAgregarBoleta()">Cancelar</button>
+          <button type="button" class="btn btn-primary btn-sm" onclick="guardarBoleta()">Guardar boleta</button>
+        </div>
+      </div>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.5rem;align-items:flex-end">
+        <div style="flex:1;min-width:120px">
+          <label style="font-size:.75rem;font-weight:600">N° Boleta</label>
+          <input type="text" class="form-control" id="bol-buscar" placeholder="Buscar..." oninput="filtrarBoletas()" />
+        </div>
+        <div style="flex:1;min-width:100px">
+          <label style="font-size:.75rem;font-weight:600">Desde</label>
+          <input type="date" class="form-control" id="bol-filtro-desde" onchange="filtrarBoletas()" />
+        </div>
+        <div style="flex:1;min-width:100px">
+          <label style="font-size:.75rem;font-weight:600">Hasta</label>
+          <input type="date" class="form-control" id="bol-filtro-hasta" onchange="filtrarBoletas()" />
+        </div>
+        <div style="flex:0 0 auto;display:flex;gap:.4rem;align-items:flex-end">
+          <button type="button" class="btn btn-outline btn-sm" onclick="limpiarFiltrosBoletas()">✕</button>
+          <button type="button" class="btn btn-primary btn-sm" onclick="abrirAgregarBoleta()">+ Agregar</button>
+        </div>
+      </div>
+      <div class="table-wrap"><table><thead><tr><th>N° Boleta</th><th>Fecha</th><th>Descripción</th><th>Importe</th><th>URL</th><th></th></tr></thead><tbody id="boletas-tbody"></tbody></table></div>
     </div>
   </div>
 </div>
@@ -2423,50 +2464,6 @@ function _loadHtml5QrCode(cb) {
       <button type="button" class="btn btn-outline" onclick="cerrarModal('modal-boleta')">Cancelar</button>
       <button type="button" class="btn btn-primary" onclick="guardarBoleta()">Guardar boleta</button>
     </div>
-  </div>
-</div>
-
-<!-- Modal Ver Boletas -->
-<div class="modal-overlay" id="modal-ver-boletas">
-  <div class="modal" style="max-width:680px">
-    <div class="modal-header">
-      <h3 id="vb-titulo">Boletas del proveedor</h3>
-      <button type="button" class="modal-close" onclick="cerrarModal('modal-ver-boletas')">✕</button>
-    </div>
-    <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.75rem;align-items:flex-end">
-      <div style="flex:1;min-width:140px">
-        <label style="font-size:.75rem;font-weight:600">N° Boleta / Descripción</label>
-        <input type="text" class="form-control" id="bol-buscar" placeholder="Buscar..." oninput="filtrarBoletas()" />
-      </div>
-      <div style="flex:1;min-width:110px">
-        <label style="font-size:.75rem;font-weight:600">Desde</label>
-        <input type="date" class="form-control" id="bol-filtro-desde" onchange="filtrarBoletas()" />
-      </div>
-      <div style="flex:1;min-width:110px">
-        <label style="font-size:.75rem;font-weight:600">Hasta</label>
-        <input type="date" class="form-control" id="bol-filtro-hasta" onchange="filtrarBoletas()" />
-      </div>
-      <div style="flex:0 0 auto;display:flex;gap:.4rem;align-items:flex-end">
-        <button type="button" class="btn btn-outline btn-sm" onclick="limpiarFiltrosBoletas()">✕</button>
-        <button type="button" class="btn btn-primary btn-sm" onclick="abrirAgregarBoleta()">+ Agregar</button>
-      </div>
-    </div>
-    <div id="bol-form" style="display:none;background:var(--gray-50);border-radius:8px;padding:.75rem;margin-bottom:.75rem">
-      <div class="grid-2">
-        <div class="form-group"><label>N° Boleta *</label><input type="text" class="form-control" id="bol-num" /></div>
-        <div class="form-group"><label>Fecha *</label><input type="date" class="form-control" id="bol-fecha" /></div>
-      </div>
-      <div class="grid-2">
-        <div class="form-group"><label>Monto (S/)</label><input type="number" class="form-control" id="bol-monto" step="0.01" /></div>
-        <div class="form-group"><label>URL imagen (opcional)</label><input type="text" class="form-control" id="bol-url" placeholder="Link Google Drive o foto" /></div>
-      </div>
-      <div class="form-group"><label>Descripción</label><input type="text" class="form-control" id="bol-desc" /></div>
-      <div style="display:flex;gap:.5rem;justify-content:flex-end">
-        <button type="button" class="btn btn-outline btn-sm" onclick="cerrarAgregarBoleta()">Cancelar</button>
-        <button type="button" class="btn btn-primary btn-sm" onclick="guardarBoleta()">Guardar boleta</button>
-      </div>
-    </div>
-    <div class="table-wrap"><table><thead><tr><th>N° Boleta</th><th>Fecha</th><th>Descripción</th><th>Monto</th><th>URL</th></tr></thead><tbody id="boletas-tbody"></tbody></table></div>
   </div>
 </div>
 <div class="modal-overlay" id="modal-ticket">
@@ -4481,17 +4478,22 @@ function abrirModalProveedor() {
   editingProvId = null;
   document.getElementById('prov-modal-titulo').textContent = 'Nuevo Proveedor';
   ['prov-nombre','prov-contacto','prov-tel','prov-productos'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('prov-boletas-seccion').style.display = 'none';
   abrirModal('modal-proveedor');
 }
 
 function editarProveedor(id) {
   editingProvId = id;
+  editingBoletaProvId = id;
   const p = DB.proveedores.find(x => x.id === id);
-  document.getElementById('prov-modal-titulo').textContent = 'Editar Proveedor';
+  document.getElementById('prov-modal-titulo').textContent = 'Editar: ' + p.nombre;
   document.getElementById('prov-nombre').value = p.nombre;
   document.getElementById('prov-contacto').value = p.contacto;
   document.getElementById('prov-tel').value = p.tel;
   document.getElementById('prov-productos').value = p.productos;
+  document.getElementById('prov-boletas-seccion').style.display = 'block';
+  document.getElementById('bol-form').style.display = 'none';
+  limpiarFiltrosBoletas();
   abrirModal('modal-proveedor');
 }
 
@@ -4534,11 +4536,7 @@ function cerrarAgregarBoleta() {
   document.getElementById('bol-form').style.display = 'none';
 }
 function verBoletas(provId) {
-  editingBoletaProvId = provId;
-  const p = DB.proveedores.find(x => x.id === provId);
-  document.getElementById('vb-titulo').textContent = 'Boletas de ' + (p ? p.nombre : '');
-  filtrarBoletas();
-  abrirModal('modal-ver-boletas');
+  editarProveedor(provId);
 }
 function filtrarBoletas() {
   const prov = DB.proveedores.find(x => x.id === editingBoletaProvId);
@@ -4551,14 +4549,24 @@ function filtrarBoletas() {
   if (desde) filtradas = filtradas.filter(b => b.fecha >= desde);
   if (hasta) filtradas = filtradas.filter(b => b.fecha <= hasta);
   const total = filtradas.reduce((s, b) => s + (b.monto||0), 0);
-  document.getElementById('boletas-tbody').innerHTML = filtradas.map(b => `<tr>
+ document.getElementById('boletas-tbody').innerHTML = filtradas.map((b, idx) => `<tr>
     <td>${b.num}</td><td>${formatDate(b.fecha)}</td><td>${b.desc||'-'}</td>
-    <td>${sol(b.monto||0)}</td><td>${b.url?`<a href="${b.url}" target="_blank" style="color:var(--primary)">🔗 Ver</a>`:'-'}</td>
+    <td>${sol(b.monto||0)}</td>
+    <td>${b.url?`<a href="${b.url}" target="_blank" style="color:var(--primary)">🔗 Ver</a>`:'-'}</td>
+    <td><button class="btn btn-xs" style="background:var(--danger-light);color:var(--danger)" onclick="eliminarBoleta(${boletas.indexOf(b)})">🗑️</button></td>
   </tr>`).join('') +
   (filtradas.length > 0 ? `<tr style="background:var(--gray-50);font-weight:700"><td colspan="3">Total: ${filtradas.length} boleta(s)</td><td>${sol(total)}</td><td></td></tr>` : '') ||
   '<tr><td colspan="5" style="text-align:center;color:var(--gray-400);padding:1rem">Sin boletas registradas</td></tr>';
 }
-
+function eliminarBoleta(idx) {
+  if (!confirm('¿Eliminar esta boleta?')) return;
+  const prov = DB.proveedores.find(x => x.id === editingBoletaProvId);
+  if (!prov || !prov.boletas) return;
+  prov.boletas.splice(idx, 1);
+  fbGuardar();
+  renderProveedores();
+  filtrarBoletas();
+}
 function limpiarFiltrosBoletas() {
   const els = ['bol-buscar','bol-filtro-desde','bol-filtro-hasta'];
   els.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
