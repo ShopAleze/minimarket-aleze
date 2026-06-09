@@ -2269,10 +2269,33 @@ function _loadHtml5QrCode(cb) {
       <button type="button" class="btn btn-outline" onclick="cerrarModal('modal-cat-update-precios')">Cerrar</button>
       <button type="button" class="btn btn-primary" onclick="aplicarPreciosCatSeleccionados()">Aplicar seleccionados</button>
     </div>
-  </div>
+</div>
 </div>
 
-<!-- Modal Promoción -->
+<!-- Modal confirmar eliminación de merma -->
+<div class="modal-overlay" id="modal-confirmar-eliminar-merma">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header">
+      <h3>🗑️ Eliminar merma</h3>
+      <button type="button" class="modal-close" onclick="cerrarModal('modal-confirmar-eliminar-merma')">✕</button>
+    </div>
+    <p style="font-size:.88rem;color:var(--gray-700);margin-bottom:1rem" id="merma-elim-desc"></p>
+    <div style="display:flex;flex-direction:column;gap:.6rem;margin-bottom:1.25rem">
+      <label style="display:flex;align-items:center;gap:.6rem;cursor:pointer;font-size:.88rem">
+        <input type="radio" name="merma-elim-opcion" value="restaurar" id="merma-elim-si" />
+        Sí, devolver stock al inventario
+      </label>
+      <label style="display:flex;align-items:center;gap:.6rem;cursor:pointer;font-size:.88rem">
+        <input type="radio" name="merma-elim-opcion" value="no-restaurar" id="merma-elim-no" />
+        No devolver stock
+      </label>
+    </div>
+    <div style="display:flex;justify-content:flex-end;gap:.5rem">
+      <button type="button" class="btn btn-outline" onclick="cerrarModal('modal-confirmar-eliminar-merma')">Cancelar</button>
+      <button type="button" class="btn btn-danger" onclick="_confirmarElimMerma()">Aceptar</button>
+    </div>
+  </div>
+</div>
 <!-- Modal Promoción Unificado -->
 <div class="modal-overlay" id="modal-promocion">
   <div class="modal modal-lg">
@@ -5451,23 +5474,38 @@ if (editingMermaId) {
   try { generarReporte(); } catch(e){}
   renderInvTable();
 }
+let _mermaElimId = null;
+
 function eliminarMerma(id) {
   const m = DB.mermas.find(x => x.id === id);
   if (!m) return;
-  const restaurar = confirm('¿Eliminar este registro de merma?\n\nAcepta → RESTAURA el stock del producto.\nCancela → Elimina SIN restaurar stock.');
-  if (restaurar) {
+  _mermaElimId = id;
+  const prod = DB.productos.find(p => p.id === m.prodId);
+  const nomProd = prod ? prod.nombre : 'producto eliminado';
+  document.getElementById('merma-elim-desc').textContent =
+    '¿Eliminar el registro de merma de "' + nomProd + '" (' + m.cant + ' ' + (prod ? prod.unidad : 'und') + ')? Selecciona qué hacer con el stock:';
+  document.querySelectorAll('input[name="merma-elim-opcion"]').forEach(r => r.checked = false);
+  abrirModal('modal-confirmar-eliminar-merma');
+}
+function _confirmarElimMerma() {
+  const opcion = document.querySelector('input[name="merma-elim-opcion"]:checked');
+  if (!opcion) { alert('Selecciona una opción antes de continuar.'); return; }
+  const m = DB.mermas.find(x => x.id === _mermaElimId);
+  if (!m) { cerrarModal('modal-confirmar-eliminar-merma'); return; }
+  if (opcion.value === 'restaurar') {
     const prod = DB.productos.find(p => p.id === m.prodId);
     if (prod) prod.stock += m.cant;
     fbGuardarProductos();
   }
-  DB.mermas = DB.mermas.filter(x => x.id !== id);
+  DB.mermas = DB.mermas.filter(x => x.id !== _mermaElimId);
+  _mermaElimId = null;
   fbGuardar();
+  cerrarModal('modal-confirmar-eliminar-merma');
   renderMermas();
   renderInvTable();
   try { renderDashboard(); } catch(e){}
   try { generarReporte(); } catch(e){}
 }
-
 // ===================== REPORTES =====================
 function initReportes() {
   setPeriodoReporte();
