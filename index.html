@@ -4436,7 +4436,7 @@ function renderProveedores() {
   document.getElementById('prov-tbody').innerHTML = DB.proveedores.map(p => `<tr>
     <td><strong>${p.nombre}</strong></td><td>${p.contacto}</td><td>${p.tel}</td>
     <td style="font-size:0.8rem">${p.productos}</td>
-    <td><button class="btn btn-xs btn-outline" onclick="verBoletas && verBoletas(${p.id})">📄 ${(p.boletas||[]).length} boleta(s)</button></td>
+    <td><button class="btn btn-xs btn-outline" onclick="verBoletas(${p.id})">📄 ${(p.boletas||[]).length} boleta(s)</button></td>
     <td style="white-space:nowrap">
       <button class="btn btn-outline btn-xs" onclick="editarProveedor(${p.id})">✏️ Editar</button>
       <button class="btn btn-xs" style="background:var(--danger-light);color:var(--danger)" onclick="eliminarProveedor(${p.id})">🗑️</button>
