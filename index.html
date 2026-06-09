@@ -4473,7 +4473,13 @@ function renderProveedores() {
     </td>
   </tr>`).join('') || '<tr><td colspan="6" style="text-align:center;padding:1rem;color:var(--gray-400)">Sin proveedores</td></tr>';
 }
-
+function limpiarFiltrosProveedores() {
+  const el1 = document.getElementById('prov-buscar');
+  const el2 = document.getElementById('prov-buscar-boleta');
+  if (el1) el1.value = '';
+  if (el2) el2.value = '';
+  renderProveedores();
+}
 function abrirModalProveedor() {
   editingProvId = null;
   editingBoletaProvId = null;
