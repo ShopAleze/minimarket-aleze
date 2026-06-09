@@ -1701,22 +1701,30 @@ function _loadHtml5QrCode(cb) {
               <div class="form-group"><label>Descripción</label><input type="text" class="form-control" id="mov-desc" /></div>
               <button type="button" class="btn btn-primary w-full" onclick="registrarMovimiento()">Registrar</button>
             </div>
-            <div class="card">
+          <div class="card" style="max-height:220px;overflow:hidden">
               <div class="card-title">Ventas por método de pago</div>
-              <canvas id="chart-metodos" height="200"></canvas>
+              <canvas id="chart-metodos" height="120"></canvas>
             </div>
           </div>
           <div class="card">
-            <div class="card-title">Historial de movimientos</div>
+            <div class="flex-between" style="margin-bottom:.75rem;flex-wrap:wrap;gap:.5rem">
+              <div class="card-title" style="margin:0">Historial de movimientos</div>
+              <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
+                <input type="date" class="form-control" id="caja-filtro-desde" style="width:140px" onchange="updateCajaStats()" />
+                <input type="date" class="form-control" id="caja-filtro-hasta" style="width:140px" onchange="updateCajaStats()" />
+                <select class="form-control" id="caja-filtro-tipo" style="width:120px" onchange="updateCajaStats()">
+                  <option value="">Todos</option>
+                  <option value="ingreso">Ingreso</option>
+                  <option value="egreso">Egreso</option>
+                </select>
+                <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('caja-filtro-desde').value='';document.getElementById('caja-filtro-hasta').value='';document.getElementById('caja-filtro-tipo').value='';updateCajaStats()">🔄</button>
+              </div>
+            </div>
             <div class="table-wrap">
               <table><thead><tr><th>Hora</th><th>Tipo</th><th>Descripción</th><th>Monto</th></tr></thead>
               <tbody id="caja-mov-tbody"></tbody></table>
             </div>
           </div>
-          <div style="text-align:right;margin-top:1rem">
-            <button type="button" class="btn btn-danger" onclick="cerrarCaja()">Cerrar Caja del Turno</button>
-          </div>
-        </div>
       </div>
 
       <!-- PROMOCIONES -->
@@ -5325,14 +5333,25 @@ function updateCajaStats() {
   document.getElementById('caja-inicial').textContent = sol(DB.caja.inicial);
   document.getElementById('caja-ingresos').textContent = sol(ingresos);
   document.getElementById('caja-egresos').textContent = sol(egresos);
-  document.getElementById('caja-saldo').textContent = sol(DB.caja.inicial + ingresos - egresos);
+const saldo = DB.caja.inicial + ingresos - egresos;
+  const saldoEl = document.getElementById('caja-saldo');
+  saldoEl.textContent = sol(saldo);
+  saldoEl.style.color = saldo < 0 ? 'var(--danger)' : '';
 
-  document.getElementById('caja-mov-tbody').innerHTML = [...DB.movimientos].reverse().map(m => `<tr>
+  const fDesde  = document.getElementById('caja-filtro-desde')?.value  || '';
+  const fHasta  = document.getElementById('caja-filtro-hasta')?.value  || '';
+  const fTipo   = document.getElementById('caja-filtro-tipo')?.value   || '';
+  let movsVis = [...DB.movimientos].reverse();
+  if (fDesde)  movsVis = movsVis.filter(m => m.fecha >= fDesde);
+  if (fHasta)  movsVis = movsVis.filter(m => m.fecha <= fHasta);
+  if (fTipo)   movsVis = movsVis.filter(m => m.tipo === fTipo);
+
+  document.getElementById('caja-mov-tbody').innerHTML = movsVis.map(m => `<tr>
     <td>${m.fecha ? m.fecha + ' ' : ''}${m.hora}</td>
     <td><span class="badge badge-${m.tipo==='ingreso'?'green':'red'}">${m.tipo}</span></td>
     <td>${m.desc}</td>
     <td style="color:${m.tipo==='ingreso'?'var(--accent)':'var(--danger)'};font-weight:700">${m.tipo==='ingreso'?'+':'-'}${sol(m.monto)}</td>
-  </tr>`).join('');
+  </tr>`).join('') || '<tr><td colspan="4" style="text-align:center;padding:1rem;color:var(--gray-400)">Sin movimientos</td></tr>';
 
   const metodos = {};
   ventasHoy.forEach(v => metodos[v.metodo] = (metodos[v.metodo]||0) + v.total);
@@ -5341,7 +5360,7 @@ function updateCajaStats() {
   chartMetodos = new Chart(ctx2, {
     type: 'doughnut',
     data: { labels: Object.keys(metodos), datasets: [{ data: Object.values(metodos), backgroundColor: ['#7C3AED','#10B981','#F59E0B','#3B82F6','#EF4444','#8B5CF6','#06B6D4','#84CC16'] }] },
-    options: { plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } }, responsive: true }
+    options: { plugins: { legend: { position: 'right', labels: { font: { size: 11 }, boxWidth: 12 } } }, responsive: true, maintainAspectRatio: false }
   });
 }
 
