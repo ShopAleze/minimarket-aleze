@@ -1661,8 +1661,7 @@ function _loadHtml5QrCode(cb) {
         </div>
         <div id="fiados-list"></div>
       </div>
-
-      <!-- CAJA -->
+  <!-- CAJA -->
       <div id="page-caja" class="page">
         <div class="page-title">Control de Caja</div>
         <div id="caja-cerrada">
@@ -1701,7 +1700,7 @@ function _loadHtml5QrCode(cb) {
               <div class="form-group"><label>Descripción</label><input type="text" class="form-control" id="mov-desc" /></div>
               <button type="button" class="btn btn-primary w-full" onclick="registrarMovimiento()">Registrar</button>
             </div>
-          <div class="card" style="max-height:220px;overflow:hidden">
+            <div class="card" style="max-height:220px;overflow:hidden">
               <div class="card-title">Ventas por método de pago</div>
               <canvas id="chart-metodos" height="120"></canvas>
             </div>
@@ -1725,8 +1724,11 @@ function _loadHtml5QrCode(cb) {
               <tbody id="caja-mov-tbody"></tbody></table>
             </div>
           </div>
+          <div style="text-align:right;margin-top:1rem">
+            <button type="button" class="btn btn-danger" onclick="cerrarCaja()">Cerrar Caja del Turno</button>
+          </div>
+        </div>
       </div>
-
       <!-- PROMOCIONES -->
       <div id="page-promociones" class="page">
         <div class="flex-between" style="margin-bottom:1rem">
