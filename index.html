@@ -4476,9 +4476,12 @@ function renderProveedores() {
 
 function abrirModalProveedor() {
   editingProvId = null;
+  editingBoletaProvId = null;
   document.getElementById('prov-modal-titulo').textContent = 'Nuevo Proveedor';
   ['prov-nombre','prov-contacto','prov-tel','prov-productos'].forEach(id => document.getElementById(id).value = '');
-  document.getElementById('prov-boletas-seccion').style.display = 'none';
+  document.getElementById('prov-boletas-seccion').style.display = 'block';
+  document.getElementById('bol-form').style.display = 'none';
+  limpiarFiltrosBoletas();
   abrirModal('modal-proveedor');
 }
 
