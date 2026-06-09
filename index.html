@@ -3334,6 +3334,7 @@ function renderPos() {
   renderCart();
   updatePosClientes();
 }
+
 function renderPosCategorias() {
   const wrap = document.getElementById('pos-categorias');
   wrap.innerHTML = `<span class="tag ${posFilterCat === '' ? 'active' : ''}" onclick="setPosFilter('')">🏪 Todos</span>`;
@@ -3349,6 +3350,7 @@ function renderPosCategorias() {
 }
 
 function setPosFilter(id) { posFilterCat = id; renderPosCategorias(); renderPosGrid(); }
+
 function renderPosGrid(search = '') {
   // Guard: no renderizar sin sesión activa
   if (!currentUser) return;
@@ -3570,7 +3572,6 @@ function procesarVenta() {
   const clienteId = parseInt(document.getElementById('pos-cliente').value) || null;
 
   // Items with proportional combo prices for accurate margin reporting
-  
   const itemsConPrecioReal = aplicarPreciosProporcionales(cart, comboInfo);
 
   const venta = {
@@ -3582,12 +3583,12 @@ function procesarVenta() {
   if (!DB.historialVentas) DB.historialVentas = [];
   DB.historialVentas.push({ ...venta, origen: 'pos', estado: 'completado', estadoStock: 'descontado' });
 
-// Actualizar stock
+  // Actualizar stock
   _fbLastWriteProdTs = Date.now();
  cart.forEach(item => {
     const prod = DB.productos.find(p => p.id === item.prodId);
     if (prod) {
-        prod.stock = Math.max(0, prod.stock - item.cant);
+        if (!prod.esCombo) prod.stock = Math.max(0, prod.stock - item.cant);
         if (prod.esCombo && prod.componentes) {
             prod.componentes.forEach(comp => {
                 const cp = DB.productos.find(x => x.id === comp.prodId);
@@ -3596,8 +3597,8 @@ function procesarVenta() {
         }
     }
 });
+
   // Caja: register always (ensureCajaAbierta abre si hace falta)
-  
   ensureCajaAbierta();
   DB.caja.ingresos += total;
   DB.movimientos.push({ tipo:'ingreso', desc:`Venta #${venta.id} (${metodo})`, monto:total, hora:nowTime(), fecha:today(), cajero:currentUser });
@@ -3634,6 +3635,7 @@ function cobrarFiado() {
   const comboDesc = comboInfo.total;
   const total = Math.max(0, sub - desc - comboDesc);
   const itemsConPrecioReal = aplicarPreciosProporcionales(cart, comboInfo);
+
   const fiado = {
     id: getId(), clienteId,
     items: itemsConPrecioReal.map(i => {
@@ -3645,7 +3647,8 @@ function cobrarFiado() {
   DB.fiados.push(fiado);
   if (!DB.historialVentas) DB.historialVentas = [];
 DB.historialVentas.push({ ...fiado, origen: 'pos', estado: 'fiado', estadoStock: 'descontado' });
-_fbLastWriteProdTs = Date.now();
+
+  _fbLastWriteProdTs = Date.now();
   cart.forEach(item => {
     const prod = DB.productos.find(p => p.id === item.prodId);
     if (prod) {
@@ -3664,7 +3667,7 @@ if (cli) { cli.deuda = (cli.deuda||0) + total; cli.compras = (cli.compras||0) + 
 
   ensureCajaAbierta();
   DB.movimientos.push({ tipo:'fiado', desc:'Fiado — ' + getClienteNombre(clienteId), monto:total, hora:nowTime(), fecha:today(), cajero:currentUser });
-  
+
   _fbLastWriteTs = Date.now();
   _fbEscribiendo = true;
   const _vPayload = JSON.parse(JSON.stringify(DB));
@@ -6740,7 +6743,7 @@ function guardarPromocion() {
       ...(prod2Id ? [{ prodId: prod2Id, cant: 1 }] : []),
       ...(prod3Id ? [{ prodId: prod3Id, cant: 1 }] : [])
     ];
-   DB.productos.push({
+    DB.productos.push({
       id: packProdId, nombre, cat: catPromo.id,
       tipo: 'combo', unidad: 'und',
       costo: costoTotal, precio: precioPromo,
@@ -6923,7 +6926,10 @@ function mobFilterPos() {
 function renderMobPosCats() {
   const el = document.getElementById('mob-pos-categorias');
   if (!el) return;
-  const cats = [{ id: '', emoji: '🏪', nombre: 'Todos', imagen: null }, ...DB.categorias];
+  const catPromo = DB.categorias.find(c => c.nombre === 'Promociones');
+  const otrosCats = DB.categorias.filter(c => c.nombre !== 'Promociones');
+  const catsOrdenadas = catPromo ? [catPromo, ...otrosCats] : otrosCats;
+  const cats = [{ id: '', emoji: '🏪', nombre: 'Todos', imagen: null }, ...catsOrdenadas];
   el.innerHTML = cats.map(c => {
     const icon = c.imagen
       ? `<img src="${c.imagen}" style="width:14px;height:14px;object-fit:cover;border-radius:2px;vertical-align:middle;margin-right:2px"/>`
@@ -6939,21 +6945,25 @@ function mobSelectCat(catId, el) {
 }
 
 function renderMobPosGrid(prods) {
-  prods = prods || DB.productos.filter(p => p.stock > 0);
+   prods = prods || DB.productos.filter(p => p.stock > 0 && (!p.esCombo || p.promoActiva !== false));
   const grid = document.getElementById('mob-pos-grid');
   if (!grid) return;
   const promoActivas = DB.promociones.filter(p => p.activa && p.hasta >= today());
   grid.innerHTML = prods.map(p => {
-    const promo = promoActivas.find(pr => pr.prod1 == p.id || pr.prod2 == p.id);
-    const esCombo2 = promo && promo.prod2;
-    const precio = (!esCombo2 && promo) ? promo.precioPromo : p.precio;
+    const tag = p.esCombo
+      ? `<span class="promo-tag" style="position:absolute;top:4px;right:4px;font-size:.6rem;background:var(--accent)">OFERTA</span>`
+      : (() => {
+          const promo = promoActivas.find(pr => !pr.packProdId && pr.prod1 == p.id && !pr.prod2);
+          return promo ? `<span class="promo-tag" style="position:absolute;top:4px;right:4px;font-size:.6rem">PROMO</span>` : '';
+        })();
+    const precio = p.esCombo ? p.precio : (() => {
+      const promo = promoActivas.find(pr => !pr.packProdId && pr.prod1 == p.id && !pr.prod2);
+      return promo ? promo.precioPromo : p.precio;
+    })();
     const stockBajo = p.stock <= p.stockMin;
     const iconHtml = p.imagen
       ? `<div style="width:44px;height:44px;margin:0 auto .25rem;border-radius:8px;overflow:hidden"><img src="${p.imagen}" style="width:100%;height:100%;object-fit:cover"/></div>`
       : `<div class="p-icon">${getCatIcono(p.cat)}</div>`;
-    const tag = esCombo2
-   ? `<span class="promo-tag" style="position:absolute;top:4px;right:4px;font-size:.6rem;background:var(--accent)">OFERTA</span>`
-      : promo ? `<span class="promo-tag" style="position:absolute;top:4px;right:4px;font-size:.6rem">PROMO</span>` : '';
     return `<div class="product-card${p.stock === 0 ? ' opacity-50' : ''}" onclick="mobAddToCart(${p.id})" style="${p.stock===0?'opacity:.45;pointer-events:none':''}">
       ${tag}
       ${iconHtml}
@@ -6968,11 +6978,18 @@ function renderMobPosGrid(prods) {
 function mobAddToCart(prodId) {
   const prod = DB.productos.find(p => p.id === prodId);
   if (!prod || prod.stock === 0) return;
+  if (prod.esCombo && prod.componentes) {
+    for (const comp of prod.componentes) {
+      const cp = DB.productos.find(x => x.id === comp.prodId);
+      if (!cp || cp.stock < comp.cant) {
+        alert(`Stock insuficiente de "${cp?.nombre || 'componente'}" para armar este pack`);
+        return;
+      }
+    }
+  }
   const promoActivas = DB.promociones.filter(p => p.activa && p.hasta >= today());
-  const promo = promoActivas.find(pr => pr.prod1 == prodId || pr.prod2 == prodId);
-  // 2-product combos: use regular price — discount shown in total
-  const esCombo2 = promo && promo.prod2;
-  const precio = (!esCombo2 && promo) ? promo.precioPromo : prod.precio;
+  const promo = promoActivas.find(pr => !pr.packProdId && pr.prod1 == prodId && !pr.prod2);
+  const precio = promo ? promo.precioPromo : prod.precio;
   const existing = cart.find(i => i.prodId === prodId);
   if (existing) {
     if (existing.cant >= prod.stock) { alert('Stock insuficiente'); return; }
@@ -7059,7 +7076,7 @@ DB.fiados.push(fiado);
   if (!DB.historialVentas) DB.historialVentas = [];
   DB.historialVentas.push({ ...fiado, origen: 'pos', estado: 'fiado', estadoStock: 'descontado' });
 
-// Descontar stock
+  // Descontar stock
   _fbLastWriteProdTs = Date.now();
   cart.forEach(item => {
     const prod = DB.productos.find(p => p.id === item.prodId);
@@ -7120,7 +7137,7 @@ function mobProcesarVenta() {
     descuento: desc + comboDesc, descuentoManual: desc, descuentoCombo: comboDesc,
     total, metodo, clienteId
   };
-// Descontar stock
+  // Descontar stock
   _fbLastWriteProdTs = Date.now();
   cart.forEach(item => {
     const prod = DB.productos.find(p => p.id === item.prodId);
