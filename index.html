@@ -5407,13 +5407,15 @@ function guardarMerma() {
 if (!prod) { alert('Producto no encontrado. Recarga el inventario.'); return; }
   if (!cant || cant <= 0) { alert('Ingresa una cantidad válida'); return; }
 
-  if (editingMermaId) {
+if (editingMermaId) {
     // Editar: restaurar stock anterior y aplicar nuevo
     const old = DB.mermas.find(x => x.id === editingMermaId);
     const oldProd = DB.productos.find(p => p.id === old.prodId);
-    if (oldProd) oldProd.stock += old.cant; // restaurar
-    if (cant > prod.stock) { alert('La cantidad supera el stock disponible'); if(oldProd) oldProd.stock -= old.cant; return; }
-    const costoAnterior = (oldProd ? oldProd.costo : 0) * old.cant;
+    const oldCant = old.cant;
+    const oldCosto = oldProd ? oldProd.costo : 0;
+    if (oldProd) oldProd.stock += oldCant;
+    if (cant > prod.stock) { alert('La cantidad supera el stock disponible'); if(oldProd) oldProd.stock -= oldCant; return; }
+    const costoAnterior = oldCosto * oldCant;
     const costoNuevo = prod.costo * cant;
     const diferencia = costoNuevo - costoAnterior;
     old.prodId = prodId; old.cant = cant; old.motivo = motivo; old.obs = obs;
@@ -5449,12 +5451,19 @@ if (!prod) { alert('Producto no encontrado. Recarga el inventario.'); return; }
   try { generarReporte(); } catch(e){}
   renderInvTable();
 }
-
 function eliminarMerma(id) {
-  if (!confirm('¿Eliminar este registro de merma?\nNota: el stock no se restaurará automáticamente.')) return;
-  DB.mermas = DB.mermas.filter(m => m.id !== id);
+  const m = DB.mermas.find(x => x.id === id);
+  if (!m) return;
+  const restaurar = confirm('¿Eliminar este registro de merma?\n\nAcepta → RESTAURA el stock del producto.\nCancela → Elimina SIN restaurar stock.');
+  if (restaurar) {
+    const prod = DB.productos.find(p => p.id === m.prodId);
+    if (prod) prod.stock += m.cant;
+    fbGuardarProductos();
+  }
+  DB.mermas = DB.mermas.filter(x => x.id !== id);
   fbGuardar();
   renderMermas();
+  renderInvTable();
   try { renderDashboard(); } catch(e){}
   try { generarReporte(); } catch(e){}
 }
