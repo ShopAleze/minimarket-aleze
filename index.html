@@ -1895,16 +1895,28 @@ function _loadHtml5QrCode(cb) {
           <div class="stat-card"><div class="stat-label">Gastos variables</div><div class="stat-value" id="g-var">S/ 0.00</div></div>
           <div class="stat-card blue" style="border-left-color:var(--info)"><div class="stat-label">Sueldos mes</div><div class="stat-value" id="g-sueldos">S/ 0.00</div></div>
         </div>
-        <div class="grid-2">
+        <div class="grid-2" style="margin-bottom:1rem">
           <div class="card">
             <div class="card-title">Gastos recurrentes configurados</div>
             <div id="gastos-rec-list"></div>
             <button type="button" class="btn btn-outline btn-sm mt-2" onclick="abrirModalGastoRec()">+ Gasto recurrente</button>
           </div>
-          <div class="card"><div class="card-title">Distribución de gastos</div><canvas id="chart-gastos" height="200"></canvas></div>
+          <div class="card" style="max-height:220px;overflow:hidden">
+            <div class="card-title">Distribución de gastos</div>
+            <canvas id="chart-gastos" height="120"></canvas>
+          </div>
         </div>
-        <div class="card"><div class="card-title">Historial de gastos</div>
-          <div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Tipo</th><th>Descripción</th><th>Monto</th></tr></thead><tbody id="gastos-tbody"></tbody></table></div>
+        <div class="card">
+          <div class="flex-between" style="margin-bottom:.75rem;flex-wrap:wrap;gap:.5rem">
+            <div class="card-title" style="margin:0">Historial de gastos</div>
+            <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
+              <input type="date" class="form-control" id="g-filtro-desde" style="width:140px" onchange="renderGastos()" />
+              <input type="date" class="form-control" id="g-filtro-hasta" style="width:140px" onchange="renderGastos()" />
+              <input type="text" class="form-control" id="g-filtro-buscar" placeholder="Buscar..." style="width:150px" oninput="renderGastos()" />
+              <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('g-filtro-desde').value='';document.getElementById('g-filtro-hasta').value='';document.getElementById('g-filtro-buscar').value='';renderGastos()">🔄</button>
+            </div>
+          </div>
+          <div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Tipo</th><th>Descripción</th><th>Monto</th><th>Acciones</th></tr></thead><tbody id="gastos-tbody"></tbody></table></div>
         </div>
       </div>
 
@@ -2435,17 +2447,23 @@ function _loadHtml5QrCode(cb) {
     </div>
   </div>
 </div>
-
+  
 <!-- Modal Gasto -->
 <div class="modal-overlay" id="modal-gasto">
-  <div class="modal"><div class="modal-header"><h3>Registrar Gasto</h3><button type="button" class="modal-close" onclick="cerrarModal('modal-gasto')">✕</button></div>
-    <div class="form-group"><label>Tipo *</label><select class="form-control" id="g-tipo"><option>Energía</option><option>Transporte</option><option>Infraestructura</option><option>Limpieza</option><option>Publicidad</option><option>Otro</option></select></div>
+  <div class="modal"><div class="modal-header"><h3 id="g-modal-titulo">Registrar Gasto</h3><button type="button" class="modal-close" onclick="cerrarModal('modal-gasto')">✕</button></div>
+    <div class="form-group" id="g-rec-wrap" style="display:none">
+      <label>Usar plantilla recurrente (opcional)</label>
+      <select class="form-control" id="g-rec-sel" onchange="onGastoRecChange()">
+        <option value="">— Ninguna —</option>
+      </select>
+    </div>
+    <div class="form-group"><label>Tipo *</label><select class="form-control" id="g-tipo"><option>Energía</option><option>Transporte</option><option>Infraestructura</option><option>Limpieza</option><option>Publicidad</option><option>Alquiler</option><option>Sueldo</option><option>Otro</option></select></div>
     <div class="form-group"><label>Descripción</label><input type="text" class="form-control" id="g-desc" /></div>
     <div class="form-group"><label>Monto (S/) *</label><input type="number" class="form-control" id="g-monto" step="0.01" /></div>
     <div class="form-group"><label>Fecha</label><input type="date" class="form-control" id="g-fecha" /></div>
     <div style="display:flex;justify-content:flex-end;gap:.5rem;margin-top:1rem">
       <button type="button" class="btn btn-outline" onclick="cerrarModal('modal-gasto')">Cancelar</button>
-      <button type="button" class="btn btn-primary" onclick="guardarGasto()">Registrar</button>
+      <button type="button" class="btn btn-primary" id="g-btn-guardar" onclick="guardarGasto()">Registrar</button>
     </div>
   </div>
 </div>
@@ -6262,15 +6280,28 @@ function renderGastos() {
         <button class="btn btn-xs" style="background:var(--danger-light);color:var(--danger)" onclick="elimGastoRec(${g.id})">🗑️</button>
       </div>
     </div>`).join('') || '<p style="font-size:.82rem;color:var(--gray-500)">Sin gastos recurrentes configurados</p>';
+// Filtros historial
+  const fDesde  = document.getElementById('g-filtro-desde')?.value  || '';
+  const fHasta  = document.getElementById('g-filtro-hasta')?.value  || '';
+  const fBuscar = (document.getElementById('g-filtro-buscar')?.value || '').toLowerCase();
+  let gastosVis = [...DB_EXT.gastos].reverse();
+  if (fDesde)  gastosVis = gastosVis.filter(g => g.fecha >= fDesde);
+  if (fHasta)  gastosVis = gastosVis.filter(g => g.fecha <= fHasta);
+  if (fBuscar) gastosVis = gastosVis.filter(g =>
+    (g.desc||'').toLowerCase().includes(fBuscar) ||
+    (g.tipo||'').toLowerCase().includes(fBuscar));
 
-  document.getElementById('gastos-tbody').innerHTML = DB_EXT.gastos.map(g => `
+  document.getElementById('gastos-tbody').innerHTML = gastosVis.map(g => `
     <tr>
       <td>${formatDate(g.fecha)}</td>
       <td><span class="badge badge-orange">${g.tipo}</span></td>
       <td>${g.desc}</td>
       <td style="font-weight:700;color:var(--danger)">${sol(g.monto)}</td>
-    </tr>`).join('') || '<tr><td colspan="4" style="text-align:center;padding:1rem;color:var(--gray-400)">Sin gastos registrados</td></tr>';
-
+      <td>
+        <button class="btn btn-xs btn-outline" onclick="editarGasto(${g.id})" title="Editar">✏️</button>
+        <button class="btn btn-xs" style="background:var(--danger-light);color:var(--danger);margin-left:.25rem" onclick="eliminarGasto(${g.id})" title="Eliminar">🗑️</button>
+      </td>
+    </tr>`).join('') || '<tr><td colspan="5" style="text-align:center;padding:1rem;color:var(--gray-400)">Sin gastos registrados</td></tr>';
   // Chart
   const tipos = {};
   gastosMes.forEach(g => tipos[g.tipo] = (tipos[g.tipo]||0) + g.monto);
@@ -6284,32 +6315,95 @@ function renderGastos() {
   });
 }
 
+let _editingGastoId = null;
+
 function abrirModalGasto() {
+  _editingGastoId = null;
   ['g-desc','g-monto'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('g-fecha').value = today();
+  document.getElementById('g-tipo').value = 'Energía';
+  document.getElementById('g-modal-titulo').textContent = 'Registrar Gasto';
+  document.getElementById('g-btn-guardar').textContent = 'Registrar';
+  // Poblar selector de recurrentes si hay alguno
+  const recWrap = document.getElementById('g-rec-wrap');
+  const recSel  = document.getElementById('g-rec-sel');
+  if (DB_EXT.gastosRec.length > 0) {
+    recSel.innerHTML = '<option value="">— Ninguna —</option>' +
+      DB_EXT.gastosRec.map(g => `<option value="${g.id}">${g.tipo} — ${g.desc} (S/${g.monto})</option>`).join('');
+    recWrap.style.display = '';
+  } else {
+    recWrap.style.display = 'none';
+  }
+  abrirModal('modal-gasto');
+}
+
+function onGastoRecChange() {
+  const id = parseInt(document.getElementById('g-rec-sel').value);
+  if (!id) return;
+  const g = DB_EXT.gastosRec.find(x => x.id === id);
+  if (!g) return;
+  document.getElementById('g-tipo').value  = g.tipo;
+  document.getElementById('g-desc').value  = g.desc;
+  document.getElementById('g-monto').value = g.monto;
+}
+
+function editarGasto(id) {
+  const g = DB_EXT.gastos.find(x => x.id === id);
+  if (!g) return;
+  _editingGastoId = id;
+  document.getElementById('g-modal-titulo').textContent = 'Editar Gasto';
+  document.getElementById('g-btn-guardar').textContent  = 'Guardar cambios';
+  document.getElementById('g-tipo').value  = g.tipo;
+  document.getElementById('g-desc').value  = g.desc;
+  document.getElementById('g-monto').value = g.monto;
+  document.getElementById('g-fecha').value = g.fecha;
+  document.getElementById('g-rec-wrap').style.display = 'none';
   abrirModal('modal-gasto');
 }
 
 function guardarGasto() {
   const monto = parseFloat(document.getElementById('g-monto').value) || 0;
   if (monto <= 0) { alert('Ingresa un monto válido'); return; }
-  DB_EXT.gastos.push({
-    id: getId(),
-    tipo: document.getElementById('g-tipo').value,
-    desc: document.getElementById('g-desc').value,
-    monto,
-    fecha: document.getElementById('g-fecha').value
-  });
-// Registrar también en caja y movimientos del día
-  ensureCajaAbierta();
-  DB.caja.egresos = (DB.caja.egresos||0) + monto;
-  DB.movimientos.push({ tipo:'egreso', desc:`Gasto: ${document.getElementById('g-desc').value} (${document.getElementById('g-tipo').value})`, monto, hora: nowTime(), fecha: document.getElementById('g-fecha').value });
+  const tipo  = document.getElementById('g-tipo').value;
+  const desc  = document.getElementById('g-desc').value;
+  const fecha = document.getElementById('g-fecha').value;
+
+  if (_editingGastoId) {
+    // EDITAR — ajustar diferencia en caja
+    const old = DB_EXT.gastos.find(x => x.id === _editingGastoId);
+    if (old) {
+      const diff = monto - old.monto;
+      old.tipo = tipo; old.desc = desc; old.monto = monto; old.fecha = fecha;
+      if (diff !== 0) {
+        ensureCajaAbierta();
+        DB.caja.egresos = Math.max(0, (DB.caja.egresos||0) + diff);
+        DB.movimientos.push({ tipo:'egreso', desc:`Ajuste gasto: ${desc} (${tipo})`, monto: Math.abs(diff), hora: nowTime(), fecha: today(), usuario: currentUser });
+      }
+    }
+  } else {
+    // NUEVO
+    DB_EXT.gastos.push({ id: getId(), tipo, desc, monto, fecha });
+    ensureCajaAbierta();
+    DB.caja.egresos = (DB.caja.egresos||0) + monto;
+    DB.movimientos.push({ tipo:'egreso', desc:`Gasto: ${desc} (${tipo})`, monto, hora: nowTime(), fecha, usuario: currentUser });
+  }
+
   fbGuardar();
   fbGuardarExt();
   cerrarModal('modal-gasto');
   renderGastos();
   try { renderCaja(); } catch(e){}
   try { renderDashboard(); } catch(e){}
+  try { generarReporte(); } catch(e){}
+}
+
+function eliminarGasto(id) {
+  if (!confirm('¿Eliminar este gasto? No se revertirá el movimiento en caja.')) return;
+  DB_EXT.gastos = DB_EXT.gastos.filter(x => x.id !== id);
+  fbGuardarExt();
+  renderGastos();
+  try { renderDashboard(); } catch(e){}
+  try { generarReporte(); } catch(e){}
 }
 
 function abrirModalGastoRec() {
@@ -6333,7 +6427,6 @@ function elimGastoRec(id) {
   fbGuardarExt();
   renderGastos();
 }
-
 // ===================== CAPITAL =====================
 function renderCapital() {
   document.getElementById('cap-inp-total').value  = DB_EXT.capital.total;
