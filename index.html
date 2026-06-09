@@ -5418,11 +5418,13 @@ if (!prod) { alert('Producto no encontrado. Recarga el inventario.'); return; }
     const diferencia = costoNuevo - costoAnterior;
     old.prodId = prodId; old.cant = cant; old.motivo = motivo; old.obs = obs;
     prod.stock -= cant;
-    // Register difference as movement
+ // Register difference as movement
     if (diferencia !== 0) {
       ensureCajaAbierta();
-      DB.movimientos.push({ tipo:'egreso', desc:`Ajuste merma: ${prod.nombre} x${cant} (${motivo})`, monto: Math.abs(diferencia), hora:nowTime(), fecha:today(), usuario:currentUser });
+      const tipoMov = diferencia > 0 ? 'egreso' : 'ingreso';
+      DB.movimientos.push({ tipo: tipoMov, desc:`Ajuste merma: ${prod.nombre} x${cant} (${motivo})`, monto: Math.abs(diferencia), hora:nowTime(), fecha:today(), usuario:currentUser });
       if (diferencia > 0 && DB.caja.abierta) DB.caja.egresos = (DB.caja.egresos||0) + diferencia;
+      if (diferencia < 0 && DB.caja.abierta) DB.caja.egresos = Math.max(0, (DB.caja.egresos||0) + diferencia);
     }
     if (DB_EXT && DB_EXT.capital) { DB_EXT.capital.recuperado -= diferencia; fbGuardarExt(); }
     fbGuardar(); fbGuardarProductos();
