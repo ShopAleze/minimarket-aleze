@@ -6798,12 +6798,28 @@ function guardarPromocion() {
 
 function togglePromo(id) {
   const p = DB.promociones.find(x => x.id === id);
-  if (p) { p.activa = !p.activa; fbGuardar(); }
+  if (!p) return;
+  p.activa = !p.activa;
+  if (p.packProdId) {
+    const prodPack = DB.productos.find(x => x.id === p.packProdId);
+    if (prodPack) { prodPack.promoActiva = p.activa; fbGuardarProductos(); }
+  }
+  fbGuardar();
   renderPromociones();
   try { renderPosGrid(); } catch(e){}
   try { renderMobPosGrid(); } catch(e){}
 }
-function eliminarPromo(id) { if (!confirm('¿Eliminar?')) return; DB.promociones = DB.promociones.filter(p => p.id !== id); fbGuardar(); renderPromociones(); }
+function eliminarPromo(id) {
+  if (!confirm('¿Eliminar?')) return;
+  const p = DB.promociones.find(x => x.id === id);
+  if (p && p.packProdId) {
+    DB.productos = DB.productos.filter(x => x.id !== p.packProdId);
+    fbGuardarProductos();
+  }
+  DB.promociones = DB.promociones.filter(x => x.id !== id);
+  fbGuardar();
+  renderPromociones();
+}
 
 // Interceptar addToCart para combos
 const _addToCartOrig = addToCart;
