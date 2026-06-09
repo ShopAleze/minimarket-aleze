@@ -1577,9 +1577,23 @@ function _loadHtml5QrCode(cb) {
 
       <!-- PROVEEDORES -->
       <div id="page-proveedores" class="page">
-        <div class="flex-between" style="margin-bottom:1rem">
+       <div class="flex-between" style="margin-bottom:1rem">
           <div class="page-title" style="margin:0">Proveedores</div>
           <button type="button" class="btn btn-primary btn-sm" onclick="abrirModalProveedor()">+ Nuevo Proveedor</button>
+        </div>
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.75rem;align-items:flex-end">
+          <div style="flex:1;min-width:160px">
+            <label style="font-size:.75rem;font-weight:600">Buscar proveedor</label>
+            <input type="text" class="form-control" id="prov-buscar" placeholder="Nombre proveedor..." oninput="renderProveedores()" />
+          </div>
+          <div style="flex:1;min-width:140px">
+            <label style="font-size:.75rem;font-weight:600">N° Boleta</label>
+            <input type="text" class="form-control" id="prov-buscar-boleta" placeholder="N° boleta..." oninput="renderProveedores()" />
+          </div>
+          <div style="flex:0 0 auto">
+            <label style="font-size:.75rem;font-weight:600">&nbsp;</label>
+            <button type="button" class="btn btn-outline btn-sm" onclick="limpiarFiltrosProveedores()">✕ Limpiar</button>
+          </div>
         </div>
         <div class="card" style="padding:0">
           <div class="table-wrap">
@@ -2419,9 +2433,23 @@ function _loadHtml5QrCode(cb) {
       <h3 id="vb-titulo">Boletas del proveedor</h3>
       <button type="button" class="modal-close" onclick="cerrarModal('modal-ver-boletas')">✕</button>
     </div>
-    <div style="display:flex;gap:.5rem;margin-bottom:.75rem">
-      <input type="text" class="form-control" id="bol-buscar" placeholder="Buscar por N° boleta, fecha, descripción..." oninput="filtrarBoletas()" />
-      <button type="button" class="btn btn-primary btn-sm" onclick="abrirAgregarBoleta()">+ Agregar</button>
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.75rem;align-items:flex-end">
+      <div style="flex:1;min-width:140px">
+        <label style="font-size:.75rem;font-weight:600">N° Boleta / Descripción</label>
+        <input type="text" class="form-control" id="bol-buscar" placeholder="Buscar..." oninput="filtrarBoletas()" />
+      </div>
+      <div style="flex:1;min-width:110px">
+        <label style="font-size:.75rem;font-weight:600">Desde</label>
+        <input type="date" class="form-control" id="bol-filtro-desde" onchange="filtrarBoletas()" />
+      </div>
+      <div style="flex:1;min-width:110px">
+        <label style="font-size:.75rem;font-weight:600">Hasta</label>
+        <input type="date" class="form-control" id="bol-filtro-hasta" onchange="filtrarBoletas()" />
+      </div>
+      <div style="flex:0 0 auto;display:flex;gap:.4rem;align-items:flex-end">
+        <button type="button" class="btn btn-outline btn-sm" onclick="limpiarFiltrosBoletas()">✕</button>
+        <button type="button" class="btn btn-primary btn-sm" onclick="abrirAgregarBoleta()">+ Agregar</button>
+      </div>
     </div>
     <div id="bol-form" style="display:none;background:var(--gray-50);border-radius:8px;padding:.75rem;margin-bottom:.75rem">
       <div class="grid-2">
@@ -4433,7 +4461,12 @@ function eliminarCategoria(id) {
 let editingProvId = null;
 
 function renderProveedores() {
-  document.getElementById('prov-tbody').innerHTML = DB.proveedores.map(p => `<tr>
+  const qNombre = (document.getElementById('prov-buscar')?.value || '').toLowerCase();
+  const qBoleta = (document.getElementById('prov-buscar-boleta')?.value || '').toLowerCase();
+  let provs = DB.proveedores;
+  if (qNombre) provs = provs.filter(p => p.nombre.toLowerCase().includes(qNombre));
+  if (qBoleta) provs = provs.filter(p => (p.boletas||[]).some(b => b.num.toLowerCase().includes(qBoleta)));
+  document.getElementById('prov-tbody').innerHTML = provs.map(p => `<tr>
     <td><strong>${p.nombre}</strong></td><td>${p.contacto}</td><td>${p.tel}</td>
     <td style="font-size:0.8rem">${p.productos}</td>
     <td><button class="btn btn-xs btn-outline" onclick="verBoletas(${p.id})">📄 ${(p.boletas||[]).length} boleta(s)</button></td>
