@@ -4542,13 +4542,27 @@ function verBoletas(provId) {
 }
 function filtrarBoletas() {
   const prov = DB.proveedores.find(x => x.id === editingBoletaProvId);
-  const q = (document.getElementById('bol-buscar').value || '').toLowerCase();
+  const q = (document.getElementById('bol-buscar')?.value || '').toLowerCase();
+  const desde = document.getElementById('bol-filtro-desde')?.value || '';
+  const hasta = document.getElementById('bol-filtro-hasta')?.value || '';
   const boletas = (prov && prov.boletas) ? prov.boletas : [];
-  const filtradas = q ? boletas.filter(b => (b.num+b.fecha+b.desc).toLowerCase().includes(q)) : boletas;
+  let filtradas = boletas;
+  if (q) filtradas = filtradas.filter(b => (b.num+b.fecha+(b.desc||'')).toLowerCase().includes(q));
+  if (desde) filtradas = filtradas.filter(b => b.fecha >= desde);
+  if (hasta) filtradas = filtradas.filter(b => b.fecha <= hasta);
+  const total = filtradas.reduce((s, b) => s + (b.monto||0), 0);
   document.getElementById('boletas-tbody').innerHTML = filtradas.map(b => `<tr>
     <td>${b.num}</td><td>${formatDate(b.fecha)}</td><td>${b.desc||'-'}</td>
     <td>${sol(b.monto||0)}</td><td>${b.url?`<a href="${b.url}" target="_blank" style="color:var(--primary)">🔗 Ver</a>`:'-'}</td>
-  </tr>`).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--gray-400);padding:1rem">Sin boletas registradas</td></tr>';
+  </tr>`).join('') +
+  (filtradas.length > 0 ? `<tr style="background:var(--gray-50);font-weight:700"><td colspan="3">Total: ${filtradas.length} boleta(s)</td><td>${sol(total)}</td><td></td></tr>` : '') ||
+  '<tr><td colspan="5" style="text-align:center;color:var(--gray-400);padding:1rem">Sin boletas registradas</td></tr>';
+}
+
+function limpiarFiltrosBoletas() {
+  const els = ['bol-buscar','bol-filtro-desde','bol-filtro-hasta'];
+  els.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  filtrarBoletas();
 }
 function guardarBoleta() {
   const num = document.getElementById('bol-num').value.trim();
