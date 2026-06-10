@@ -2515,33 +2515,17 @@ function _loadHtml5QrCode(cb) {
       <h3>🏦 Registrar pago préstamo</h3>
       <button type="button" class="modal-close" onclick="cerrarModal('modal-pago-cuota')">✕</button>
     </div>
- <!-- Modal Pago Préstamo -->
-<div class="modal-overlay" id="modal-pago-cuota">
-  <div class="modal" style="max-width:460px">
-    
-    <div class="modal-header">
-      <h3>🏦 Registrar pago préstamo</h3>
-      <button type="button" class="modal-close" onclick="cerrarModal('modal-pago-cuota')">✕</button>
-    </div>
-
     <div class="form-group">
       <label>Fecha del pago</label>
       <input type="date" class="form-control" id="pc-fecha" />
     </div>
-
     <div class="form-group">
-      <label>Monto pagado</label>
-      <input type="number" class="form-control" id="pc-monto" />
+      <label>Monto pagado (S/) <span style="font-size:.75rem;color:var(--gray-400)" id="pc-ref"></span></label>
+      <input type="number" class="form-control" id="pc-monto" step="0.01" />
     </div>
-
     <div class="form-group">
       <label>Concepto</label>
-      <input type="text" class="form-control" />
-    </div>
-
-  </div>
-</div>
-
+  
 <!-- Modal Gasto Recurrente -->
 <div class="modal-overlay" id="modal-gasto-rec">
   <div class="modal"><div class="modal-header"><h3>Gasto Recurrente</h3><button type="button" class="modal-close" onclick="cerrarModal('modal-gasto-rec')">✕</button></div>
