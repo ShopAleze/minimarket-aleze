@@ -5631,7 +5631,7 @@ function generarReporte() {
 }
 
 function reporteVentas(desde, hasta) {
- const ventas = [...(DB.ventas || []), ...(DB.historialVentas || []).filter(h => h.origen === 'pago_fiado')].filter(v => v.fecha >= desde && v.fecha <= hasta);
+const ventas = [...(DB.ventas || []), ...(DB.historialVentas || []).filter(v => (v.origen==='pos'&&v.estado==='completado')||(v.origen==='online'&&v.estado==='entregado')||(v.origen==='pago_fiado'&&v.estado==='completado'))].filter(v => v.fecha >= desde && v.fecha <= hasta);
   const porDia = {};
   ventas.forEach(v => porDia[v.fecha] = (porDia[v.fecha]||0) + v.total);
   const labels = Object.keys(porDia).sort();
@@ -5676,7 +5676,7 @@ function reporteVentas(desde, hasta) {
 }
 
 function reporteProductos(desde, hasta) {
-  const ventas = [...(DB.ventas || []), ...(DB.historialVentas || []).filter(h => h.origen === 'pago_fiado')].filter(v => v.fecha >= desde && v.fecha <= hasta);
+const ventas = [...(DB.ventas || []), ...(DB.historialVentas || []).filter(v => (v.origen==='pos'&&v.estado==='completado')||(v.origen==='online'&&v.estado==='entregado')||(v.origen==='pago_fiado'&&v.estado==='completado'))].filter(v => v.fecha >= desde && v.fecha <= hasta);
   const prods = {};
   ventas.forEach(v => (v.items||[]).forEach(i => {
     if (!prods[i.nombre]) prods[i.nombre] = { cant: 0, total: 0, costo: 0 };
@@ -5704,7 +5704,7 @@ function reporteProductos(desde, hasta) {
 }
 
 function reporteRentabilidad(desde, hasta) {
-  const ventas = [...(DB.ventas || []), ...(DB.historialVentas || []).filter(h => h.origen === 'pago_fiado')].filter(v => v.fecha >= desde && v.fecha <= hasta);
+const ventas = [...(DB.ventas || []), ...(DB.historialVentas || []).filter(v => (v.origen==='pos'&&v.estado==='completado')||(v.origen==='online'&&v.estado==='entregado')||(v.origen==='pago_fiado'&&v.estado==='completado'))].filter(v => v.fecha >= desde && v.fecha <= hasta);
   // Por producto
   const porProd = {};
   ventas.forEach(v => (v.items||[]).forEach(i => {
