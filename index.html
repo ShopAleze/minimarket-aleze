@@ -5643,7 +5643,7 @@ function generarReporte() {
 }
 
 function reporteVentas(desde, hasta) {
-const ventas = [...(DB.ventas || []), ...(DB.historialVentas || []).filter(v => (v.origen==='pos'&&v.estado==='completado')||(v.origen==='online'&&v.estado==='entregado')||(v.origen==='pago_fiado'&&v.estado==='completado'))].filter(v => v.fecha >= desde && v.fecha <= hasta);
+const ventas = [...(DB.ventas || []), ...(DB.historialVentas || []).filter(v => (v.origen==='pos'&&v.estado==='completado')||(v.origen==='online'&&v.estado==='completado')||(v.origen==='pago_fiado'&&v.estado==='completado'))].filter(v => v.fecha >= desde && v.fecha <= hasta);
   const porDia = {};
   ventas.forEach(v => porDia[v.fecha] = (porDia[v.fecha]||0) + v.total);
   const labels = Object.keys(porDia).sort();
@@ -5688,7 +5688,7 @@ const ventas = [...(DB.ventas || []), ...(DB.historialVentas || []).filter(v => 
 }
 
 function reporteProductos(desde, hasta) {
-const ventas = [...(DB.ventas || []), ...(DB.historialVentas || []).filter(v => (v.origen==='pos'&&v.estado==='completado')||(v.origen==='online'&&v.estado==='entregado')||(v.origen==='pago_fiado'&&v.estado==='completado'))].filter(v => v.fecha >= desde && v.fecha <= hasta);
+const ventas = [...(DB.ventas || []), ...(DB.historialVentas || []).filter(v => (v.origen==='pos'&&v.estado==='completado')||(v.origen==='online'&&v.estado==='completado')||(v.origen==='pago_fiado'&&v.estado==='completado'))].filter(v => v.fecha >= desde && v.fecha <= hasta);
   const prods = {};
   ventas.forEach(v => (v.items||[]).forEach(i => {
     if (!prods[i.nombre]) prods[i.nombre] = { cant: 0, total: 0, costo: 0 };
@@ -5716,7 +5716,7 @@ const ventas = [...(DB.ventas || []), ...(DB.historialVentas || []).filter(v => 
 }
 
 function reporteRentabilidad(desde, hasta) {
-const ventas = [...(DB.ventas || []), ...(DB.historialVentas || []).filter(v => (v.origen==='pos'&&v.estado==='completado')||(v.origen==='online'&&v.estado==='entregado')||(v.origen==='pago_fiado'&&v.estado==='completado'))].filter(v => v.fecha >= desde && v.fecha <= hasta);
+const ventas = [...(DB.ventas || []), ...(DB.historialVentas || []).filter(v => (v.origen==='pos'&&v.estado==='completado')||(v.origen==='online'&&v.estado==='completado')||(v.origen==='pago_fiado'&&v.estado==='completado'))].filter(v => v.fecha >= desde && v.fecha <= hasta);
   // Por producto
   const porProd = {};
   ventas.forEach(v => (v.items||[]).forEach(i => {
@@ -5854,7 +5854,7 @@ function exportReporte() {
 
   // Filtro común de ventas
   const vf = [...(DB.ventas||[]), ...(DB.historialVentas||[]).filter(v =>
-    (v.origen==='pos'&&v.estado==='completado')||(v.origen==='online'&&v.estado==='entregado')||(v.origen==='pago_fiado'&&v.estado==='completado')
+    (v.origen==='pos'&&v.estado==='completado')||(v.origen==='online'&&v.estado==='completado')||(v.origen==='pago_fiado'&&v.estado==='completado')
   )].filter(v => v.fecha >= desde && v.fecha <= hasta);
 
   // Hoja 1: Ventas por día
@@ -6630,11 +6630,11 @@ function updateCapStats() {
   // Panel rentabilidad mes actual
   const mes = getMesActual();
   const ventasMes = DB.historialVentas.filter(v => v.fecha && v.fecha.startsWith(mes) &&
-    ((v.origen==='pos'&&v.estado==='completado')||(v.origen==='online'&&v.estado==='entregado')||(v.origen==='pago_fiado'&&v.estado==='completado')))
+    ((v.origen==='pos'&&v.estado==='completado')||(v.origen==='online'&&v.estado==='completado')||(v.origen==='pago_fiado'&&v.estado==='completado')))
     .reduce((s,v) => s+v.total, 0);
   const costoMes = DB.historialVentas.filter(v => v.fecha && v.fecha.startsWith(mes) &&
     v.items && v.items.length &&
-    ((v.origen==='pos'&&v.estado==='completado')||(v.origen==='online'&&v.estado==='entregado')))
+    ((v.origen==='pos'&&v.estado==='completado')||(v.origen==='online'&&v.estado==='completado')))
     .reduce((s,v) => s+v.items.reduce((ss,i) => { const p=DB.productos.find(x=>x.id===i.prodId); return ss+(p?p.costo*i.cant:0); },0), 0);
   const gastosMes  = DB_EXT.gastos.filter(g => g.fecha && g.fecha.startsWith(mes)).reduce((s,g) => s+g.monto, 0);
   const gastosRec  = DB_EXT.gastosRec.reduce((s,g) => s+g.monto, 0);
@@ -6650,11 +6650,11 @@ function updateCapStats() {
   // Panel rentabilidad acumulado año
   const anio = today().substring(0,4);
   const ventasAnio = DB.historialVentas.filter(v => v.fecha && v.fecha.startsWith(anio) &&
-    ((v.origen==='pos'&&v.estado==='completado')||(v.origen==='online'&&v.estado==='entregado')||(v.origen==='pago_fiado'&&v.estado==='completado')))
+    ((v.origen==='pos'&&v.estado==='completado')||(v.origen==='online'&&v.estado==='completado')||(v.origen==='pago_fiado'&&v.estado==='completado')))
     .reduce((s,v) => s+v.total, 0);
   const costoAnio = DB.historialVentas.filter(v => v.fecha && v.fecha.startsWith(anio) &&
     v.items && v.items.length &&
-    ((v.origen==='pos'&&v.estado==='completado')||(v.origen==='online'&&v.estado==='entregado')))
+    ((v.origen==='pos'&&v.estado==='completado')||(v.origen==='online'&&v.estado==='completado')))
     .reduce((s,v) => s+v.items.reduce((ss,i) => { const p=DB.productos.find(x=>x.id===i.prodId); return ss+(p?p.costo*i.cant:0); },0), 0);
   const gastosAnio = DB_EXT.gastos.filter(g => g.fecha && g.fecha.startsWith(anio)).reduce((s,g) => s+g.monto, 0);
   const mermasAnio = DB.mermas.filter(m => m.fecha && m.fecha.startsWith(anio))
@@ -6747,11 +6747,11 @@ function abrirCerrarMes() {
   document.getElementById('cm-mes').value = mes;
   // Calcular ganancia neta del mes automáticamente
   const ventasMes = DB.historialVentas.filter(v => v.fecha && v.fecha.startsWith(mes) &&
-    ((v.origen==='pos'&&v.estado==='completado')||(v.origen==='online'&&v.estado==='entregado')||(v.origen==='pago_fiado'&&v.estado==='completado')))
+    ((v.origen==='pos'&&v.estado==='completado')||(v.origen==='online'&&v.estado==='completado')||(v.origen==='pago_fiado'&&v.estado==='completado')))
     .reduce((s,v) => s+v.total, 0);
   const costoMes = DB.historialVentas.filter(v => v.fecha && v.fecha.startsWith(mes) &&
     v.items && v.items.length &&
-    ((v.origen==='pos'&&v.estado==='completado')||(v.origen==='online'&&v.estado==='entregado')))
+    ((v.origen==='pos'&&v.estado==='completado')||(v.origen==='online'&&v.estado==='completado')))
     .reduce((s,v) => s+v.items.reduce((ss,i) => { const p=DB.productos.find(x=>x.id===i.prodId); return ss+(p?p.costo*i.cant:0); },0), 0);
   const gastosMes  = DB_EXT.gastos.filter(g => g.fecha && g.fecha.startsWith(mes)).reduce((s,g) => s+g.monto, 0);
   const gastosRec  = DB_EXT.gastosRec.reduce((s,g) => s+g.monto, 0);
@@ -8833,6 +8833,41 @@ function guardarEdicionPedido() {
   alert('✅ Pedido actualizado correctamente.');
 }
 
+function _dialogoPagoOnline(nombre, callback) {
+  const ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem;box-sizing:border-box';
+  ov.innerHTML = `
+    <div style="background:white;border-radius:14px;padding:1.5rem;width:100%;max-width:400px;box-shadow:0 4px 24px rgba(0,0,0,0.2)">
+      <div style="font-weight:700;font-size:1rem;color:var(--gray-900);margin-bottom:1.25rem">
+        💳 Registrar pago — <em style="color:var(--primary)">${nombre||'cliente'}</em>
+      </div>
+      <label id="_dlg-lbl-c" style="display:flex;align-items:flex-start;gap:.75rem;padding:.75rem;border:1.5px solid var(--gray-200);border-radius:8px;cursor:pointer;margin-bottom:.5rem">
+        <input type="radio" name="_dlg_po" value="cobrado" style="width:18px;height:18px;margin-top:2px;flex-shrink:0" />
+        <span><strong>✅ Pedido pagado</strong><br><span style="font-size:.78rem;color:var(--gray-500)">Va a historial de ventas y caja</span></span>
+      </label>
+      <label id="_dlg-lbl-f" style="display:flex;align-items:flex-start;gap:.75rem;padding:.75rem;border:1.5px solid var(--gray-200);border-radius:8px;cursor:pointer;margin-bottom:1.25rem">
+        <input type="radio" name="_dlg_po" value="fiado" style="width:18px;height:18px;margin-top:2px;flex-shrink:0" />
+        <span><strong>📋 Pedido fiado</strong><br><span style="font-size:.78rem;color:var(--gray-500)">Va al módulo de fiados</span></span>
+      </label>
+      <div style="display:flex;gap:.5rem;justify-content:flex-end">
+        <button id="_dlg-btn-c" style="padding:.55rem 1rem;border-radius:8px;border:1px solid var(--gray-300);background:white;cursor:pointer;font-size:.85rem">Cancelar</button>
+        <button id="_dlg-btn-a" style="padding:.55rem 1rem;border-radius:8px;border:none;background:var(--primary);color:white;cursor:pointer;font-size:.85rem;font-weight:600">Aceptar</button>
+      </div>
+    </div>`;
+  document.body.appendChild(ov);
+  ov.querySelectorAll('input[name="_dlg_po"]').forEach(r => r.addEventListener('change', () => {
+    document.getElementById('_dlg-lbl-c').style.borderColor = r.value==='cobrado' ? 'var(--primary)' : 'var(--gray-200)';
+    document.getElementById('_dlg-lbl-f').style.borderColor = r.value==='fiado'   ? 'var(--primary)' : 'var(--gray-200)';
+  }));
+  document.getElementById('_dlg-btn-c').onclick = () => { document.body.removeChild(ov); callback(null); };
+  document.getElementById('_dlg-btn-a').onclick = () => {
+    const sel = ov.querySelector('input[name="_dlg_po"]:checked');
+    if (!sel) { alert('Selecciona una opción'); return; }
+    document.body.removeChild(ov);
+    callback(sel.value);
+  };
+}
+
 // ── Confirmar entrega con validación de stock ─────────────────────────────────
 function confirmarEntregaPedido(id) {
   if (!DB.pedidosOnline) return;
@@ -8865,83 +8900,116 @@ function confirmarEntregaPedido(id) {
       });
       confirmMsg += '\n¿Continuar de todas formas?';
     }
-if (!confirm(confirmMsg)) return;
+if (!confirm(confirmMsg)) { _fbEscribiendo = false; return; }
 
-    // ── Cobrado o Fiado ─────────────────────────────────────────────────────
-    _esPagado = confirm(
-      `¿Cómo se registra el pago de ${p.clienteNombre||'cliente'}?\n\n` +
-      `✅ OK → Cobrado (historial de ventas + caja)\n` +
-      `📋 Cancelar → Fiado (módulo de fiados)`
-    );
+    // ── Dialog async: cobrado o fiado ────────────────────────────────────────
+    _dialogoPagoOnline(p.clienteNombre, function(tipoPago) {
+      if (tipoPago === null) { _fbEscribiendo = false; return; }
+      _esPagado = (tipoPago === 'cobrado');
 
-    // ── Matching / creación de cliente ──────────────────────────────────────
-    const telNorm = (p.telefono||p.clienteTel||'').replace(/\s/g,'');
-    let cli = telNorm ? DB.clientes.find(c=>(c.tel||'').replace(/\s/g,'')=== telNorm) : null;
-    if (!cli && (p.clienteNombre||'').length >= 2) {
-      cli = { id: getId(), nombre: p.clienteNombre, alias: p.clienteNombre,
-              tel: p.clienteTel||p.telefono||'', dir: p.clienteDir||'',
-              cumple: '', compras: 0, total: 0, deuda: 0 };
-      DB.clientes.push(cli);
-    }
+      // ── Matching / creación de cliente ────────────────────────────────────
+      const telNorm = (p.telefono||p.clienteTel||'').replace(/\s/g,'');
+      let cli = telNorm ? DB.clientes.find(c=>(c.tel||'').replace(/\s/g,'')=== telNorm) : null;
+      if (!cli && (p.clienteNombre||'').length >= 2) {
+        cli = { id: getId(), nombre: p.clienteNombre, alias: p.clienteNombre,
+                tel: p.clienteTel||p.telefono||'', dir: p.clienteDir||'',
+                cumple: '', compras: 0, total: 0, deuda: 0 };
+        DB.clientes.push(cli);
+      }
 
-    // ── Descontar stock (siempre, independiente del tipo de pago) ───────────
-    (p.items||[]).filter(i=>i.cant>0&&!i.eliminado).forEach(item => {
-      const prod = DB.productos.find(x => x.id === item.prodId);
-      if (prod) {
-        if (!prod.esCombo) prod.stock = Math.max(0, prod.stock - item.cant);
-        if (prod.esCombo && prod.componentes) {
-          prod.componentes.forEach(comp => {
-            const cp = DB.productos.find(x => x.id === comp.prodId);
-            if (cp) cp.stock = Math.max(0, cp.stock - comp.cant * item.cant);
-          });
+      // ── Descontar stock (siempre) ──────────────────────────────────────────
+      (p.items||[]).filter(i=>i.cant>0&&!i.eliminado).forEach(item => {
+        const prod = DB.productos.find(x => x.id === item.prodId);
+        if (prod) {
+          if (!prod.esCombo) prod.stock = Math.max(0, prod.stock - item.cant);
+          if (prod.esCombo && prod.componentes) {
+            prod.componentes.forEach(comp => {
+              const cp = DB.productos.find(x => x.id === comp.prodId);
+              if (cp) cp.stock = Math.max(0, cp.stock - comp.cant * item.cant);
+            });
+          }
         }
+      });
+
+      if (!DB.historialVentas) DB.historialVentas = [];
+      const itemsFinales = (p.items||[]).filter(i=>i.cant>0&&!i.eliminado);
+
+      if (_esPagado) {
+        // ── COBRADO ──────────────────────────────────────────────────────────
+        DB.historialVentas.push({
+          id: p.id, fecha: p.fecha, hora: p.hora,
+          cajero: currentUser||'Online', clienteId: cli ? cli.id : null,
+          clienteNombre: p.clienteNombre, items: itemsFinales,
+          subtotal: itemsFinales.reduce((s,i)=>s+i.precio*i.cant,0),
+          descuento: p.descuento || 0, total: p.total, metodo: p.metodo,
+          origen: 'online', estado: 'completado',
+          estadoStock: 'descontado', notaAdmin: p.notaAdmin || ''
+        });
+        if (cli) { cli.compras = (cli.compras||0)+1; cli.total = (cli.total||0)+p.total; }
+      } else {
+        // ── FIADO ─────────────────────────────────────────────────────────────
+        if (cli) {
+          const fiadoOnline = {
+            id: p.id, clienteId: cli.id,
+            items: itemsFinales.map(i => {
+              const prod = DB.productos.find(x => x.id === i.prodId);
+              return { ...i, costoUnitario: prod ? prod.costo : 0 };
+            }),
+            total: p.total, pagado: 0, fecha: p.fecha,
+            descuentoCombo: p.descuento || 0, descuentoManual: 0,
+            origenOnline: true
+          };
+          if (!DB.fiados) DB.fiados = [];
+          DB.fiados.push(fiadoOnline);
+          cli.deuda   = (cli.deuda||0)   + p.total;
+          cli.compras = (cli.compras||0) + 1;
+          cli.total   = (cli.total||0)   + p.total;
+        }
+        DB.historialVentas.push({
+          id: p.id, fecha: p.fecha, hora: p.hora,
+          cajero: currentUser||'Online', clienteId: cli ? cli.id : null,
+          clienteNombre: p.clienteNombre, items: itemsFinales,
+          subtotal: itemsFinales.reduce((s,i)=>s+i.precio*i.cant,0),
+          descuento: p.descuento || 0, total: p.total, metodo: p.metodo,
+          origen: 'online', estado: 'fiado',
+          estadoStock: 'descontado', notaAdmin: p.notaAdmin || ''
+        });
       }
+
+      // ── Actualizar estado pedido + caja ────────────────────────────────────
+      p.estado = 'entregado';
+      ensureCajaAbierta();
+      if (_esPagado) {
+        DB.caja.ingresos += p.total;
+        DB.movimientos.push({ tipo:'ingreso', desc:`Pedido online cobrado — ${p.clienteNombre||'cliente'}`, monto: p.total, hora: nowTime(), fecha: today() });
+      } else {
+        DB.movimientos.push({ tipo:'fiado', desc:`Fiado online — ${p.clienteNombre||'cliente'}`, monto: p.total, hora: nowTime(), fecha: today() });
+      }
+
+      // ── Firestore + Firebase ───────────────────────────────────────────────
+      if (fbFS) {
+        fbFS.collection('pedidos_online').doc(String(p.id)).update({
+          estado: 'entregado', cajero: currentUser || 'admin',
+          fechaEntrega: today(), horaEntrega: nowTime()
+        }).catch(e => console.warn('pedidos_online update error:', e.code));
+      }
+      fbGuardar();
+      fbGuardarProductos();
+      setTimeout(() => { _fbEscribiendo = false; }, 8000);
+
+      // ── Sincronizar UI ─────────────────────────────────────────────────────
+      renderPedidosOnline();
+      try { renderInvTable(); }        catch(e){}
+      try { renderHistorialVentas(); } catch(e){}
+      try { renderDashboard(); }       catch(e){}
+      try { renderCaja(); }            catch(e){}
+      try { renderFiados(); }          catch(e){}
+      try { generarReporte(); }        catch(e){}
+      alert(_esPagado
+        ? '✅ Pedido cobrado. Stock, caja, historial y reportes actualizados.'
+        : '✅ Pedido fiado. Stock descontado, visible en módulo Fiados.');
     });
-
-    if (!DB.historialVentas) DB.historialVentas = [];
-    const itemsFinales = (p.items||[]).filter(i=>i.cant>0&&!i.eliminado);
-
-    if (_esPagado) {
-      // ── COBRADO: historial completado + actualizar cliente ─────────────────
-      DB.historialVentas.push({
-        id: p.id, fecha: p.fecha, hora: p.hora,
-        cajero: currentUser||'Online', clienteId: cli ? cli.id : null,
-        clienteNombre: p.clienteNombre, items: itemsFinales,
-        subtotal: itemsFinales.reduce((s,i)=>s+i.precio*i.cant,0),
-        descuento: p.descuento || 0, total: p.total, metodo: p.metodo,
-        origen: 'online', estado: 'completado',
-        estadoStock: 'descontado', notaAdmin: p.notaAdmin || ''
-      });
-      if (cli) { cli.compras = (cli.compras||0)+1; cli.total = (cli.total||0)+p.total; }
-    } else {
-      // ── FIADO: módulo fiados + historial estado fiado ──────────────────────
-      if (cli) {
-        const fiadoOnline = {
-          id: p.id, clienteId: cli.id,
-          items: itemsFinales.map(i => {
-            const prod = DB.productos.find(x => x.id === i.prodId);
-            return { ...i, costoUnitario: prod ? prod.costo : 0 };
-          }),
-          total: p.total, pagado: 0, fecha: p.fecha,
-          descuentoCombo: p.descuento || 0, descuentoManual: 0,
-          origenOnline: true
-        };
-        if (!DB.fiados) DB.fiados = [];
-        DB.fiados.push(fiadoOnline);
-        cli.deuda   = (cli.deuda||0)   + p.total;
-        cli.compras = (cli.compras||0) + 1;
-        cli.total   = (cli.total||0)   + p.total;
-      }
-      DB.historialVentas.push({
-        id: p.id, fecha: p.fecha, hora: p.hora,
-        cajero: currentUser||'Online', clienteId: cli ? cli.id : null,
-        clienteNombre: p.clienteNombre, items: itemsFinales,
-        subtotal: itemsFinales.reduce((s,i)=>s+i.precio*i.cant,0),
-        descuento: p.descuento || 0, total: p.total, metodo: p.metodo,
-        origen: 'online', estado: 'fiado',
-        estadoStock: 'descontado', notaAdmin: p.notaAdmin || ''
-      });
-    }
+    return; // Flujo entregado es async — el código siguiente aplica solo a otros estados
   }
 
   // Si se elimina el pedido
@@ -8961,34 +9029,17 @@ if (!confirm(confirmMsg)) return;
     try { renderDashboard(); } catch(e) {}
     return;
   }
-// Si se cancela, no descontar nada — solo cambiar estado
+  // Estados: procesado, cancelado — solo cambiar estado
   p.estado = nuevoEstado;
-  // Registrar movimiento según tipo de pago
-  if (nuevoEstado === 'entregado') {
-    ensureCajaAbierta();
-    if (_esPagado) {
-      DB.caja.ingresos += p.total;
-      DB.movimientos.push({ tipo:'ingreso', desc:`Pedido online cobrado — ${p.clienteNombre||'cliente'}`, monto: p.total, hora: nowTime(), fecha: today() });
-    } else {
-      DB.movimientos.push({ tipo:'fiado', desc:`Fiado online — ${p.clienteNombre||'cliente'}`, monto: p.total, hora: nowTime(), fecha: today() });
-    }
-  }
-  // Actualizar estado en la colección pedidos_online (Firestore)
   if (fbFS) {
     fbFS.collection('pedidos_online').doc(String(p.id)).update({
-      estado: nuevoEstado,
-      cajero: currentUser || 'admin',
-      fechaEntrega: nuevoEstado === 'entregado' ? today() : null,
-      horaEntrega:  nuevoEstado === 'entregado' ? nowTime() : null
+      estado: nuevoEstado, cajero: currentUser || 'admin',
+      fechaEntrega: null, horaEntrega: null
     }).catch(e => console.warn('pedidos_online update error:', e.code));
   }
-
-  // Guardar cambios operativos en aleze/db y aleze/db_productos
   fbGuardar();
   fbGuardarProductos();
   setTimeout(() => { _fbEscribiendo = false; }, 8000);
-
-// Sincronización total — caja, inventario, historial, dashboard, reportes
   renderPedidosOnline();
   try { renderInvTable(); }        catch(e){}
   try { renderHistorialVentas(); } catch(e){}
@@ -8996,13 +9047,8 @@ if (!confirm(confirmMsg)) return;
   try { renderCaja(); }            catch(e){}
   try { renderFiados(); }          catch(e){}
   try { generarReporte(); }        catch(e){}
-  alert(nuevoEstado === 'entregado'
-    ? (_esPagado
-        ? '✅ Pedido cobrado. Stock, caja, historial y reportes actualizados.'
-        : '✅ Pedido fiado. Stock descontado, visible en módulo Fiados.')
-    : '✅ Estado actualizado.');
+  alert('✅ Estado actualizado.');
 }
-
 // ===================== TIENDA PÚBLICA (/tienda) =====================
 // La tienda se carga en una capa separada cuando la ruta es /tienda
 let _tiendaCart = [];
