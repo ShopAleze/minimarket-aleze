@@ -867,8 +867,6 @@ function _loadHtml5QrCode(cb) {
    .inv-filters .form-control {
       width: 100%;
     }
-  .rep-filtros-card { overflow-x: auto; }
-  .rep-filtros-card > div { flex-wrap: nowrap; min-width: max-content; }
   }
 
   /* ── FASE 3.3: Escáner fijo y centrado — nunca se mueve ────────────────── */
@@ -1780,7 +1778,7 @@ function _loadHtml5QrCode(cb) {
           <div class="page-title" style="margin:0">Reportes</div>
           <button type="button" class="btn btn-danger btn-sm" onclick="abrirReset('reportes')" style="font-size:0.78rem">🗑️ Limpiar reportes</button>
         </div>
-       <div class="card rep-filtros-card" style="margin-bottom:1rem">
+    <div class="card" style="margin-bottom:1rem">
           <div style="display:flex;gap:0.75rem;flex-wrap:wrap;align-items:center">
             <select class="form-control" id="rep-tipo" style="width:200px" onchange="generarReporte()">
               <option value="todos-tipos">📊 Todos los reportes</option>
