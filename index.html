@@ -1781,6 +1781,7 @@ function _loadHtml5QrCode(cb) {
         <div class="card" style="margin-bottom:1rem">
           <div style="display:flex;gap:0.75rem;flex-wrap:wrap;align-items:center">
             <select class="form-control" id="rep-tipo" style="width:200px" onchange="generarReporte()">
+              <option value="todos-tipos">📊 Todos los reportes</option>
               <option value="ventas">Ventas por período</option>
               <option value="productos">Productos más vendidos</option>
               <option value="rentabilidad">Rentabilidad</option>
@@ -5624,6 +5625,13 @@ function generarReporte() {
   const tipo = document.getElementById('rep-tipo').value;
   const desde = document.getElementById('rep-desde').value;
   const hasta = document.getElementById('rep-hasta').value;
+  if (tipo === 'todos-tipos') {
+    document.getElementById('rep-stats').innerHTML = '<div class="stat-card blue"><div class="stat-label">Modo exportación</div><div class="stat-value" style="font-size:1rem">📊 Todos los reportes</div></div>';
+    document.getElementById('rep-tabla-titulo').textContent = 'Exportación completa';
+    document.getElementById('rep-tabla-wrap').innerHTML = '<div style="padding:1.5rem;text-align:center;color:var(--gray-500);font-size:.9rem">Haz clic en <strong>📥 Exportar Excel</strong> para descargar las 6 hojas:<br><br><span style="color:var(--accent)">Ventas · Productos · Rentabilidad · Mermas · Fiados · Gastos</span></div>';
+    if (chartReporte) { chartReporte.destroy(); chartReporte = null; }
+    return;
+  }
   if (tipo === 'ventas') reporteVentas(desde, hasta);
   else if (tipo === 'productos') reporteProductos(desde, hasta);
   else if (tipo === 'rentabilidad') reporteRentabilidad(desde, hasta);
