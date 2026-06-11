@@ -1788,7 +1788,8 @@ function _loadHtml5QrCode(cb) {
               <option value="fiados">Fiados</option>
               <option value="gastos">Gastos</option>
             </select>
-            <select class="form-control" id="rep-periodo" style="width:150px" onchange="setPeriodoReporte()">
+         <select class="form-control" id="rep-periodo" style="width:150px" onchange="setPeriodoReporte()">
+              <option value="todos">Todos</option>
               <option value="hoy">Hoy</option>
               <option value="semana">Esta semana</option>
               <option value="mes" selected>Este mes</option>
@@ -1797,12 +1798,12 @@ function _loadHtml5QrCode(cb) {
             </select>
             <input type="date" class="form-control" id="rep-desde" style="width:150px" onchange="generarReporte()" />
             <input type="date" class="form-control" id="rep-hasta" style="width:150px" onchange="generarReporte()" />
-            <button type="button" class="btn btn-outline btn-sm" onclick="exportReporte()">📥 Exportar CSV</button>
+            <button type="button" class="btn btn-outline btn-sm" onclick="exportReporte()">📥 Exportar Excel</button>
           </div>
         </div>
         <div class="grid-4" id="rep-stats" style="margin-bottom:1rem"></div>
         <div class="grid-2">
-          <div class="card"><canvas id="chart-reporte" height="220"></canvas></div>
+          <div class="card" style="max-height:200px;overflow:hidden"><canvas id="chart-reporte" height="120"></canvas></div>
           <div class="card">
             <div class="card-title" id="rep-tabla-titulo">Detalle</div>
             <div class="table-wrap" id="rep-tabla-wrap"></div>
@@ -5608,7 +5609,8 @@ function setPeriodoReporte() {
   const periodo = document.getElementById('rep-periodo')?.value || 'mes';
   const hoy = today();
   let desde, hasta = hoy;
-  if (periodo === 'hoy') { desde = hoy; }
+if (periodo === 'todos') { desde = '2000-01-01'; hasta = '2099-12-31'; }
+  else if (periodo === 'hoy') { desde = hoy; }
   else if (periodo === 'semana') { const d = new Date(); d.setDate(d.getDate()-7); desde = d.toISOString().split('T')[0]; }
   else if (periodo === 'mes') { desde = hoy.substring(0,7) + '-01'; }
   else if (periodo === 'anual') { desde = hoy.substring(0,4) + '-01-01'; }
@@ -5830,22 +5832,96 @@ function reporteGastos(desde, hasta) {
     <tfoot><tr style="background:var(--gray-50);font-weight:700"><td colspan="3">TOTAL</td><td style="color:var(--danger)">${sol(total)}</td></tr></tfoot>
     </table>`;
 }
-
 function exportReporte() {
-  const tipo = document.getElementById('rep-tipo').value;
-  const desde = document.getElementById('rep-desde').value;
-  const hasta = document.getElementById('rep-hasta').value;
-  const tabla = document.getElementById('rep-tabla-wrap').querySelector('table');
-  if (!tabla) { alert('No hay datos para exportar'); return; }
-  let csv = '';
-  tabla.querySelectorAll('tr').forEach(row => {
-    const cols = Array.from(row.querySelectorAll('th,td')).map(c => '"'+c.textContent.trim().replace(/"/g,'""')+'"');
-    csv += cols.join(',') + '\n';
+  const desde = document.getElementById('rep-desde').value || '2000-01-01';
+  const hasta  = document.getElementById('rep-hasta').value  || '2099-12-31';
+  const xe = v => String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  const cs = v => `<Cell><Data ss:Type="String">${xe(v)}</Data></Cell>`;
+  const cn = v => `<Cell><Data ss:Type="Number">${isNaN(parseFloat(v))?0:parseFloat(v).toFixed(2)}</Data></Cell>`;
+  const ch = v => `<Cell ss:StyleID="h"><Data ss:Type="String">${xe(v)}</Data></Cell>`;
+  const xr = (...c) => `<Row>${c.join('')}</Row>`;
+  const ws = (name, rows) => `<Worksheet ss:Name="${xe(name)}"><Table>${rows.join('')}</Table></Worksheet>`;
+
+  // Filtro común de ventas
+  const vf = [...(DB.ventas||[]), ...(DB.historialVentas||[]).filter(v =>
+    (v.origen==='pos'&&v.estado==='completado')||(v.origen==='online'&&v.estado==='entregado')||(v.origen==='pago_fiado'&&v.estado==='completado')
+  )].filter(v => v.fecha >= desde && v.fecha <= hasta);
+
+  // Hoja 1: Ventas por día
+  const porDia = {};
+  vf.forEach(v => {
+    if (!porDia[v.fecha]) porDia[v.fecha] = {tx:0, tot:0, cos:0};
+    porDia[v.fecha].tx++;
+    porDia[v.fecha].tot += v.total;
+    porDia[v.fecha].cos += (v.items||[]).reduce((s,i)=>{const p=DB.productos.find(x=>x.id===i.prodId);return s+(p?p.costo*i.cant:0);},0);
   });
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const r1 = [xr(ch('Fecha'),ch('Transacciones'),ch('Total S/'),ch('Costo S/'),ch('Ganancia S/'))];
+  Object.keys(porDia).sort().forEach(d => {
+    const dd=porDia[d]; r1.push(xr(cs(formatDate(d)),cn(dd.tx),cn(dd.tot),cn(dd.cos),cn(dd.tot-dd.cos)));
+  });
+  const vTot=vf.reduce((s,v)=>s+v.total,0), vCos=Object.values(porDia).reduce((s,d)=>s+d.cos,0);
+  r1.push(xr(cs('TOTAL'),cn(vf.length),cn(vTot),cn(vCos),cn(vTot-vCos)));
+
+  // Hoja 2: Productos
+  const prods = {};
+  vf.forEach(v=>(v.items||[]).forEach(i=>{
+    if(!prods[i.nombre])prods[i.nombre]={cant:0,tot:0,cos:0};
+    prods[i.nombre].cant+=i.cant; prods[i.nombre].tot+=i.precio*i.cant;
+    const p=DB.productos.find(x=>x.id===i.prodId); prods[i.nombre].cos+=(p?p.costo:0)*i.cant;
+  }));
+  const r2=[xr(ch('Producto'),ch('Cantidad'),ch('Ingresos S/'),ch('Costo S/'),ch('Ganancia S/'))];
+  Object.entries(prods).sort((a,b)=>b[1].cant-a[1].cant).forEach(([n,v])=>r2.push(xr(cs(n),cn(v.cant),cn(v.tot),cn(v.cos),cn(v.tot-v.cos))));
+  const pTot=Object.values(prods).reduce((s,v)=>s+v.tot,0),pCos=Object.values(prods).reduce((s,v)=>s+v.cos,0);
+  r2.push(xr(cs('TOTAL'),cn(Object.values(prods).reduce((s,v)=>s+v.cant,0)),cn(pTot),cn(pCos),cn(pTot-pCos)));
+
+  // Hoja 3: Rentabilidad
+  const porP={};
+  vf.forEach(v=>(v.items||[]).forEach(i=>{
+    const p=DB.productos.find(x=>x.id===i.prodId); if(!p) return;
+    if(!porP[p.id])porP[p.id]={nom:p.nombre,cant:0,ing:0,cos:0};
+    porP[p.id].cant+=i.cant; porP[p.id].ing+=i.precio*i.cant; porP[p.id].cos+=p.costo*i.cant;
+  }));
+  const r3=[xr(ch('Producto'),ch('Cantidad'),ch('Ingresos S/'),ch('Costo S/'),ch('Ganancia S/'),ch('Margen%'))];
+  Object.values(porP).sort((a,b)=>(b.ing-b.cos)-(a.ing-a.cos)).forEach(d=>{
+    const g=d.ing-d.cos, m=d.cos>0?g/d.cos*100:0;
+    r3.push(xr(cs(d.nom),cn(d.cant),cn(d.ing),cn(d.cos),cn(g),cn(m.toFixed(1))));
+  });
+  const gB=Object.values(porP).reduce((s,d)=>s+d.ing-d.cos,0);
+  const gOp=DB_EXT.gastos.filter(g=>g.fecha&&g.fecha>=desde&&g.fecha<=hasta).reduce((s,g)=>s+g.monto,0);
+  const gRec=DB_EXT.gastosRec.reduce((s,g)=>s+g.monto,0);
+  const sue=Object.values(DB_EXT.sueldos).reduce((s,v)=>s+v,0);
+  const mer=DB.mermas.filter(m=>m.fecha>=desde&&m.fecha<=hasta).reduce((s,m)=>{const p=DB.productos.find(x=>x.id===m.prodId);return s+(p?p.costo*m.cant:0);},0);
+  r3.push(xr(cs(''),cs(''),cs(''),cs(''),cs(''),cs('')));
+  r3.push(xr(cs('Ganancia bruta'),cs(''),cs(''),cs(''),cn(gB),cs('')));
+  r3.push(xr(cs('Gastos operativos'),cs(''),cs(''),cs(''),cn(-(gOp+gRec+sue)),cs('')));
+  r3.push(xr(cs('Pérdida mermas'),cs(''),cs(''),cs(''),cn(-mer),cs('')));
+  r3.push(xr(cs('RENTABILIDAD REAL'),cs(''),cs(''),cs(''),cn(gB-gOp-gRec-sue-mer),cs('')));
+
+  // Hoja 4: Mermas
+  const merLst=DB.mermas.filter(m=>m.fecha>=desde&&m.fecha<=hasta);
+  const r4=[xr(ch('Fecha'),ch('Producto'),ch('Cantidad'),ch('Motivo'),ch('Pérdida S/'))];
+  merLst.forEach(m=>{const p=DB.productos.find(x=>x.id===m.prodId);r4.push(xr(cs(formatDate(m.fecha)),cs(p?p.nombre:'-'),cn(m.cant),cs(m.motivo),cn(p?p.costo*m.cant:0)));});
+  r4.push(xr(cs('TOTAL PÉRDIDA'),cs(''),cs(''),cs(''),cn(merLst.reduce((s,m)=>{const p=DB.productos.find(x=>x.id===m.prodId);return s+(p?p.costo*m.cant:0);},0))));
+
+  // Hoja 5: Fiados
+  const fLst=DB.clientes.map(c=>({nom:c.alias||c.nombre,deu:DB.fiados.filter(f=>f.clienteId===c.id).reduce((s,f)=>s+Math.max(0,f.total-f.pagado),0)})).filter(d=>d.deu>0).sort((a,b)=>b.deu-a.deu);
+  const r5=[xr(ch('Cliente'),ch('Deuda S/'))];
+  fLst.forEach(d=>r5.push(xr(cs(d.nom),cn(d.deu))));
+  r5.push(xr(cs('TOTAL'),cn(fLst.reduce((s,d)=>s+d.deu,0))));
+
+  // Hoja 6: Gastos
+  const gLst=DB_EXT.gastos.filter(g=>g.fecha&&g.fecha>=desde&&g.fecha<=hasta);
+  const r6=[xr(ch('Fecha'),ch('Tipo'),ch('Descripción'),ch('Monto S/'))];
+  gLst.forEach(g=>r6.push(xr(cs(formatDate(g.fecha)),cs(g.tipo),cs(g.desc),cn(g.monto))));
+  r6.push(xr(cs('TOTAL'),cs(''),cs(''),cn(gLst.reduce((s,g)=>s+g.monto,0))));
+
+  // Generar Workbook SpreadsheetML
+  const wb = `<?xml version="1.0" encoding="UTF-8"?><?mso-application progid="Excel.Sheet"?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"><Styles><Style ss:ID="h"><Font ss:Bold="1"/><Interior ss:Color="#EDE9FE" ss:Pattern="Solid"/></Style></Styles>${ws('Ventas',r1)}${ws('Productos',r2)}${ws('Rentabilidad',r3)}${ws('Mermas',r4)}${ws('Fiados',r5)}${ws('Gastos',r6)}</Workbook>`;
+
+  const blob = new Blob([wb], {type:'application/vnd.ms-excel;charset=utf-8;'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url; a.download = `reporte-${tipo}-${desde}-${hasta}.csv`; a.click();
+  a.href = url; a.download = `reporte-aleze-${desde}-${hasta}.xls`; a.click();
   URL.revokeObjectURL(url);
 }
 
