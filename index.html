@@ -8841,7 +8841,8 @@ function confirmarEntregaPedido(id) {
   const nuevoEstado = document.getElementById('po-estado-'+id)?.value;
   if (!nuevoEstado) return;
   // Lock listener immediately so the re-render after fbGuardar() doesn't revert
-  _fbEscribiendo = true;
+ _fbEscribiendo = true;
+  let _esPagado = true; // se define al confirmar entrega (cobrado o fiado)
 
   // Si se marca como entregado: verificar stock y confirmar
   if (nuevoEstado === 'entregado' && p.estado !== 'entregado') {
@@ -8864,10 +8865,26 @@ function confirmarEntregaPedido(id) {
       });
       confirmMsg += '\n¿Continuar de todas formas?';
     }
+if (!confirm(confirmMsg)) return;
 
-    if (!confirm(confirmMsg)) return;
+    // ── Cobrado o Fiado ─────────────────────────────────────────────────────
+    _esPagado = confirm(
+      `¿Cómo se registra el pago de ${p.clienteNombre||'cliente'}?\n\n` +
+      `✅ OK → Cobrado (historial de ventas + caja)\n` +
+      `📋 Cancelar → Fiado (módulo de fiados)`
+    );
 
-    // Descontar stock solo de items activos
+    // ── Matching / creación de cliente ──────────────────────────────────────
+    const telNorm = (p.telefono||p.clienteTel||'').replace(/\s/g,'');
+    let cli = telNorm ? DB.clientes.find(c=>(c.tel||'').replace(/\s/g,'')=== telNorm) : null;
+    if (!cli && (p.clienteNombre||'').length >= 2) {
+      cli = { id: getId(), nombre: p.clienteNombre, alias: p.clienteNombre,
+              tel: p.clienteTel||p.telefono||'', dir: p.clienteDir||'',
+              cumple: '', compras: 0, total: 0, deuda: 0 };
+      DB.clientes.push(cli);
+    }
+
+    // ── Descontar stock (siempre, independiente del tipo de pago) ───────────
     (p.items||[]).filter(i=>i.cant>0&&!i.eliminado).forEach(item => {
       const prod = DB.productos.find(x => x.id === item.prodId);
       if (prod) {
@@ -8881,31 +8898,50 @@ function confirmarEntregaPedido(id) {
       }
     });
 
-    // Registrar en ventas y historial
-    const ventaOnline = {
-      id: p.id, fecha: p.fecha, hora: p.hora,
-      cajero: 'Online', clienteId: null, clienteNombre: p.clienteNombre,
-      items: (p.items||[]).filter(i=>i.cant>0&&!i.eliminado),
-      subtotal: (p.items||[]).filter(i=>i.cant>0&&!i.eliminado).reduce((s,i)=>s+i.precio*i.cant,0),
-      descuento: p.descuento || 0, total: p.total,
-      metodo: p.metodo, origen: 'online'
-    };
     if (!DB.historialVentas) DB.historialVentas = [];
     const itemsFinales = (p.items||[]).filter(i=>i.cant>0&&!i.eliminado);
-    DB.historialVentas.push({
-      id: p.id,
-      fecha: p.fecha, hora: p.hora,
-      cajero: 'Online', clienteId: null, clienteNombre: p.clienteNombre,
-      items: itemsFinales,
-      subtotal: itemsFinales.reduce((s,i)=>s+i.precio*i.cant,0),
-      descuento: p.descuento || 0,
-      total: p.total,
-      metodo: p.metodo,
-      origen: 'online',
-      estado: 'completado',
-      estadoStock: 'descontado',
-      notaAdmin: p.notaAdmin || ''
-    });
+
+    if (_esPagado) {
+      // ── COBRADO: historial completado + actualizar cliente ─────────────────
+      DB.historialVentas.push({
+        id: p.id, fecha: p.fecha, hora: p.hora,
+        cajero: currentUser||'Online', clienteId: cli ? cli.id : null,
+        clienteNombre: p.clienteNombre, items: itemsFinales,
+        subtotal: itemsFinales.reduce((s,i)=>s+i.precio*i.cant,0),
+        descuento: p.descuento || 0, total: p.total, metodo: p.metodo,
+        origen: 'online', estado: 'completado',
+        estadoStock: 'descontado', notaAdmin: p.notaAdmin || ''
+      });
+      if (cli) { cli.compras = (cli.compras||0)+1; cli.total = (cli.total||0)+p.total; }
+    } else {
+      // ── FIADO: módulo fiados + historial estado fiado ──────────────────────
+      if (cli) {
+        const fiadoOnline = {
+          id: p.id, clienteId: cli.id,
+          items: itemsFinales.map(i => {
+            const prod = DB.productos.find(x => x.id === i.prodId);
+            return { ...i, costoUnitario: prod ? prod.costo : 0 };
+          }),
+          total: p.total, pagado: 0, fecha: p.fecha,
+          descuentoCombo: p.descuento || 0, descuentoManual: 0,
+          origenOnline: true
+        };
+        if (!DB.fiados) DB.fiados = [];
+        DB.fiados.push(fiadoOnline);
+        cli.deuda   = (cli.deuda||0)   + p.total;
+        cli.compras = (cli.compras||0) + 1;
+        cli.total   = (cli.total||0)   + p.total;
+      }
+      DB.historialVentas.push({
+        id: p.id, fecha: p.fecha, hora: p.hora,
+        cajero: currentUser||'Online', clienteId: cli ? cli.id : null,
+        clienteNombre: p.clienteNombre, items: itemsFinales,
+        subtotal: itemsFinales.reduce((s,i)=>s+i.precio*i.cant,0),
+        descuento: p.descuento || 0, total: p.total, metodo: p.metodo,
+        origen: 'online', estado: 'fiado',
+        estadoStock: 'descontado', notaAdmin: p.notaAdmin || ''
+      });
+    }
   }
 
   // Si se elimina el pedido
@@ -8925,13 +8961,17 @@ function confirmarEntregaPedido(id) {
     try { renderDashboard(); } catch(e) {}
     return;
   }
-  // Si se cancela, no descontar nada — solo cambiar estado
+// Si se cancela, no descontar nada — solo cambiar estado
   p.estado = nuevoEstado;
-  // Register cash movement for online delivery
+  // Registrar movimiento según tipo de pago
   if (nuevoEstado === 'entregado') {
     ensureCajaAbierta();
-    DB.caja.ingresos += p.total;
-    DB.movimientos.push({ tipo:'ingreso', desc:`Pedido online entregado — ${p.clienteNombre||'cliente'}`, monto: p.total, hora: nowTime(), fecha: today() });
+    if (_esPagado) {
+      DB.caja.ingresos += p.total;
+      DB.movimientos.push({ tipo:'ingreso', desc:`Pedido online cobrado — ${p.clienteNombre||'cliente'}`, monto: p.total, hora: nowTime(), fecha: today() });
+    } else {
+      DB.movimientos.push({ tipo:'fiado', desc:`Fiado online — ${p.clienteNombre||'cliente'}`, monto: p.total, hora: nowTime(), fecha: today() });
+    }
   }
   // Actualizar estado en la colección pedidos_online (Firestore)
   if (fbFS) {
@@ -8948,15 +8988,18 @@ function confirmarEntregaPedido(id) {
   fbGuardarProductos();
   setTimeout(() => { _fbEscribiendo = false; }, 8000);
 
-  // Sincronización total — caja, inventario, historial, dashboard, reportes
+// Sincronización total — caja, inventario, historial, dashboard, reportes
   renderPedidosOnline();
-  try { renderInvTable(); }       catch(e){}
+  try { renderInvTable(); }        catch(e){}
   try { renderHistorialVentas(); } catch(e){}
-  try { renderDashboard(); }      catch(e){}
-  try { renderCaja(); }           catch(e){}
-  try { generarReporte(); }       catch(e){}
+  try { renderDashboard(); }       catch(e){}
+  try { renderCaja(); }            catch(e){}
+  try { renderFiados(); }          catch(e){}
+  try { generarReporte(); }        catch(e){}
   alert(nuevoEstado === 'entregado'
-    ? '✅ Pedido entregado. Stock, caja, historial y reportes actualizados.'
+    ? (_esPagado
+        ? '✅ Pedido cobrado. Stock, caja, historial y reportes actualizados.'
+        : '✅ Pedido fiado. Stock descontado, visible en módulo Fiados.')
     : '✅ Estado actualizado.');
 }
 
