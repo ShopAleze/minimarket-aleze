@@ -8505,7 +8505,6 @@ function fbEscucharPedidosOnline() {
       console.warn('pedidos_online listener error:', err.code);
     });
 }
-
 function renderPedidosOnline() {
   if (!DB.pedidosOnline) DB.pedidosOnline = [];
   const filtro = document.getElementById('po-filtro')?.value || '';
@@ -8514,9 +8513,9 @@ function renderPedidosOnline() {
 
   let lista = [...DB.pedidosOnline];
   if (filtro) lista = lista.filter(p => p.estado === filtro);
-  if (desde) lista = lista.filter(p => p.fecha >= desde);
-  if (hasta) lista = lista.filter(p => p.fecha <= hasta);
-  lista.sort((a,b) => (b.id || 0) > (a.id || 0) ? 1 : -1);
+  if (desde)  lista = lista.filter(p => p.fecha >= desde);
+  if (hasta)  lista = lista.filter(p => p.fecha <= hasta);
+  lista.sort((a,b) => (b.id||0) > (a.id||0) ? 1 : -1);
 
   const pendientes = DB.pedidosOnline.filter(p => p.estado === 'pendiente').length;
   const badge = document.getElementById('po-badge-pendiente');
@@ -8528,61 +8527,81 @@ function renderPedidosOnline() {
   const listEl = document.getElementById('po-list');
   if (!listEl) return;
   if (lista.length === 0) {
-    listEl.innerHTML = '<div class="card" style="text-align:center;padding:2rem;color:var(--gray-400)">🛍️ Sin pedidos registrados</div>';
+    listEl.innerHTML = '<div class="card" style="text-align:center;padding:2rem;color:var(--gray-400)">🛍️ Sin pedidos para los filtros seleccionados</div>';
     return;
   }
 
-  const yaEntregado = id => {
-    const p = DB.pedidosOnline.find(x => String(x.id) === String(id));
-    return p && p.estado === 'entregado';
-  };
+  // ── Agrupar por teléfono normalizado (fallback: nombre) ─────────────────
+  const grupos = {};
+  lista.forEach(p => {
+    const key = (p.telefono||p.clienteTel||'').replace(/\s/g,'') || (p.clienteNombre||'?').toLowerCase();
+    if (!grupos[key]) grupos[key] = { nombre: p.clienteNombre||'Cliente', tel: p.clienteTel||p.telefono||'', pedidos: [] };
+    grupos[key].pedidos.push(p);
+  });
 
-  listEl.innerHTML = lista.map(p => {
-    const entregado = p.estado === 'entregado';
-    const cancelado = p.estado === 'cancelado';
-    const bloqueado = entregado || cancelado; // no se puede editar si ya está cerrado
+  // Primero grupos con pendientes, luego por más reciente
+  const gruposArr = Object.values(grupos).sort((a, b) => {
+    const aPend = a.pedidos.some(p => p.estado === 'pendiente') ? 1 : 0;
+    const bPend = b.pedidos.some(p => p.estado === 'pendiente') ? 1 : 0;
+    if (bPend !== aPend) return bPend - aPend;
+    return (b.pedidos[0]?.id||0) > (a.pedidos[0]?.id||0) ? 1 : -1;
+  });
+
+  listEl.innerHTML = gruposArr.map(g => {
+    const totalGrupo = g.pedidos.reduce((s,p) => s+(p.total||0), 0);
+    const pendGrupo  = g.pedidos.filter(p => p.estado === 'pendiente').length;
+
+    const pedidosHTML = g.pedidos.map(p => {
+      const entregado = p.estado === 'entregado';
+      const cancelado = p.estado === 'cancelado';
+      const bloqueado = entregado || cancelado;
+      return `
+      <div style="border:1px solid var(--gray-200);border-radius:8px;padding:.75rem;margin-bottom:.5rem;border-left:3px solid var(--${borderColor[p.estado]||'gray-300'})">
+        <div class="flex-between" style="margin-bottom:.35rem;flex-wrap:wrap;gap:.35rem">
+          <div style="display:flex;align-items:center;gap:.4rem;flex-wrap:wrap">
+            <span style="font-size:.78rem;color:var(--gray-500)">${formatDate(p.fecha)} ${p.hora||''}</span>
+            <span class="badge ${badgeColor[p.estado]||'badge-gray'}">${p.estado}</span>
+            ${p.editado ? `<span class="badge badge-purple">✏️ editado</span>` : ''}
+          </div>
+          <strong style="color:var(--primary)">${sol(p.total)}</strong>
+        </div>
+        <div style="font-size:.8rem;color:var(--gray-700);margin-bottom:.4rem;line-height:1.5">
+          ${(p.items||[]).filter(i=>i.cant>0&&!i.eliminado).map(i=>`${i.nombre} x${i.cant} — ${sol(i.precio*i.cant)}`).join(' &nbsp;·&nbsp; ')}
+        </div>
+        <div class="flex-between" style="flex-wrap:wrap;gap:.4rem">
+          <span style="font-size:.78rem;color:var(--gray-500)">
+            ${p.entrega==='delivery'?'🚚 Delivery':'🏪 Recojo'} &nbsp;·&nbsp; 💳 ${p.metodo||'-'}
+            ${p.descuento>0?`&nbsp;·&nbsp;<span style="color:var(--accent)">-${sol(p.descuento)} desc.</span>`:''}
+          </span>
+          <div style="display:flex;gap:.35rem;align-items:center">
+            ${!bloqueado ? `<button class="btn btn-outline btn-xs" style="color:var(--primary);border-color:var(--primary)" onclick="editarPedidoOnline('${p.id}')">✏️ Editar</button>` : ''}
+            <select class="form-control" style="width:130px;font-size:.78rem" id="po-estado-${p.id}" ${bloqueado?'disabled':''}>
+              <option value="pendiente"  ${p.estado==='pendiente' ?'selected':''}>Pendiente</option>
+              <option value="procesado"  ${p.estado==='procesado' ?'selected':''}>Procesado</option>
+              <option value="entregado"  ${p.estado==='entregado' ?'selected':''}>✅ Entregado</option>
+              <option value="cancelado"  ${p.estado==='cancelado' ?'selected':''}>❌ Cancelado</option>
+              <option value="eliminar" style="color:var(--danger)">🗑️ Eliminar</option>
+            </select>
+            ${!bloqueado ? `<button class="btn btn-primary btn-xs" onclick="confirmarEntregaPedido('${p.id}')">Guardar</button>` : ''}
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+
     return `
-    <div class="card" style="margin-bottom:.75rem;border-left:4px solid var(--${borderColor[p.estado]||'gray-300'})">
-      <!-- Cabecera -->
-      <div class="flex-between" style="margin-bottom:.5rem">
+    <div class="card" style="margin-bottom:.75rem;border-left:4px solid var(--${pendGrupo>0?'warning':'gray-300'})">
+      <div class="flex-between" style="margin-bottom:.6rem;flex-wrap:wrap;gap:.4rem">
         <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap">
-          <strong style="font-size:.95rem">${p.clienteNombre||'Cliente'}</strong>
-          ${p.clienteTel ? `<span style="font-size:.75rem;color:var(--gray-500)">📱 ${p.clienteTel}</span>` : ''}
-          <span class="badge ${badgeColor[p.estado]||'badge-gray'}">${p.estado}</span>
-          ${p.editado ? `<span class="badge badge-purple" title="Pedido modificado por el admin">✏️ editado</span>` : ''}
+          <strong style="font-size:.95rem">👤 ${g.nombre}</strong>
+          ${g.tel ? `<span style="font-size:.75rem;color:var(--gray-500)">📱 ${g.tel}</span>` : ''}
+          ${pendGrupo>0 ? `<span class="badge badge-orange">${pendGrupo} pendiente${pendGrupo>1?'s':''}</span>` : ''}
         </div>
-        <div style="font-size:.78rem;color:var(--gray-500)">${formatDate(p.fecha)} ${p.hora||''}</div>
-      </div>
-
-      <!-- Items -->
-      <div style="font-size:.82rem;color:var(--gray-700);margin-bottom:.5rem;line-height:1.6">
-        ${(p.items||[]).filter(i=>i.cant>0).map(i=>`
-          <span style="display:inline-block;margin-right:.75rem">
-            ${i.nombre} <strong>x${i.cant}</strong>
-            ${i.eliminado ? '<span style="color:var(--danger);font-size:.7rem">❌ eliminado</span>' : `— ${sol(i.precio*i.cant)}`}
-          </span>`).join('')}
-      </div>
-
-      <!-- Footer -->
-      <div class="flex-between" style="flex-wrap:wrap;gap:.4rem">
-        <div style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap">
-          <span style="font-size:.82rem">📦 ${p.entrega==='delivery'?'🚚 Delivery':'🏪 Recojo en tienda'}</span>
-          <span style="font-size:.82rem">💳 ${p.metodo||'-'}</span>
-          <strong style="color:var(--primary)">Total: ${sol(p.total)}</strong>
-          ${p.descuento > 0 ? `<span style="font-size:.75rem;color:var(--accent)">(-${sol(p.descuento)} desc.)</span>` : ''}
-        </div>
-        <div style="display:flex;gap:.4rem;align-items:center">
-          ${!bloqueado ? `<button class="btn btn-outline btn-xs" style="color:var(--primary);border-color:var(--primary-light)" onclick="editarPedidoOnline('${p.id}')">✏️ Editar</button>` : ''}
-          <select class="form-control" style="width:130px;font-size:.78rem" id="po-estado-${p.id}" ${bloqueado?'disabled':''}>
-            <option value="pendiente"  ${p.estado==='pendiente' ?'selected':''}>Pendiente</option>
-            <option value="procesado"  ${p.estado==='procesado' ?'selected':''}>Procesado</option>
-            <option value="entregado"  ${p.estado==='entregado' ?'selected':''}>✅ Entregado</option>
-            <option value="cancelado"  ${p.estado==='cancelado' ?'selected':''}>❌ Cancelado</option>
-            <option value="eliminar" style="color:var(--danger)">🗑️ Eliminar pedido</option>
-          </select>
-          ${!bloqueado ? `<button class="btn btn-primary btn-xs" onclick="confirmarEntregaPedido('${p.id}')">Guardar</button>` : ''}
+        <div style="text-align:right">
+          <span style="font-size:.78rem;color:var(--gray-500)">${g.pedidos.length} pedido${g.pedidos.length>1?'s':''}</span>
+          <strong style="color:var(--primary);margin-left:.5rem">Total: ${sol(totalGrupo)}</strong>
         </div>
       </div>
+      ${pedidosHTML}
     </div>`;
   }).join('');
 }
@@ -9233,7 +9252,7 @@ function _renderTienda() {
 .tnd-prod-name { font-size:.85rem;font-weight:700;color:#1f2937;margin-bottom:.25rem;line-height:1.2; }
 .tnd-prod-price { font-size:1.1rem;font-weight:800;color:#7C3AED; }
 .tnd-prod-price-orig { font-size:.75rem;color:#9ca3af;text-decoration:line-through; }
-.tnd-prod-promo { background:#EF4444;color:white;font-size:.65rem;padding:1px 5px;border-radius:4px;margin-bottom:.2rem; }
+.tnd-prod-promo { position:absolute;top:8px;left:8px;color:white;font-size:.63rem;font-weight:700;padding:2px 7px;border-radius:4px;z-index:1;background:#EF4444; }
 .tnd-prod-badge { position:absolute;top:8px;right:8px; }
 .tnd-panel-overlay {
   position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:none;
@@ -9348,8 +9367,11 @@ let _tndStep = 'cart'; // cart | datos | pago | confirmacion
 function tndRenderCats() {
   const el = document.getElementById('tnd-cats');
   if (!el) return;
+  const catPromo = (DB.categorias||[]).find(c => c.nombre === 'Promociones');
+  const otrosCats = (DB.categorias||[]).filter(c => c.nombre !== 'Promociones');
+  const catsOrdenadas = catPromo ? [catPromo, ...otrosCats] : otrosCats;
   el.innerHTML = `<span class="tnd-cat-tag active" onclick="tndSetCat('')">Todos</span>` +
-    (DB.categorias||[]).map(c => `<span class="tnd-cat-tag" onclick="tndSetCat(${c.id})">${c.imagen ? `<img src="${c.imagen}" style="width:16px;height:16px;object-fit:cover;border-radius:3px;vertical-align:middle">` : c.emoji} ${c.nombre}</span>`).join('');
+    catsOrdenadas.map(c => `<span class="tnd-cat-tag" onclick="tndSetCat(${c.id})">${c.imagen ? `<img src="${c.imagen}" style="width:16px;height:16px;object-fit:cover;border-radius:3px;vertical-align:middle">` : c.emoji} ${c.nombre}</span>`).join('');
 }
 
 function tndSetCat(id) {
@@ -9365,7 +9387,8 @@ function tndFiltrar() {
   let prods = (DB.productos||[]).filter(p => {
     if (_tndCatActiva && p.cat != _tndCatActiva) return false;
     if (buscar && !(p.nombre||'').toLowerCase().includes(buscar)) return false;
-    if (p.venc && p.venc < hoy) return false; // ocultar productos vencidos
+    if (p.venc && p.venc < hoy) return false;
+    if (p.esCombo && p.promoActiva === false) return false; // ocultar combos desactivados
     return true;
   });
 
@@ -9386,7 +9409,7 @@ function tndFiltrar() {
 
     return `<div class="tnd-prod-card ${agotado?'agotado':''}" onclick="${agotado?'':('tndAgregarCarrito('+p.id+')')}">
       <div class="tnd-prod-badge">${badge}</div>
-      ${promo ? `<div class="tnd-prod-promo">🔥 ${promo.nombre||'Promo'}</div>` : ''}
+  ${p.esCombo ? `<div class="tnd-prod-promo" style="background:var(--accent)">OFERTA</div>` : promo ? `<div class="tnd-prod-promo">PROMO</div>` : ''}
       <div class="tnd-prod-icon">${icon}</div>
       <div class="tnd-prod-name">${p.nombre}</div>
       ${precioOrig ? `<div class="tnd-prod-price-orig">S/ ${precioOrig.toFixed(2)}</div>` : ''}
@@ -9625,7 +9648,8 @@ function tndEnviarPedido() {
   // ── Construir pedido con TODOS los campos requeridos por pedidoValido() ──
   // Incluye: clienteNombre, telefono, items, total, fecha, origen
   if (!DB.pedidosOnline) DB.pedidosOnline = [];
-  const clienteId = tndGetClienteId();
+  const clienteExistente = (DB.clientes||[]).find(c=>(c.tel||'').replace(/\s/g,'')=== telLimpio);
+  const clienteId = clienteExistente ? clienteExistente.id : tndGetClienteId();
   const pedido = {
     id:            getId(),
     fecha,                          // string "YYYY-MM-DD" — requerido por reglas
