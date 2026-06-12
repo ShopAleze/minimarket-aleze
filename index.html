@@ -1267,11 +1267,17 @@ function _loadHtml5QrCode(cb) {
         <div class="nav-item" onclick="navigate('historial-ventas')" title="Historial de todas las ventas">
           <span class="icon">📜</span><span class="nav-label">Historial Ventas</span>
         </div>
-        <div class="nav-item" onclick="navigate('pedidos-online')" title="Pedidos recibidos por la tienda online">
-          <span class="icon">🛍️</span><span class="nav-label">Pedidos Online</span>
-        </div>
-        <div class="nav-item" onclick="navigate('configuracion')" title="Configuración del sistema">
+      <div class="nav-item" onclick="navigate('configuracion')" title="Configuración del sistema">
           <span class="icon">⚙️</span><span class="nav-label">Configuración</span>
+        </div>
+      </div>
+      <!-- Pedidos Online: visible para admin, vendedor 1 y vendedor 2 -->
+      <div class="nav-section" id="vendedor-nav">
+        <div class="nav-section-label">Pedidos</div>
+        <div class="nav-item" onclick="navigate('pedidos-online')" title="Pedidos recibidos por la tienda online">
+          <span class="icon">🛍️</span>
+          <span class="nav-label">Pedidos Online</span>
+          <span id="po-nav-badge" style="display:none;background:var(--danger);color:white;border-radius:10px;font-size:.7rem;padding:1px 6px;margin-left:auto;font-weight:700"></span>
         </div>
       </div>
     </aside>
@@ -8494,8 +8500,14 @@ function fbEscucharPedidosOnline() {
       _pedidosLoaded = true;
       // Refrescar UI si el admin está viendo pedidos
       try { renderPedidosOnline(); } catch(e) {}
-      // Actualizar badge de alertas (pedidos pendientes)
-      try { updateAlertCount(); } catch(e) {}
+     // Actualizar badge de alertas (pedidos pendientes)
+        try { updateAlertCount(); } catch(e) {}
+        // Badge nav pedidos — visible para todos los roles
+        try {
+          const _pend = DB.pedidosOnline.filter(p => p.estado === 'pendiente').length;
+          const _nb = document.getElementById('po-nav-badge');
+          if (_nb) { _nb.textContent = _pend || ''; _nb.style.display = _pend > 0 ? 'inline-block' : 'none'; }
+        } catch(e) {}
       // Refrescar dashboard si está visible
       try {
         const activePage = document.querySelector('.page.active');
