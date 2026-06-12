@@ -5946,7 +5946,8 @@ function renderConfiguracion() {
   document.getElementById('cfg-nombre').value    = DB.config.nombre    || 'Minimarket Aleze';
   document.getElementById('cfg-direccion').value = DB.config.direccion || '';
   document.getElementById('cfg-telefono').value  = DB.config.telefono  || '';
-  document.getElementById('cfg-whatsapp-tienda').value = DB.config.whatsappTienda || '980037284';
+ document.getElementById('cfg-whatsapp-tienda').value = DB.config.whatsappTienda || '980037284';
+    document.getElementById('cfg-ruc').value = DB.config.ruc || '';
   document.getElementById('cfg-ticket-msg').value= DB.config.ticketMsg || '¡Gracias por su compra!';
   document.getElementById('cfg-dias-venc').value = DB.config.diasVenc  || 7;
   document.getElementById('cfg-monto-apertura').value = DB.config.montoAperturaAuto || 0;
@@ -5977,7 +5978,8 @@ function guardarConfig() {
   DB.config.ticketMsg = document.getElementById('cfg-ticket-msg').value;
   DB.config.diasVenc  = parseInt(document.getElementById('cfg-dias-venc').value) || 7;
   DB.config.montoAperturaAuto = parseFloat(document.getElementById('cfg-monto-apertura').value) || 0;
-fbGuardarProductos(); // config también va en db_productos para que la tienda lo lea
+    DB.config.ruc = document.getElementById('cfg-ruc').value.trim();
+  fbGuardarProductos();// config también va en db_productos para que la tienda lo lea
   fbGuardar();
   try { renderDashboard(); } catch(e){}
   alert('✅ Configuración guardada');
