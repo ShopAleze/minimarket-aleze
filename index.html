@@ -9176,11 +9176,8 @@ function _getStockBadge(p) {
 
 function _getPromoTienda(p) {
   const hoy = today();
-  return (DB.promociones||[]).find(pr =>
-    pr.activa !== false && pr.hasta >= hoy &&
-    !pr.packProdId &&
-    pr.prod1 && parseInt(pr.prod1) === p.id && !pr.prod2
-  );
+  const promoActivas = (DB.promociones||[]).filter(pr => pr.activa && pr.hasta >= hoy);
+  return promoActivas.find(pr => !pr.packProdId && pr.prod1 == p.id && !pr.prod2);
 }
 function _renderTienda() {
   try {
