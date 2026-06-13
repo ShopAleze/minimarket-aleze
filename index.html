@@ -9158,7 +9158,8 @@ if (!confirm(confirmMsg)) { _fbEscribiendo = false; return; }
         DB.movimientos.push({ tipo:'fiado', desc:`Fiado online — ${p.clienteNombre||'cliente'}`, monto: p.total, hora: nowTime(), fecha: today() });
       }
 
-      // ── Firestore + Firebase ───────────────────────────────────────────────
+     // ── Firestore + Firebase ───────────────────────────────────────────────
+      _fbLastWriteTs = Date.now();
       if (fbFS) {
         fbFS.collection('pedidos_online').doc(String(p.id)).update({
           estado: 'entregado', cajero: currentUser || 'admin',
