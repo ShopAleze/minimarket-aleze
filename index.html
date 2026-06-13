@@ -5531,7 +5531,7 @@ function cerrarCaja() {
 function updateCajaStats() {
   const ventasHoy = DB.historialVentas.filter(v => v.fecha === today() &&
   ((v.origen === 'pos' && v.estado === 'completado') ||
-   (v.origen === 'online' && v.estado === 'entregado')));
+ (v.origen === 'online' && v.estado === 'completado')));
   const ingresos = DB.caja.ingresos;
   const egresos = DB.caja.egresos;
   document.getElementById('caja-inicial').textContent = sol(DB.caja.inicial);
