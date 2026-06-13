@@ -1926,7 +1926,8 @@ background: #F5F3FF;
             <div class="form-group"><label>Dirección</label><input type="text" class="form-control" id="cfg-direccion" value="Jr. Tigrillo Mz. Ll4 Lt. 5 Asoc. Percin Deza SJL" /></div>
             <div class="form-group"><label>Teléfono</label><input type="text" class="form-control" id="cfg-telefono" placeholder="Ej: 999 888 777" /></div>
             <div class="form-group"><label>WhatsApp Tienda Online 📱</label><input type="text" class="form-control" id="cfg-whatsapp-tienda" placeholder="Ej: 980037284" value="980037284" /></div>
-            <div class="form-group"><label>RUC / DNI (opcional)</label><input type="text" class="form-control" id="cfg-ruc" /></div>
+           <div class="form-group"><label>RUC / DNI (opcional)</label><input type="text" class="form-control" id="cfg-ruc" /></div>
+            <div class="form-group"><label>🔒 PIN acceso personal (4 dígitos)</label><input type="password" class="form-control" id="cfg-pin-acceso" maxlength="4" placeholder="1234" /></div>
             <button type="button" class="btn btn-primary" onclick="guardarConfig()">Guardar</button>
           </div>
           <div class="card">
@@ -6082,7 +6083,8 @@ function renderConfiguracion() {
   document.getElementById('cfg-direccion').value = DB.config.direccion || '';
   document.getElementById('cfg-telefono').value  = DB.config.telefono  || '';
  document.getElementById('cfg-whatsapp-tienda').value = DB.config.whatsappTienda || '980037284';
-    document.getElementById('cfg-ruc').value = DB.config.ruc || '';
+document.getElementById('cfg-ruc').value = DB.config.ruc || '';
+    document.getElementById('cfg-pin-acceso').value = DB.config.pinAcceso || '';
   document.getElementById('cfg-ticket-msg').value= DB.config.ticketMsg || '¡Gracias por su compra!';
   document.getElementById('cfg-dias-venc').value = DB.config.diasVenc  || 7;
   document.getElementById('cfg-monto-apertura').value = DB.config.montoAperturaAuto || 0;
@@ -6113,7 +6115,9 @@ function guardarConfig() {
   DB.config.ticketMsg = document.getElementById('cfg-ticket-msg').value;
   DB.config.diasVenc  = parseInt(document.getElementById('cfg-dias-venc').value) || 7;
   DB.config.montoAperturaAuto = parseFloat(document.getElementById('cfg-monto-apertura').value) || 0;
-    DB.config.ruc = document.getElementById('cfg-ruc').value.trim();
+  DB.config.ruc = document.getElementById('cfg-ruc').value.trim();
+    const _pin = document.getElementById('cfg-pin-acceso').value.trim();
+    if (_pin) DB.config.pinAcceso = _pin;
   fbGuardarProductos();// config también va en db_productos para que la tienda lo lea
   fbGuardar();
   try { renderDashboard(); } catch(e){}
