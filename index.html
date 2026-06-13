@@ -3890,7 +3890,7 @@ function procesarVenta() {
   _fbLastWriteTs = Date.now();
   _fbEscribiendo = true;
   const _vPayload = JSON.parse(JSON.stringify(DB));
-  delete _vPayload.productos; delete _vPayload.categorias;
+delete _vPayload.productos; delete _vPayload.categorias; delete _vPayload.pedidosOnline;
   fbDocRef().set(_vPayload)
     .then(() => { setTimeout(() => { _fbEscribiendo = false; }, 300); })
     .catch(() => { _fbEscribiendo = false; });
@@ -3949,7 +3949,7 @@ if (cli) { cli.deuda = (cli.deuda||0) + total; cli.compras = (cli.compras||0) + 
   _fbLastWriteTs = Date.now();
   _fbEscribiendo = true;
   const _vPayload = JSON.parse(JSON.stringify(DB));
-  delete _vPayload.productos; delete _vPayload.categorias;
+delete _vPayload.productos; delete _vPayload.categorias; delete _vPayload.pedidosOnline;
   fbDocRef().set(_vPayload)
     .then(() => { setTimeout(() => { _fbEscribiendo = false; }, 300); })
     .catch(() => { _fbEscribiendo = false; });
@@ -7759,7 +7759,7 @@ if (cli) { cli.deuda = (cli.deuda||0) + total; cli.compras = (cli.compras||0) + 
   _fbLastWriteTs = Date.now();
   _fbEscribiendo = true;
   const _vPayload = JSON.parse(JSON.stringify(DB));
-  delete _vPayload.productos; delete _vPayload.categorias;
+delete _vPayload.productos; delete _vPayload.categorias; delete _vPayload.pedidosOnline;
   fbDocRef().set(_vPayload)
     .then(() => { setTimeout(() => { _fbEscribiendo = false; }, 300); })
     .catch(() => { _fbEscribiendo = false; });
@@ -10591,7 +10591,7 @@ function iniciarBackupAutomatico() {
     const ahora = new Date();
     const key = 'backup_' + ahora.toISOString().replace(/[:.]/g, '-').substring(0, 16);
     const payload = JSON.parse(JSON.stringify(DB));
-    delete payload.productos; delete payload.categorias;
+  delete payload.productos; delete payload.categorias; delete payload.pedidosOnline;
     payload._backupTs = ahora.toISOString();
     payload._backupUser = currentUser;
     fbFS.collection('aleze_backups').doc(key).set(payload)
