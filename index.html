@@ -149,7 +149,7 @@ function _loadHtml5QrCode(cb) {
   /* LOGIN */
   #login-screen {
     position: fixed; inset: 0;
-    background: linear-gradient(135deg, #5B21B6 0%, #7C3AED 50%, #059669 100%);
+background: #F5F3FF;
     display: none; align-items: center; justify-content: center;
     z-index: 9999;
     overflow: hidden;
@@ -157,14 +157,14 @@ function _loadHtml5QrCode(cb) {
     box-sizing: border-box;
   }
   #login-screen.visible { display: flex; }
-  .login-card {
+.login-card {
     background: white;
     border-radius: 20px;
     padding: 2.5rem;
     width: 360px;
     max-width: 92vw;
     box-sizing: border-box;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    box-shadow: 0 8px 32px rgba(96,30,249,0.15);
     text-align: center;
   }
   .login-logo {
@@ -175,7 +175,7 @@ function _loadHtml5QrCode(cb) {
     margin: 0 auto 1rem;
     font-size: 2rem;
   }
-  .login-card h1 { font-size: 1.5rem; font-weight: 700; color: var(--gray-900); margin-bottom: 0.25rem; }
+  .login-card h1 { font-size: 1.5rem; font-weight: 700; color: #601EF9; margin-bottom: 0.25rem; }
   .login-card p { color: var(--gray-500); font-size: 0.875rem; margin-bottom: 1.5rem; }
   .login-card select, .login-card input {
     width: 100%; padding: 0.75rem 1rem;
@@ -195,6 +195,46 @@ function _loadHtml5QrCode(cb) {
     transition: opacity 0.2s;
   }
   .btn-login:hover { opacity: 0.9; }
+  /* ── LOGIN REDISEÑADO ──────────────────────────── */
+  .koala-circle {
+    width:130px;height:130px;border-radius:50%;overflow:hidden;
+    margin:0 auto 1rem;background:white;flex-shrink:0;
+   box-shadow:0 0 0 6px #601EF9;display:flex;align-items:center;
+    justify-content:center;font-size:2.5rem;
+  }
+  .koala-circle.koala-sm { width:82px;height:82px;box-shadow:0 0 0 5px #601EF9;margin-bottom:.75rem; }
+  .koala-circle img { width:100%;height:100%;object-fit:cover;border-radius:50%; }
+  .btn-compra {
+    width:100%;padding:.875rem 1rem;
+   background:#601EF9;color:white;
+    border:1.5px solid #601EF9;border-radius:var(--radius);
+    font-size:.95rem;font-weight:600;cursor:pointer;
+    margin-bottom:.75rem;line-height:1.5;transition:background .2s;
+  }
+.btn-compra:hover { background:#4F0FE0; }
+  .stats-row { display:flex;margin-bottom:.75rem;background:white;border-radius:10px;border:.5px solid #DDD6FE;overflow:hidden; }
+  .stat-item { flex:1;padding:.5rem .75rem;text-align:center; }
+  .stat-item:first-child { border-right:.5px solid #EDE9FE; }
+  .stat-num { display:block;font-size:1.1rem;font-weight:600;color:var(--primary); }
+  .stat-lbl { display:block;font-size:.7rem;color:var(--gray-500); }
+  .btn-personal {
+    width:100%;padding:.6rem 1rem;background:transparent;color:#6D28D9;
+    border:.5px solid #C4B5FD;border-radius:var(--radius);
+    font-size:.82rem;font-weight:500;cursor:pointer;transition:background .2s;
+  }
+  .btn-personal:hover { background:#F5F3FF; }
+  .pin-dot { width:14px;height:14px;border-radius:50%;background:#DDD6FE;border:2px solid #C4B5FD;transition:background .2s; }
+  .pin-dot.filled { background:var(--primary);border-color:var(--primary); }
+  .pin-pad { display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:.25rem; }
+  .pin-pad button {
+    padding:.75rem 0;border-radius:12px;border:.5px solid #EDE9FE;
+    background:white;font-size:1.15rem;font-weight:500;color:#1E1B4B;
+    cursor:pointer;transition:background .15s;
+  }
+  .pin-pad button:active,.pin-pad button:hover { background:#F5F3FF; }
+  .pin-pad .pin-zero { background:var(--primary);color:white;border-color:var(--primary); }
+  .pin-pad .pin-zero:hover { opacity:.9; }
+  .btn-volver { background:none;border:none;color:var(--gray-400);font-size:.8rem;margin-top:.6rem;cursor:pointer; }
 
   /* LAYOUT */
   #app { display: none; height: 100dvh; flex-direction: column; }
@@ -1164,8 +1204,60 @@ function _loadHtml5QrCode(cb) {
 </div>
 
 <div id="login-screen">
-  <div class="login-card">
-    <div class="login-logo">🛒</div>
+
+  <!-- PANEL 1: Bienvenida pública -->
+  <div id="login-welcome" class="login-card">
+    <div class="koala-circle">
+      <img src="/minimarket-aleze/logo.png"alt="Koalita Aleze"
+           onerror="this.style.display='none';this.parentNode.innerHTML='🛒'"/>
+    </div>
+    <h1>Minimarket Aleze</h1>
+    <p>Jr. Tigrillo Mz. Ll4 Lt. 5 – SJL</p>
+    <button type="button" class="btn-compra" onclick="location.hash='#/tienda';initTienda()">
+      🛍️ ¡Compra aquí!
+      <span style="font-size:.78rem;opacity:.75;display:block;font-weight:400">Ver productos · Pedir delivery →</span>
+    </button>
+    <div class="stats-row">
+      <div class="stat-item"><span class="stat-num">480+</span><span class="stat-lbl">Productos</span></div>
+      <div class="stat-item"><span class="stat-num">4.9</span><span class="stat-lbl">Calificación</span></div>
+    </div>
+    <button type="button" class="btn-personal" onclick="mostrarPin()">🔒 Acceso personal</button>
+    <div style="color:var(--gray-400);font-size:.7rem;margin-top:.5rem">v1.0.1</div>
+  </div>
+
+  <!-- PANEL 2: PIN -->
+  <div id="login-pin" class="login-card" style="display:none">
+    <div class="koala-circle koala-sm">
+      <img src="/minimarket-aleze/logo.png" alt="Koalita Aleze"
+           onerror="this.style.display='none';this.parentNode.innerHTML='🔒'"/>
+    </div>
+    <h2 style="font-size:1.1rem;font-weight:600;color:var(--gray-900);margin-bottom:.25rem">Acceso personal</h2>
+    <p style="color:var(--gray-500);font-size:.8rem;margin-bottom:1rem">Ingresa tu PIN de 4 dígitos</p>
+    <div id="pin-dots" style="display:flex;justify-content:center;gap:14px;margin-bottom:.6rem">
+      <div class="pin-dot"></div><div class="pin-dot"></div>
+      <div class="pin-dot"></div><div class="pin-dot"></div>
+    </div>
+    <div id="pin-error" style="color:var(--danger);font-size:.8rem;margin-bottom:.4rem;min-height:1.1rem;display:none">PIN incorrecto</div>
+    <div class="pin-pad">
+      <button type="button" onclick="_pinDigit('1')">1</button>
+      <button type="button" onclick="_pinDigit('2')">2</button>
+      <button type="button" onclick="_pinDigit('3')">3</button>
+      <button type="button" onclick="_pinDigit('4')">4</button>
+      <button type="button" onclick="_pinDigit('5')">5</button>
+      <button type="button" onclick="_pinDigit('6')">6</button>
+      <button type="button" onclick="_pinDigit('7')">7</button>
+      <button type="button" onclick="_pinDigit('8')">8</button>
+      <button type="button" onclick="_pinDigit('9')">9</button>
+      <div></div>
+      <button type="button" class="pin-zero" onclick="_pinDigit('0')">0</button>
+      <button type="button" onclick="_pinBack()">⌫</button>
+    </div>
+    <button type="button" class="btn-volver" onclick="volverWelcome()">← Volver</button>
+  </div>
+
+  <!-- PANEL 3: Login con contraseña (tras PIN correcto) -->
+  <div id="login-form-panel" class="login-card" style="display:none">
+    <div class="login-logo">🔒</div>
     <h1>Minimarket Aleze</h1>
     <p>Jr. Tigrillo Mz. Ll4 Lt. 5 – SJL</p>
     <select id="login-user" class="form-control" style="margin-bottom:0.75rem">
@@ -1177,11 +1269,9 @@ function _loadHtml5QrCode(cb) {
     <input type="password" id="login-pass" autocomplete="current-password" class="form-control" placeholder="Contraseña" onkeydown="if(event.key==='Enter')doLogin()" />
     <div id="login-error" style="color:var(--danger);font-size:0.8rem;margin-bottom:0.5rem;display:none">Contraseña incorrecta</div>
     <button type="button" class="btn-login" onclick="doLogin()">Ingresar</button>
-    <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid #e5e7eb">
-      <a href="#/tienda" onclick="initTienda();return false;" style="color:var(--primary);font-size:.85rem;font-weight:600;text-decoration:none">🛍️ Compra aquí →</a>
-      <div style="color:var(--gray-400);font-size:0.7rem;margin-top:0.5rem">v1.0.1</div>
-    </div>
+    <button type="button" class="btn-volver" onclick="volverWelcome()">← Volver</button>
   </div>
+
 </div>
 
 <!-- APP -->
@@ -1836,7 +1926,8 @@ function _loadHtml5QrCode(cb) {
             <div class="form-group"><label>Dirección</label><input type="text" class="form-control" id="cfg-direccion" value="Jr. Tigrillo Mz. Ll4 Lt. 5 Asoc. Percin Deza SJL" /></div>
             <div class="form-group"><label>Teléfono</label><input type="text" class="form-control" id="cfg-telefono" placeholder="Ej: 999 888 777" /></div>
             <div class="form-group"><label>WhatsApp Tienda Online 📱</label><input type="text" class="form-control" id="cfg-whatsapp-tienda" placeholder="Ej: 980037284" value="980037284" /></div>
-            <div class="form-group"><label>RUC / DNI (opcional)</label><input type="text" class="form-control" id="cfg-ruc" /></div>
+           <div class="form-group"><label>RUC / DNI (opcional)</label><input type="text" class="form-control" id="cfg-ruc" /></div>
+            <div class="form-group"><label>🔒 PIN acceso personal (4 dígitos)</label><input type="password" class="form-control" id="cfg-pin-acceso" maxlength="4" placeholder="1234" /></div>
             <button type="button" class="btn btn-primary" onclick="guardarConfig()">Guardar</button>
           </div>
           <div class="card">
@@ -2959,7 +3050,7 @@ function resetAppState() {
   _vaciarCampo('movimientos', []);
   _vaciarCampo('proveedores', []);
   _vaciarCampo('promociones', []);
-  _vaciarCampo('pedidosOnline', []);
+try { Object.defineProperty(DB, 'pedidosOnline', { value: [], writable: true, configurable: true, enumerable: true }); } catch(e) { DB.pedidosOnline = []; }
   _vaciarCampo('inventariosMensuales', []);
   _vaciarCampo('historialVentas', []);
 
@@ -3050,7 +3141,51 @@ function _mostrarBloqueo(hasta) {
     }
   }, 500);
 }
-
+// ── Flujo Welcome → PIN → Login ─────────────────────────────────────
+let _pinValue = '';
+function mostrarPin() {
+  _pinValue = '';
+  _actualizarDots();
+  document.getElementById('pin-error').style.display = 'none';
+  document.getElementById('login-welcome').style.display = 'none';
+  document.getElementById('login-pin').style.display = 'block';
+  document.getElementById('login-form-panel').style.display = 'none';
+}
+function volverWelcome() {
+  _pinValue = '';
+  document.getElementById('login-welcome').style.display = 'block';
+  document.getElementById('login-pin').style.display = 'none';
+  document.getElementById('login-form-panel').style.display = 'none';
+  document.getElementById('login-error').style.display = 'none';
+  document.getElementById('login-pass').value = '';
+}
+function _pinDigit(d) {
+  if (_pinValue.length >= 4) return;
+  _pinValue += d;
+  _actualizarDots();
+  document.getElementById('pin-error').style.display = 'none';
+  if (_pinValue.length === 4) setTimeout(_verificarPin, 200);
+}
+function _pinBack() {
+  if (!_pinValue.length) return;
+  _pinValue = _pinValue.slice(0, -1);
+  _actualizarDots();
+}
+function _actualizarDots() {
+  document.querySelectorAll('.pin-dot').forEach((d, i) =>
+    d.classList.toggle('filled', i < _pinValue.length));
+}
+function _verificarPin() {
+  const pin = (DB.config && DB.config.pinAcceso) ? String(DB.config.pinAcceso) : '1234';
+  if (_pinValue === pin) {
+    document.getElementById('login-pin').style.display = 'none';
+    document.getElementById('login-form-panel').style.display = 'block';
+    document.getElementById('login-pass').focus();
+  } else {
+    document.getElementById('pin-error').style.display = 'block';
+    _pinValue = ''; _actualizarDots();
+  }
+}
 async function doLogin() {
   // ── PASO 0: Reset total de estado anterior (sesión previa, cambio de usuario) ──
   resetAppState();
@@ -3134,7 +3269,7 @@ async function doLogin() {
         const data = snapOp.data();
         const camposOp = ['ventas','clientes','fiados','mermas','movimientos',
                           'proveedores','promociones','caja','config',
-                          'inventariosMensuales','historialVentas','pedidosOnline'];
+                          'inventariosMensuales','historialVentas'];
         camposOp.forEach(k => { if (k in data && k in DB) DB[k] = data[k]; });
         if (data.config && data.config.passwords) Object.assign(PASSWORDS, data.config.passwords);
       }
@@ -3203,10 +3338,11 @@ function doLogout() {
   // Volver a pantalla de login
   document.getElementById('login-screen').classList.add('visible');
   document.getElementById('app').classList.remove('visible');
-  document.getElementById('login-user').value = '';
-  document.getElementById('login-pass').value = '';
-  const errEl = document.getElementById('login-error');
-  if (errEl) errEl.style.display = 'none';
+document.getElementById('login-user').value = '';
+    document.getElementById('login-pass').value = '';
+    const errEl = document.getElementById('login-error');
+    if (errEl) errEl.style.display = 'none';
+    volverWelcome();
 
   // Restaurar bloqueo si sigue activo
   const bloqueoTs = parseInt(localStorage.getItem('aleze_bloqueo') || '0');
@@ -5947,7 +6083,8 @@ function renderConfiguracion() {
   document.getElementById('cfg-direccion').value = DB.config.direccion || '';
   document.getElementById('cfg-telefono').value  = DB.config.telefono  || '';
  document.getElementById('cfg-whatsapp-tienda').value = DB.config.whatsappTienda || '980037284';
-    document.getElementById('cfg-ruc').value = DB.config.ruc || '';
+document.getElementById('cfg-ruc').value = DB.config.ruc || '';
+    document.getElementById('cfg-pin-acceso').value = DB.config.pinAcceso || '';
   document.getElementById('cfg-ticket-msg').value= DB.config.ticketMsg || '¡Gracias por su compra!';
   document.getElementById('cfg-dias-venc').value = DB.config.diasVenc  || 7;
   document.getElementById('cfg-monto-apertura').value = DB.config.montoAperturaAuto || 0;
@@ -5978,7 +6115,9 @@ function guardarConfig() {
   DB.config.ticketMsg = document.getElementById('cfg-ticket-msg').value;
   DB.config.diasVenc  = parseInt(document.getElementById('cfg-dias-venc').value) || 7;
   DB.config.montoAperturaAuto = parseFloat(document.getElementById('cfg-monto-apertura').value) || 0;
-    DB.config.ruc = document.getElementById('cfg-ruc').value.trim();
+  DB.config.ruc = document.getElementById('cfg-ruc').value.trim();
+    const _pin = document.getElementById('cfg-pin-acceso').value.trim();
+    if (_pin) DB.config.pinAcceso = _pin;
   fbGuardarProductos();// config también va en db_productos para que la tienda lo lea
   fbGuardar();
   try { renderDashboard(); } catch(e){}
@@ -7813,8 +7952,9 @@ function fbGuardar() {
     _fbEscribiendo = true;
     // Excluir productos y categorias — tienen su propio documento
     const payload = JSON.parse(JSON.stringify(DB));
-    delete payload.productos;
+  delete payload.productos;
     delete payload.categorias;
+    delete payload.pedidosOnline;
     fbDocRef().set(payload)
       .then(() => { setTimeout(() => { _fbEscribiendo = false; }, 300); })
       .catch(e => { _fbEscribiendo = false; console.warn('Firestore write error:', e); });
@@ -7860,7 +8000,7 @@ function fbEscuchar() {
     if (!data) return;
     // Solo campos operativos (no productos/categorias que vienen de db_productos)
     const camposOp = ['ventas','clientes','fiados','mermas','movimientos',
-                      'proveedores','promociones','caja','inventariosMensuales','historialVentas','pedidosOnline'];
+                      'proveedores','promociones','caja','inventariosMensuales','historialVentas'];
     camposOp.forEach(k => { if (k in data && k in DB) DB[k] = data[k]; });
     if (data.config) DB.config = { ...DB.config, ...data.config };
     try { renderDashboard(); }    catch(e){}
@@ -7998,7 +8138,7 @@ window.onload = async function() {
         const data = snapOp.data();
         const camposOp = ['ventas','clientes','fiados','mermas','movimientos',
                           'proveedores','promociones','caja','config',
-                          'inventariosMensuales','historialVentas','pedidosOnline'];
+                     'inventariosMensuales','historialVentas'];
         camposOp.forEach(k => { if (k in data && k in DB) DB[k] = data[k]; });
         if (data.config && data.config.passwords) Object.assign(PASSWORDS, data.config.passwords);
       } else {
@@ -8485,9 +8625,9 @@ function fbEscucharPedidosOnline() {
   _pedidosOnlineUnsub = fbFS.collection('pedidos_online')
     .orderBy('fecha', 'desc')
     .onSnapshot(snapshot => {
-      if (_fbEscribiendo) return;
+    if (_fbEscribiendo) return;
       if (snapshot.metadata && snapshot.metadata.hasPendingWrites) return;
-      if (Date.now() - _fbLastWriteTs < 2000) return;
+      DB.pedidosOnline = snapshot.docs.map(doc => doc.data());
       // Actualizar DB.pedidosOnline con todos los documentos de la colección
       const nuevos = snapshot.docs
         .map(doc => doc.data())
@@ -9241,7 +9381,7 @@ function _renderTienda() {
 .tnd-search-bar input {
   flex:1;border:none;outline:none;font-size:.95rem;background:transparent;
 }
-.tnd-cats { display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:1.25rem; }
+.tnd-cats { display:flex;gap:.4rem;flex-wrap:nowrap;overflow-x:auto;margin-bottom:1.25rem;scrollbar-width:none;-webkit-overflow-scrolling:touch; }
 .tnd-cat-tag {
   padding:.3rem .8rem;border-radius:20px;cursor:pointer;
   border:1.5px solid #e5e7eb;background:white;
