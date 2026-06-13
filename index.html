@@ -4378,6 +4378,7 @@ function guardarCatRapida() {
 }
 
 function guardarCategoria() {
+  if (currentRole !== 'admin') return;
   const nombre = document.getElementById('cat-nombre').value.trim();
   if (!nombre) { alert('El nombre es obligatorio'); return; }
   const emoji  = document.getElementById('cat-emoji').value.trim() || '📦';
@@ -4414,6 +4415,7 @@ function verCodigoBarras(id) {
 }
 
 function guardarProducto() {
+  if (currentRole !== 'admin') return;
   const nombre = document.getElementById('prod-nombre').value.trim();
   const cat = parseInt(document.getElementById('prod-cat').value);
   const costo = parseFloat(document.getElementById('prod-costo').value);
@@ -4760,6 +4762,7 @@ function editarProveedor(id) {
 }
 
 function guardarProveedor() {
+  if (currentRole !== 'admin') return;
   const nombre = document.getElementById('prov-nombre').value.trim();
   if (!nombre) { alert('Ingresa el nombre'); return; }
   const data = { nombre, contacto: document.getElementById('prov-contacto').value, tel: document.getElementById('prov-tel').value, productos: document.getElementById('prov-productos').value };
@@ -5663,6 +5666,7 @@ function editarMerma(id) {
 }
 
 function guardarMerma() {
+  if (currentRole !== 'admin') return;
   const prodId = parseInt(document.getElementById('merma-prod').value);
   const cant = parseFloat(document.getElementById('merma-cant').value) || 0;
   const motivo = document.getElementById('merma-motivo-sel').value;
@@ -6079,6 +6083,7 @@ function exportReporte() {
 
 // ===================== CONFIGURACION =====================
 function renderConfiguracion() {
+  if (currentRole !== 'admin') return;
   document.getElementById('cfg-nombre').value    = DB.config.nombre    || 'Minimarket Aleze';
   document.getElementById('cfg-direccion').value = DB.config.direccion || '';
   document.getElementById('cfg-telefono').value  = DB.config.telefono  || '';
@@ -6670,6 +6675,7 @@ function editarGasto(id) {
 }
 
 function guardarGasto() {
+  if (currentRole !== 'admin') return;
   const monto = parseFloat(document.getElementById('g-monto').value) || 0;
   if (monto <= 0) { alert('Ingresa un monto válido'); return; }
   const tipo  = document.getElementById('g-tipo').value;
