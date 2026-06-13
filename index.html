@@ -3338,7 +3338,7 @@ function doLogout() {
   // Volver a pantalla de login
   document.getElementById('login-screen').classList.add('visible');
   document.getElementById('app').classList.remove('visible');
-document.getElementById('login-user').value = '';
+    document.getElementById('login-user').value = '';
     document.getElementById('login-pass').value = '';
     const errEl = document.getElementById('login-error');
     if (errEl) errEl.style.display = 'none';
@@ -6116,8 +6116,8 @@ function guardarConfig() {
   DB.config.diasVenc  = parseInt(document.getElementById('cfg-dias-venc').value) || 7;
   DB.config.montoAperturaAuto = parseFloat(document.getElementById('cfg-monto-apertura').value) || 0;
   DB.config.ruc = document.getElementById('cfg-ruc').value.trim();
-    const _pin = document.getElementById('cfg-pin-acceso').value.trim();
-    if (_pin) DB.config.pinAcceso = _pin;
+ const _pin = document.getElementById('cfg-pin-acceso').value.trim();
+  if (_pin) DB.config.pinAcceso = _pin;
   fbGuardarProductos();// config también va en db_productos para que la tienda lo lea
   fbGuardar();
   try { renderDashboard(); } catch(e){}
