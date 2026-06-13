@@ -157,14 +157,14 @@ background: #F5F3FF;
     box-sizing: border-box;
   }
   #login-screen.visible { display: flex; }
-.login-card {
+  .login-card {
     background: white;
     border-radius: 20px;
     padding: 2.5rem;
     width: 360px;
     max-width: 92vw;
     box-sizing: border-box;
-    box-shadow: 0 8px 32px rgba(96,30,249,0.15);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
     text-align: center;
   }
   .login-logo {
@@ -206,12 +206,12 @@ background: #F5F3FF;
   .koala-circle img { width:100%;height:100%;object-fit:cover;border-radius:50%; }
   .btn-compra {
     width:100%;padding:.875rem 1rem;
-   background:#601EF9;color:white;
-    border:1.5px solid #601EF9;border-radius:var(--radius);
+    background:white;color:#3B0764;
+    border:1.5px solid var(--primary);border-radius:var(--radius);
     font-size:.95rem;font-weight:600;cursor:pointer;
     margin-bottom:.75rem;line-height:1.5;transition:background .2s;
   }
-.btn-compra:hover { background:#4F0FE0; }
+  .btn-compra:hover { background:#F5F3FF; }
   .stats-row { display:flex;margin-bottom:.75rem;background:white;border-radius:10px;border:.5px solid #DDD6FE;overflow:hidden; }
   .stat-item { flex:1;padding:.5rem .75rem;text-align:center; }
   .stat-item:first-child { border-right:.5px solid #EDE9FE; }
@@ -1213,7 +1213,7 @@ background: #F5F3FF;
     </div>
     <h1>Minimarket Aleze</h1>
     <p>Jr. Tigrillo Mz. Ll4 Lt. 5 – SJL</p>
-    <button type="button" class="btn-compra" onclick="location.hash='#/tienda';initTienda()">
+    <button type="button" class="btn-compra" onclick="initTienda()">
       🛍️ ¡Compra aquí!
       <span style="font-size:.78rem;opacity:.75;display:block;font-weight:400">Ver productos · Pedir delivery →</span>
     </button>
@@ -1926,8 +1926,7 @@ background: #F5F3FF;
             <div class="form-group"><label>Dirección</label><input type="text" class="form-control" id="cfg-direccion" value="Jr. Tigrillo Mz. Ll4 Lt. 5 Asoc. Percin Deza SJL" /></div>
             <div class="form-group"><label>Teléfono</label><input type="text" class="form-control" id="cfg-telefono" placeholder="Ej: 999 888 777" /></div>
             <div class="form-group"><label>WhatsApp Tienda Online 📱</label><input type="text" class="form-control" id="cfg-whatsapp-tienda" placeholder="Ej: 980037284" value="980037284" /></div>
-           <div class="form-group"><label>RUC / DNI (opcional)</label><input type="text" class="form-control" id="cfg-ruc" /></div>
-            <div class="form-group"><label>🔒 PIN acceso personal (4 dígitos)</label><input type="password" class="form-control" id="cfg-pin-acceso" maxlength="4" placeholder="1234" /></div>
+            <div class="form-group"><label>RUC / DNI (opcional)</label><input type="text" class="form-control" id="cfg-ruc" /></div>
             <button type="button" class="btn btn-primary" onclick="guardarConfig()">Guardar</button>
           </div>
           <div class="card">
@@ -3050,7 +3049,7 @@ function resetAppState() {
   _vaciarCampo('movimientos', []);
   _vaciarCampo('proveedores', []);
   _vaciarCampo('promociones', []);
-try { Object.defineProperty(DB, 'pedidosOnline', { value: [], writable: true, configurable: true, enumerable: true }); } catch(e) { DB.pedidosOnline = []; }
+  _vaciarCampo('pedidosOnline', []);
   _vaciarCampo('inventariosMensuales', []);
   _vaciarCampo('historialVentas', []);
 
@@ -3269,7 +3268,7 @@ async function doLogin() {
         const data = snapOp.data();
         const camposOp = ['ventas','clientes','fiados','mermas','movimientos',
                           'proveedores','promociones','caja','config',
-                          'inventariosMensuales','historialVentas'];
+                          'inventariosMensuales','historialVentas','pedidosOnline'];
         camposOp.forEach(k => { if (k in data && k in DB) DB[k] = data[k]; });
         if (data.config && data.config.passwords) Object.assign(PASSWORDS, data.config.passwords);
       }
@@ -6083,8 +6082,7 @@ function renderConfiguracion() {
   document.getElementById('cfg-direccion').value = DB.config.direccion || '';
   document.getElementById('cfg-telefono').value  = DB.config.telefono  || '';
  document.getElementById('cfg-whatsapp-tienda').value = DB.config.whatsappTienda || '980037284';
-document.getElementById('cfg-ruc').value = DB.config.ruc || '';
-    document.getElementById('cfg-pin-acceso').value = DB.config.pinAcceso || '';
+    document.getElementById('cfg-ruc').value = DB.config.ruc || '';
   document.getElementById('cfg-ticket-msg').value= DB.config.ticketMsg || '¡Gracias por su compra!';
   document.getElementById('cfg-dias-venc').value = DB.config.diasVenc  || 7;
   document.getElementById('cfg-monto-apertura').value = DB.config.montoAperturaAuto || 0;
@@ -6115,9 +6113,7 @@ function guardarConfig() {
   DB.config.ticketMsg = document.getElementById('cfg-ticket-msg').value;
   DB.config.diasVenc  = parseInt(document.getElementById('cfg-dias-venc').value) || 7;
   DB.config.montoAperturaAuto = parseFloat(document.getElementById('cfg-monto-apertura').value) || 0;
-  DB.config.ruc = document.getElementById('cfg-ruc').value.trim();
-    const _pin = document.getElementById('cfg-pin-acceso').value.trim();
-    if (_pin) DB.config.pinAcceso = _pin;
+    DB.config.ruc = document.getElementById('cfg-ruc').value.trim();
   fbGuardarProductos();// config también va en db_productos para que la tienda lo lea
   fbGuardar();
   try { renderDashboard(); } catch(e){}
@@ -7952,9 +7948,8 @@ function fbGuardar() {
     _fbEscribiendo = true;
     // Excluir productos y categorias — tienen su propio documento
     const payload = JSON.parse(JSON.stringify(DB));
-  delete payload.productos;
+    delete payload.productos;
     delete payload.categorias;
-    delete payload.pedidosOnline;
     fbDocRef().set(payload)
       .then(() => { setTimeout(() => { _fbEscribiendo = false; }, 300); })
       .catch(e => { _fbEscribiendo = false; console.warn('Firestore write error:', e); });
@@ -8000,7 +7995,7 @@ function fbEscuchar() {
     if (!data) return;
     // Solo campos operativos (no productos/categorias que vienen de db_productos)
     const camposOp = ['ventas','clientes','fiados','mermas','movimientos',
-                      'proveedores','promociones','caja','inventariosMensuales','historialVentas'];
+                      'proveedores','promociones','caja','inventariosMensuales','historialVentas','pedidosOnline'];
     camposOp.forEach(k => { if (k in data && k in DB) DB[k] = data[k]; });
     if (data.config) DB.config = { ...DB.config, ...data.config };
     try { renderDashboard(); }    catch(e){}
@@ -8138,7 +8133,7 @@ window.onload = async function() {
         const data = snapOp.data();
         const camposOp = ['ventas','clientes','fiados','mermas','movimientos',
                           'proveedores','promociones','caja','config',
-                     'inventariosMensuales','historialVentas'];
+                          'inventariosMensuales','historialVentas','pedidosOnline'];
         camposOp.forEach(k => { if (k in data && k in DB) DB[k] = data[k]; });
         if (data.config && data.config.passwords) Object.assign(PASSWORDS, data.config.passwords);
       } else {
@@ -8625,9 +8620,9 @@ function fbEscucharPedidosOnline() {
   _pedidosOnlineUnsub = fbFS.collection('pedidos_online')
     .orderBy('fecha', 'desc')
     .onSnapshot(snapshot => {
-    if (_fbEscribiendo) return;
+      if (_fbEscribiendo) return;
       if (snapshot.metadata && snapshot.metadata.hasPendingWrites) return;
-      DB.pedidosOnline = snapshot.docs.map(doc => doc.data());
+      if (Date.now() - _fbLastWriteTs < 2000) return;
       // Actualizar DB.pedidosOnline con todos los documentos de la colección
       const nuevos = snapshot.docs
         .map(doc => doc.data())
@@ -9381,7 +9376,7 @@ function _renderTienda() {
 .tnd-search-bar input {
   flex:1;border:none;outline:none;font-size:.95rem;background:transparent;
 }
-.tnd-cats { display:flex;gap:.4rem;flex-wrap:nowrap;overflow-x:auto;margin-bottom:1.25rem;scrollbar-width:none;-webkit-overflow-scrolling:touch; }
+.tnd-cats { display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:1.25rem; }
 .tnd-cat-tag {
   padding:.3rem .8rem;border-radius:20px;cursor:pointer;
   border:1.5px solid #e5e7eb;background:white;
