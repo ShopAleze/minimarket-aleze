@@ -8072,7 +8072,7 @@ function fbEscuchar() {
 // Solo las colecciones que el usuario modifica activamente
 // Columnas que van al doc 'db' (operaciones)
 const _fbPatchColsOp   = ['ventas','clientes','fiados','mermas','movimientos',
-                           'proveedores','promociones','caja','inventariosMensuales','pedidosOnline'];
+                           'proveedores','promociones','caja','inventariosMensuales'];
 // Columnas que van al doc 'db_productos' (catálogo)
 const _fbPatchColsProd = ['productos','categorias'];
 
@@ -8625,9 +8625,8 @@ function fbEscucharPedidosOnline() {
   _pedidosOnlineUnsub = fbFS.collection('pedidos_online')
     .orderBy('fecha', 'desc')
     .onSnapshot(snapshot => {
-  if (_fbEscribiendo) return;
+if (_fbEscribiendo) return;
         if (snapshot.metadata && snapshot.metadata.hasPendingWrites) return;
-        if (_pedidosLoaded && Date.now() - _fbLastWriteTs < 2000) return;
         // Actualizar DB.pedidosOnline con todos los documentos de la colección
       const nuevos = snapshot.docs
         .map(doc => doc.data())
