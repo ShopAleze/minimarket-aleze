@@ -9381,7 +9381,7 @@ function _renderTienda() {
 .tnd-search-bar input {
   flex:1;border:none;outline:none;font-size:.95rem;background:transparent;
 }
-.tnd-cats { display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:1.25rem; }
+.tnd-cats { display:flex;gap:.4rem;flex-wrap:nowrap;overflow-x:auto;margin-bottom:1.25rem;scrollbar-width:none;-webkit-overflow-scrolling:touch; }
 .tnd-cat-tag {
   padding:.3rem .8rem;border-radius:20px;cursor:pointer;
   border:1.5px solid #e5e7eb;background:white;
