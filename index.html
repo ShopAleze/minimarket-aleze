@@ -3050,7 +3050,7 @@ function resetAppState() {
   _vaciarCampo('movimientos', []);
   _vaciarCampo('proveedores', []);
   _vaciarCampo('promociones', []);
-  _vaciarCampo('pedidosOnline', []);
+try { Object.defineProperty(DB, 'pedidosOnline', { value: [], writable: true, configurable: true, enumerable: true }); } catch(e) { DB.pedidosOnline = []; }
   _vaciarCampo('inventariosMensuales', []);
   _vaciarCampo('historialVentas', []);
 
@@ -3269,7 +3269,7 @@ async function doLogin() {
         const data = snapOp.data();
         const camposOp = ['ventas','clientes','fiados','mermas','movimientos',
                           'proveedores','promociones','caja','config',
-                          'inventariosMensuales','historialVentas','pedidosOnline'];
+                          'inventariosMensuales','historialVentas'];
         camposOp.forEach(k => { if (k in data && k in DB) DB[k] = data[k]; });
         if (data.config && data.config.passwords) Object.assign(PASSWORDS, data.config.passwords);
       }
@@ -7952,8 +7952,9 @@ function fbGuardar() {
     _fbEscribiendo = true;
     // Excluir productos y categorias — tienen su propio documento
     const payload = JSON.parse(JSON.stringify(DB));
-    delete payload.productos;
+  delete payload.productos;
     delete payload.categorias;
+    delete payload.pedidosOnline;
     fbDocRef().set(payload)
       .then(() => { setTimeout(() => { _fbEscribiendo = false; }, 300); })
       .catch(e => { _fbEscribiendo = false; console.warn('Firestore write error:', e); });
@@ -7999,7 +8000,7 @@ function fbEscuchar() {
     if (!data) return;
     // Solo campos operativos (no productos/categorias que vienen de db_productos)
     const camposOp = ['ventas','clientes','fiados','mermas','movimientos',
-                      'proveedores','promociones','caja','inventariosMensuales','historialVentas','pedidosOnline'];
+                      'proveedores','promociones','caja','inventariosMensuales','historialVentas'];
     camposOp.forEach(k => { if (k in data && k in DB) DB[k] = data[k]; });
     if (data.config) DB.config = { ...DB.config, ...data.config };
     try { renderDashboard(); }    catch(e){}
@@ -8137,7 +8138,7 @@ window.onload = async function() {
         const data = snapOp.data();
         const camposOp = ['ventas','clientes','fiados','mermas','movimientos',
                           'proveedores','promociones','caja','config',
-                          'inventariosMensuales','historialVentas','pedidosOnline'];
+                     'inventariosMensuales','historialVentas'];
         camposOp.forEach(k => { if (k in data && k in DB) DB[k] = data[k]; });
         if (data.config && data.config.passwords) Object.assign(PASSWORDS, data.config.passwords);
       } else {
