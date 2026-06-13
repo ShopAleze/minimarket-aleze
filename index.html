@@ -9038,10 +9038,21 @@ function _dialogoPagoOnline(nombre, callback) {
     document.getElementById('_dlg-lbl-c').style.borderColor = r.value==='cobrado' ? 'var(--primary)' : 'var(--gray-200)';
     document.getElementById('_dlg-lbl-f').style.borderColor = r.value==='fiado'   ? 'var(--primary)' : 'var(--gray-200)';
   }));
-  document.getElementById('_dlg-btn-c').onclick = () => { document.body.removeChild(ov); callback(null); };
-  document.getElementById('_dlg-btn-a').onclick = () => {
+ const _dlgTimeout = setTimeout(() => {
+    if (document.body.contains(ov)) {
+      document.body.removeChild(ov);
+      callback(null);
+    }
+  }, 60000);
+
+  document.getElementById('_dlg-btn-c').onclick = () => {
+    clearTimeout(_dlgTimeout);
+    document.body.removeChild(ov); callback(null);
+  };
+ document.getElementById('_dlg-btn-a').onclick = () => {
     const sel = ov.querySelector('input[name="_dlg_po"]:checked');
     if (!sel) { alert('Selecciona una opción'); return; }
+    clearTimeout(_dlgTimeout);
     document.body.removeChild(ov);
     callback(sel.value);
   };
