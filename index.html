@@ -8626,8 +8626,9 @@ function fbEscucharPedidosOnline() {
     .orderBy('fecha', 'desc')
     .onSnapshot(snapshot => {
 if (_fbEscribiendo) return;
-        if (snapshot.metadata && snapshot.metadata.hasPendingWrites) return;
-        // Actualizar DB.pedidosOnline con todos los documentos de la colección
+      if (snapshot.metadata && snapshot.metadata.hasPendingWrites) return;
+      if (_pedidosLoaded && Date.now() - _fbLastWriteTs < 2000) return;
+      // Actualizar DB.pedidosOnline con todos los documentos de la colección
       const nuevos = snapshot.docs
         .map(doc => doc.data())
         .filter(p => p.estado === 'pendiente' && !_pedidosKnownIds.has(String(p.id)));
