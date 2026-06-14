@@ -9902,8 +9902,11 @@ function tndEnviarPedido() {
       <div style="font-size:4rem;margin-bottom:1rem">✅</div>
       <h3 style="font-size:1.2rem;font-weight:800;color:#1f2937;margin-bottom:.5rem">¡Tu pedido fue enviado!</h3>
       <p style="font-size:.9rem;color:#6b7280;margin-bottom:1rem">Se abrió WhatsApp con tu pedido listo para enviar a la tienda.<br>El vendedor te confirmará la disponibilidad y el costo de delivery si aplica.</p>
-      <div style="background:#EDE9FE;border-radius:10px;padding:.75rem;font-size:.82rem;color:#5B21B6">
+     <div style="background:#EDE9FE;border-radius:10px;padding:.75rem;font-size:.82rem;color:#5B21B6">
         📱 WhatsApp tienda: <strong>${waNum}</strong>
+      </div>
+      <div style="background:#FEF3C7;border-radius:10px;padding:.75rem;font-size:.82rem;color:#92400E;margin-top:.5rem">
+        🎁 Cada compra te acerca a un premio. ¡Te esperamos pronto!
       </div>
     </div>`;
   document.getElementById('tnd-panel-footer').innerHTML = `<button class="tnd-btn tnd-btn-outline" onclick="tndCerrarPanel()">Seguir comprando</button>`;
