@@ -3324,6 +3324,15 @@ async function doLogin() {
 }
 
 function doLogout() {
+  // ── PASO -1: Si hay una operación de guardado en curso, confirmar ──
+  if (_fbEscribiendo) {
+    if (!confirm('Hay una operación guardándose en este momento. Si sales ahora podrías perder datos.\n\n¿Deseas esperar unos segundos y volver a intentar?\n\nPulsa "Aceptar" para esperar, o "Cancelar" para salir de todos modos.')) {
+      // Usuario eligió "Cancelar" → salir de todos modos
+    } else {
+      // Usuario eligió "Aceptar" → esperar y no salir aún
+      return;
+    }
+  }
   // ── PASO 0: Reset total — ningún estado de sesión persiste ──
   resetAppState();
 
