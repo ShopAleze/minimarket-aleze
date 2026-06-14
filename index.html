@@ -7958,7 +7958,8 @@ function fbGuardar() {
   if (todoVacio) { console.warn('fbGuardar: bloqueado — todos los arrays operativos están vacíos'); return; }
   _fbLastWriteTs = Date.now();
   clearTimeout(_fbSaveTimer);
-  _fbSaveTimer = setTimeout(() => {
+_fbSaveTimer = setTimeout(() => {
+    _fbSaveTimer = null;
     _fbEscribiendo = true;
     // Excluir productos y categorias — tienen su propio documento
     const payload = JSON.parse(JSON.stringify(DB));
