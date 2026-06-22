@@ -10445,6 +10445,15 @@ function aplicarCambiosExcel() {
   let modCount = 0, newCount = 0;
   const prodsSinCodigo = [];
 
+  // IDs únicos garantizados — evita colisiones en importaciones masivas
+  const _idsUsados = new Set(DB.productos.map(p => p.id));
+  const _getUniqueId = () => {
+    let id;
+    do { id = getId(); } while (_idsUsados.has(id));
+    _idsUsados.add(id);
+    return id;
+  };
+
   aceptados.forEach(c => {
     if (c.tipo === 'mod') {
       const idx = DB.productos.findIndex(p => String(p.id) === String(c.prodId));
@@ -10454,10 +10463,10 @@ function aplicarCambiosExcel() {
     } else if (c.tipo === 'nuevo') {
       const f = c.fila;
       const codigoIngresado = f['Codigo_Barras'] ? f['Codigo_Barras'].toString().trim() : '';
-      const codigoFinal = codigoIngresado || ('7' + getId().toString().slice(-12));
+  const codigoFinal = codigoIngresado || ('7' + _getUniqueId().toString().slice(-12));
       const autoGenerado = !codigoIngresado;
       const nuevoProd = {
-        id: getId(),
+       id: _getUniqueId(),
         nombre:   f['Nombre'].toString().trim(),
         cat:      parseInt(f['ID_Categoria']) || (DB.categorias[0] ? DB.categorias[0].id : 1),
         tipo:     f['Tipo'] || 'unidad',
