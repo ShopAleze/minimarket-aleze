@@ -9406,9 +9406,10 @@ function _renderTienda() {
 }
 .tnd-cats { display:flex;gap:.4rem;flex-wrap:nowrap;overflow-x:auto;margin-bottom:1.25rem;scrollbar-width:none;-webkit-overflow-scrolling:touch; }
 .tnd-cat-tag {
-  padding:.3rem .8rem;border-radius:20px;cursor:pointer;
+  padding:.25rem .6rem;border-radius:20px;cursor:pointer;
   border:1.5px solid #e5e7eb;background:white;
-  font-size:.82rem;font-weight:600;color:#6b7280;transition:all .15s;
+  font-size:.75rem;font-weight:600;color:#6b7280;transition:all .15s;
+  white-space:nowrap;
 }
 .tnd-cat-tag.active { background:#7C3AED;color:white;border-color:#7C3AED; }
 .tnd-grid {
@@ -9572,9 +9573,11 @@ function tndFiltrar() {
   grid.innerHTML = prods.map(p => {
     const agotado = p.stock <= 0;
     const cat = (DB.categorias||[]).find(c => c.id === p.cat);
-    const icon = cat?.imagen
-      ? `<img src="${cat.imagen}" style="width:40px;height:40px;object-fit:cover;border-radius:8px">`
-      : (cat?.emoji || '📦');
+   const icon = p.imagen
+      ? `<img src="${p.imagen}" style="width:60px;height:60px;object-fit:contain;border-radius:8px">`
+      : cat?.imagen
+        ? `<img src="${cat.imagen}" style="width:60px;height:60px;object-fit:cover;border-radius:8px">`
+        : (cat?.emoji || '📦');
     const badge = _getStockBadge(p);
     const promo = _getPromoTienda(p);
     const precio = promo && promo.precioPromo ? promo.precioPromo : p.precio;
