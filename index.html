@@ -7992,7 +7992,7 @@ function fbGuardarProductos() {
         _fbProdCacheTs = Date.now(); // actualizar timestamp caché
         setTimeout(() => { _fbEscribiendo = false; }, 300);
       })
-      .catch(e => { _fbEscribiendo = false; console.warn('Firestore db_productos write error:', e); });
+      .catch(e => { _fbEscribiendo = false; alert('⚠️ Error al guardar stock. Avisa al administrador.\nCódigo: ' + (e.code || e.message || 'desconocido')); });
   }, 1200);
 }
 
