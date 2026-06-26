@@ -7102,13 +7102,13 @@ function guardarInventarioMensual() {
 
 function exportarInventarioMensual() {
   const fecha = document.getElementById('inv-mens-fecha').value || today();
-  let csv = 'Producto,Categoría,Tipo,Stock Sistema,Cantidad Contada,Diferencia,Motivo,Verificado,Fecha Inventario\n';
+ let csv = 'Producto;Categoría;Tipo;Stock Sistema;Cantidad Contada;Diferencia;Motivo;Verificado;Fecha Inventario\n';
   DB.productos.forEach((p, i) => {
     const d = invMensualData[i] || {};
  const diff = d.contado !== null && d.contado !== undefined ? (d.contado - p.stock).toFixed(2) : '';
     const _cat = DB.categorias.find(c => c.id == p.cat);
     const _catNombre = _cat ? _cat.nombre : 'Sin cat.';
-    csv += `"${p.nombre}","${_catNombre}","${p.tipo}",${p.stock},${d.contado??''},${diff},"${d.motivo||''}","${d.verificado?'Sí':'No'}","${formatDate(fecha)}"\n`;
+   csv += `"${p.nombre}";"${_catNombre}";"${p.tipo}";${p.stock};${d.contado??''};${diff};"${d.motivo||''}";"${d.verificado?'Sí':'No'}";"${formatDate(fecha)}"\n`;
   });
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   const url  = URL.createObjectURL(blob);
