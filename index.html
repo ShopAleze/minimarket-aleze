@@ -8029,6 +8029,7 @@ _fbSaveTimer = setTimeout(() => {
 // Se llama únicamente cuando el admin edita inventario/categorias
 function fbGuardarProductos() {
   if (!fbFS) return;
+  if (!fbAuth || !fbAuth.currentUser) return;
   _fbLastWriteProdTs = Date.now();
   clearTimeout(_fbSaveTimerProd);
   _fbSaveTimerProd = setTimeout(() => {
