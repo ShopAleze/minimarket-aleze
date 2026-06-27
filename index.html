@@ -99,6 +99,7 @@ function _loadHtml5QrCode(cb) {
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-check-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
 <style>
   :root {
     --primary: #7C3AED;
@@ -7896,6 +7897,7 @@ let _fbSaveTimer = null;
 let _fbLastWriteTs = 0;     // timestamp del último fbGuardar() — protege ventana debounce
 let _fbLastWriteProdTs = 0; // timestamp del último fbGuardarProductos()
 let fbAuth = null; // Firebase Authentication
+let fbStorage = null;     // Firebase Storage — imágenes de productos  
 let _fbSnapshotUnsub = null; // Para desuscribirse si fuera necesario
 let _pedidosOnlineUnsub = null; // Listener colección pedidos_online
 
@@ -7920,9 +7922,10 @@ appCheckInstance.activate(RECAPTCHA_SITE_KEY, true);
     }
     // ────────────────────────────────────────────────────────────────────────
 
-    fbFS  = firebase.firestore();
-    fbAuth = firebase.auth(); // Firebase Authentication para seguridad Firestore
-    return true;
+   fbFS  = firebase.firestore();
+      fbAuth = firebase.auth();
+      fbStorage = firebase.storage();
+      return true;
   } catch(e) {
     console.error('Firebase init error:', e);
     return false;
