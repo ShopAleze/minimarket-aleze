@@ -4829,6 +4829,7 @@ function eliminarProveedor(id) {
 let editingBoletaProvId = null;
 let _boletaProductos = []; // Productos recibidos en la boleta actual (temporal)
 function abrirAgregarBoleta() {
+  if (currentRole !== 'admin') return;
   document.getElementById('bol-form').style.display = 'block';
   document.getElementById('bol-num').value = '';
   document.getElementById('bol-fecha').value = today();
@@ -4869,6 +4870,7 @@ function filtrarBoletas() {
   '<tr><td colspan="5" style="text-align:center;color:var(--gray-400);padding:1rem">Sin boletas registradas</td></tr>';
 }
 function eliminarBoleta(idx) {
+  if (currentRole !== 'admin') return;
   const prov = DB.proveedores.find(x => x.id === editingBoletaProvId);
   if (!prov || !prov.boletas) return;
   const boleta = prov.boletas[idx];
@@ -4953,20 +4955,36 @@ function _boletaRenderLista() {
     el.innerHTML = '<div style="color:var(--gray-400);text-align:center;padding:.5rem">Sin productos agregados aún</div>';
     return;
   }
-  el.innerHTML = _boletaProductos.map((p, i) => `
-    <div style="display:flex;align-items:center;gap:.4rem;margin-bottom:.4rem;background:var(--gray-50);border-radius:6px;padding:.4rem .6rem">
-      <span style="flex:1;font-size:.82rem;font-weight:600">${p.nombre}</span>
-      <input type="number" min="0.01" step="0.01" value="${p.cantidad}" style="width:60px;padding:2px 4px;border:1px solid var(--gray-200);border-radius:4px;font-size:.8rem"
-        onchange="_boletaProductos[${i}].cantidad=parseFloat(this.value)||1;_boletaRenderLista()" title="Cantidad" />
-      <input type="number" min="0" step="0.01" value="${p.costo}" ${p.esBonif ? 'disabled style="width:60px;padding:2px 4px;border:1px solid var(--gray-200);border-radius:4px;font-size:.8rem;opacity:.45"' : 'style="width:60px;padding:2px 4px;border:1px solid var(--gray-200);border-radius:4px;font-size:.8rem"'}
-        onchange="_boletaProductos[${i}].costo=parseFloat(this.value)||0" title="Costo unitario" />
-      <label style="font-size:.72rem;white-space:nowrap;display:flex;align-items:center;gap:2px">
-        <input type="checkbox" ${p.esBonif?'checked':''} onchange="_boletaProductos[${i}].esBonif=this.checked;_boletaRenderLista()"> Bonif.
-      </label>
-      <button onclick="_boletaQuitarProd(${p.prodId})" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:1rem;padding:0 2px">✕</button>
-    </div>`).join('');
+el.innerHTML = _boletaProductos.map((p, i) => {
+    const prod = DB.productos.find(x => x.id === p.prodId);
+    const precio = prod ? prod.precio : 0;
+    const margenActual = precio > 0 ? ((precio - prod.costo) / precio * 100).toFixed(1) : '—';
+    const margenNuevo  = precio > 0 && !p.esBonif && p.costo > 0 ? ((precio - p.costo) / precio * 100).toFixed(1) : null;
+    const margenColor  = margenNuevo !== null && parseFloat(margenNuevo) < parseFloat(margenActual) ? 'var(--danger)' : 'var(--accent)';
+    return `
+    <div style="background:var(--gray-50);border-radius:6px;padding:.4rem .6rem;margin-bottom:.4rem">
+      <div style="display:flex;align-items:center;gap:.4rem;flex-wrap:wrap">
+        <span style="flex:1;font-size:.82rem;font-weight:600;min-width:120px">${p.nombre}</span>
+        <input type="number" min="0.01" step="0.01" value="${p.cantidad}" style="width:58px;padding:2px 4px;border:1px solid var(--gray-200);border-radius:4px;font-size:.8rem"
+          onchange="_boletaProductos[${i}].cantidad=parseFloat(this.value)||1;_boletaRenderLista()" title="Cantidad" />
+        <input type="number" min="0" step="0.01" value="${p.costo}" ${p.esBonif ? 'disabled style="width:58px;padding:2px 4px;border:1px solid var(--gray-200);border-radius:4px;font-size:.8rem;opacity:.45"' : 'style="width:58px;padding:2px 4px;border:1px solid var(--gray-200);border-radius:4px;font-size:.8rem"'}
+          onchange="_boletaProductos[${i}].costo=parseFloat(this.value)||0;_boletaRenderLista()" title="Costo unitario S/" />
+        <label style="font-size:.72rem;white-space:nowrap;display:flex;align-items:center;gap:2px">
+          <input type="checkbox" ${p.esBonif?'checked':''} onchange="_boletaProductos[${i}].esBonif=this.checked;_boletaRenderLista()"> Bonif.
+        </label>
+        <button onclick="_boletaQuitarProd(${p.prodId})" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:1rem;padding:0 2px">✕</button>
+      </div>
+      <div style="display:flex;align-items:center;gap:.5rem;margin-top:.3rem;flex-wrap:wrap">
+        <label style="font-size:.72rem;color:var(--gray-500)">Vence:</label>
+        <input type="date" value="${p.venc||''}" style="font-size:.75rem;padding:2px 4px;border:1px solid var(--gray-200);border-radius:4px"
+          onchange="_boletaProductos[${i}].venc=this.value" title="Fecha de vencimiento (opcional)" />
+        ${margenNuevo !== null ? `<span style="font-size:.72rem;color:var(--gray-500)">Margen: <b style="color:${margenColor}">${margenNuevo}%</b> <span style="color:var(--gray-400)">(antes ${margenActual}%)</span></span>` : `<span style="font-size:.72rem;color:var(--gray-400)">Margen actual: ${margenActual}%</span>`}
+      </div>
+    </div>`;
+  }).join('');
 }  
 function guardarBoleta() {
+  if (currentRole !== 'admin') return;
   const num   = document.getElementById('bol-num').value.trim();
   const fecha = document.getElementById('bol-fecha').value;
   if (!num || !fecha) { alert('Ingresa número y fecha de la boleta'); return; }
@@ -4987,17 +5005,26 @@ function guardarBoleta() {
     }
 
     // ── Resumen de confirmación ──
-    const resumen = _boletaProductos.map(p =>
-      `• ${p.nombre}: +${p.cantidad} ${p.esBonif ? '(Bonificación — sin costo)' : `a S/${(+p.costo).toFixed(2)}`}`
+  const totalProductos = _boletaProductos.reduce((s, p) => s + (p.esBonif ? 0 : p.cantidad * p.costo), 0);
+    const montoIngresado = parseFloat(document.getElementById('bol-monto').value) || 0;
+    const difMonto = montoIngresado > 0 ? Math.abs(montoIngresado - totalProductos) : null;
+? `
+
+⚠️ El total de productos (S/${totalProductos.toFixed(2)}) difiere del importe ingresado (S/${montoIngresado.toFixed(2)}) en S/${difMonto.toFixed(2)}. Verifica si hay productos no registrados.`
+      `• ${p.nombre}: +${p.cantidad} ${p.esBonif ? '(Bonificación)' : `a S/${(+p.costo).toFixed(2)} = S/${(p.cantidad * p.costo).toFixed(2)}`}${p.venc ? ` | Vence: ${p.venc}` : ''}`
     ).join('\n');
-    if (!confirm(`📦 Confirmar actualización de stock:\n\n${resumen}\n\n¿Continuar?`)) return;
+    const alertaDif = difMonto !== null && difMonto > 0.5
+      ? `\n\n⚠️ El total de productos (S/${totalProductos.toFixed(2)}) difiere del importe ingresado (S/${montoIngresado.toFixed(2)}) en S/${difMonto.toFixed(2)}. Verifica si hay productos no registrados.`
+      : '';
+    if (!confirm(`📦 Confirmar actualización de stock:\n\n${resumen}\n\nTotal productos: S/${totalProductos.toFixed(2)}${alertaDif}\n\n¿Continuar?`)) return;
 
     // ── Actualizar stock y costo ──
     _boletaProductos.forEach(p => {
       const prod = DB.productos.find(x => x.id === p.prodId);
       if (!prod) return;
-      prod.stock = Math.round(((prod.stock || 0) + p.cantidad) * 1000) / 1000;
+    prod.stock = Math.round(((prod.stock || 0) + p.cantidad) * 1000) / 1000;
       if (!p.esBonif && p.costo > 0) prod.costo = p.costo;
+      if (p.venc) prod.venc = p.venc;
     });
     fbGuardarProductos();
   }
