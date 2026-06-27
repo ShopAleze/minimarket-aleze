@@ -3736,11 +3736,18 @@ function changeQty(i, delta) {
 }
 
 function setGranelQty(i, val) {
+  if (i >= cart.length) return;
   const cant = parseFloat(val) || 0.01;
   const prod = DB.productos.find(p => p.id === cart[i].prodId);
   const max = prod ? prod.stock : 999;
   cart[i].cant = Math.max(0.01, Math.min(max, parseFloat(cant.toFixed(2))));
-  renderCart(); calcTotal();
+  // Actualizar precio del ítem sin re-renderizar el carrito completo
+  const cartItems = document.querySelectorAll('.cart-item');
+  if (cartItems[i]) {
+    const priceEl = cartItems[i].querySelector('.cart-item-price');
+    if (priceEl) priceEl.textContent = sol(cart[i].precio * cart[i].cant);
+  }
+  calcTotal();
 }
 
 function removeItem(i) { cart.splice(i, 1); renderCart(); calcTotal(); }
