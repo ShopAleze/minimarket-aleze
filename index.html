@@ -3715,7 +3715,11 @@ function renderCart() {
       <div class="cart-item-name">${item.nombre}</div>
       <div class="cart-item-qty">
         <button class="qty-btn" onclick="changeQty(${i},-1)">−</button>
-        <span class="qty-val">${item.tipo==='granel' ? item.cant.toFixed(2) : item.cant}</span>
+       ${item.tipo==='granel'
+          ? `<input type="number" class="qty-val" min="0.01" step="0.01" value="${item.cant.toFixed(2)}"
+               onchange="setGranelQty(${i},this.value)"
+               style="width:62px;text-align:center;border:1px solid var(--gray-200);border-radius:4px;font-size:.85rem;padding:1px 3px">`
+          : `<span class="qty-val">${item.cant}</span>`}
         <button class="qty-btn" onclick="changeQty(${i},1)">+</button>
       </div>
       <div class="cart-item-price">${sol(item.precio * item.cant)}</div>
@@ -3728,6 +3732,14 @@ function changeQty(i, delta) {
   const prod = DB.productos.find(p => p.id === cart[i].prodId);
   const step = cart[i].tipo === 'granel' ? 0.25 : 1;
   cart[i].cant = Math.max(step, Math.min(prod ? prod.stock : 999, cart[i].cant + delta * step));
+  renderCart(); calcTotal();
+}
+
+function setGranelQty(i, val) {
+  const cant = parseFloat(val) || 0.01;
+  const prod = DB.productos.find(p => p.id === cart[i].prodId);
+  const max = prod ? prod.stock : 999;
+  cart[i].cant = Math.max(0.01, Math.min(max, parseFloat(cant.toFixed(2))));
   renderCart(); calcTotal();
 }
 
