@@ -2306,8 +2306,8 @@ background: #F5F3FF;
       <button type="button" class="btn btn-outline" onclick="cerrarModal('modal-proveedor')">Cancelar</button>
       <button type="button" class="btn btn-primary" onclick="guardarProveedor()">Guardar proveedor</button>
     </div>
-    <div id="prov-boletas-seccion" style="display:none;border-top:2px solid var(--gray-200);padding-top:.75rem">
-      <div style="font-weight:700;font-size:.88rem;margin-bottom:.5rem">📄 Boletas registradas</div>
+<div id="prov-boletas-seccion" style="display:none;border-top:2px solid var(--gray-200);padding-top:.75rem">
+      <div style="font-weight:700;font-size:.95rem;margin-bottom:.75rem;color:var(--primary)">📄 Historial de boletas</div>
       <div id="bol-form" style="display:none;background:var(--gray-50);border-radius:8px;padding:.75rem;margin-bottom:.75rem">
         <div class="grid-2">
           <div class="form-group"><label>N° Boleta *</label><input type="text" class="form-control" id="bol-num" /></div>
@@ -4869,9 +4869,32 @@ function filtrarBoletas() {
   '<tr><td colspan="5" style="text-align:center;color:var(--gray-400);padding:1rem">Sin boletas registradas</td></tr>';
 }
 function eliminarBoleta(idx) {
-  if (!confirm('¿Eliminar esta boleta?')) return;
   const prov = DB.proveedores.find(x => x.id === editingBoletaProvId);
   if (!prov || !prov.boletas) return;
+  const boleta = prov.boletas[idx];
+  if (!boleta) return;
+  const tieneProductos = boleta.productos && boleta.productos.length > 0;
+  if (tieneProductos) {
+    const lista = boleta.productos.map(p =>
+      `• ${p.nombre}: ${p.cantidad} unid${p.esBonif ? ' (bonif.)' : ''}`
+    ).join('\n');
+    const opcion = confirm(
+      `La boleta N° ${boleta.num} tiene productos asociados:\n\n${lista}\n\n` +
+      `¿Deseas REVERTIR el stock de estos productos?\n\n` +
+      `✅ Aceptar = Revertir stock (recomendado si fue un error)\n` +
+      `❌ Cancelar = Solo eliminar la boleta, mantener stock`
+    );
+    if (opcion) {
+      // Revertir stock
+      boleta.productos.forEach(p => {
+        const prod = DB.productos.find(x => x.id === p.prodId);
+        if (prod) prod.stock = Math.round(((prod.stock || 0) - p.cantidad) * 1000) / 1000;
+      });
+      fbGuardarProductos();
+    }
+  } else {
+    if (!confirm(`¿Eliminar la boleta N° ${boleta.num}?`)) return;
+  }
   prov.boletas.splice(idx, 1);
   fbGuardar();
   renderProveedores();
