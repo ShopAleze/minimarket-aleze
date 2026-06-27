@@ -1918,7 +1918,9 @@ background: #F5F3FF;
           <div class="card-title">💾 Respaldo de datos</div>
           <div style="font-size:.85rem;color:var(--gray-500);margin-bottom:.75rem">El sistema guarda un respaldo automático cada 30 minutos. Puedes restaurar manualmente si algo sale mal.</div>
           <div id="backup-lista" style="margin-bottom:.75rem;font-size:.82rem"></div>
-          <button type="button" class="btn btn-outline btn-sm" onclick="verBackups()">🔍 Ver respaldos disponibles</button>
+         <button type="button" class="btn btn-outline btn-sm" onclick="verBackups()">🔍 Ver respaldos disponibles</button>
+          <button type="button" class="btn btn-outline btn-sm" style="margin-top:.5rem" onclick="migrarImagenesAStorage()">🖼️ Migrar imágenes a Storage</button>
+        </div>
         </div>
         <div class="grid-2">
           <div class="card">
@@ -6106,7 +6108,28 @@ function exportReporte() {
   a.href = url; a.download = `reporte-aleze-${desde}-${hasta}.xls`; a.click();
   URL.revokeObjectURL(url);
 }
-
+async function migrarImagenesAStorage() {
+  if (!fbStorage) { alert('Storage no disponible'); return; }
+  const pendientes = DB.productos.filter(p => p.imagen && p.imagen.startsWith('data:'));
+  if (!pendientes.length) { alert('✅ No hay imágenes base64 pendientes de migrar.'); return; }
+  if (!confirm(`Se migrarán ${pendientes.length} imágenes a Firebase Storage.\nEsto puede tardar 2-3 minutos.\n¿Continuar?`)) return;
+  let ok = 0, err = 0;
+  for (const p of pendientes) {
+    try {
+      const blob = await fetch(p.imagen).then(r => r.blob());
+      const ref  = fbStorage.ref(`productos/${p.id}.webp`);
+      await ref.put(blob, { contentType: 'image/webp' });
+      p.imagen = await ref.getDownloadURL();
+      ok++;
+    } catch(e) {
+      console.warn('Error migrando:', p.nombre, e);
+      err++;
+    }
+    await new Promise(r => setTimeout(r, 150)); // pausa entre subidas
+  }
+  fbGuardarProductos();
+  alert(`✅ Migración completa.\n${ok} imágenes migradas a Storage.\n${err ? '⚠️ '+err+' errores — ver consola.' : ''}`);
+}
 // ===================== CONFIGURACION =====================
 function renderConfiguracion() {
   if (currentRole !== 'admin') return;
