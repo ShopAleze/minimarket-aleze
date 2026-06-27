@@ -5003,21 +5003,17 @@ function guardarBoleta() {
       alert(`❌ Cantidad inválida en: ${invalidos.map(p => p.nombre).join(', ')}\nRevisa que todas las cantidades sean mayores a 0.`);
       return;
     }
-
-    // ── Resumen de confirmación ──
-  const totalProductos = _boletaProductos.reduce((s, p) => s + (p.esBonif ? 0 : p.cantidad * p.costo), 0);
+// ── Resumen de confirmación ──
+    const totalProductos = _boletaProductos.reduce((s, p) => s + (p.esBonif ? 0 : p.cantidad * p.costo), 0);
     const montoIngresado = parseFloat(document.getElementById('bol-monto').value) || 0;
     const difMonto = montoIngresado > 0 ? Math.abs(montoIngresado - totalProductos) : null;
-? `
-
-⚠️ El total de productos (S/${totalProductos.toFixed(2)}) difiere del importe ingresado (S/${montoIngresado.toFixed(2)}) en S/${difMonto.toFixed(2)}. Verifica si hay productos no registrados.`
+    const resumen = _boletaProductos.map(p =>
       `• ${p.nombre}: +${p.cantidad} ${p.esBonif ? '(Bonificación)' : `a S/${(+p.costo).toFixed(2)} = S/${(p.cantidad * p.costo).toFixed(2)}`}${p.venc ? ` | Vence: ${p.venc}` : ''}`
     ).join('\n');
     const alertaDif = difMonto !== null && difMonto > 0.5
       ? `\n\n⚠️ El total de productos (S/${totalProductos.toFixed(2)}) difiere del importe ingresado (S/${montoIngresado.toFixed(2)}) en S/${difMonto.toFixed(2)}. Verifica si hay productos no registrados.`
       : '';
     if (!confirm(`📦 Confirmar actualización de stock:\n\n${resumen}\n\nTotal productos: S/${totalProductos.toFixed(2)}${alertaDif}\n\n¿Continuar?`)) return;
-
     // ── Actualizar stock y costo ──
     _boletaProductos.forEach(p => {
       const prod = DB.productos.find(x => x.id === p.prodId);
