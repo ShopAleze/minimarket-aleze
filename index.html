@@ -9893,10 +9893,11 @@ let _tndVista = 'home'; // 'home' | 'catalogo'
 function _tndRenderHome() {
   const cfg   = DB.config || {};
   const waNum = (cfg.whatsappTienda || '980037284').replace(/\D/g,'');
-  const grid  = document.getElementById('tnd-grid');
+const grid  = document.getElementById('tnd-grid');
   const cats  = document.getElementById('tnd-cats');
   const back  = document.getElementById('tnd-back-home');
   if (!grid) return;
+  grid.style.cssText = 'display:block';
   if (cats) cats.style.display = 'none';
   if (back) back.style.display = 'none';
   const bannerHtml = cfg.bannerVisible !== false && cfg.bannerUrl
@@ -9973,6 +9974,8 @@ function _tndIrHome() {
 }
 
 function tndFiltrar() {
+  const _gridEl = document.getElementById('tnd-grid');
+  if (_gridEl) _gridEl.style.cssText = '';
   const buscar = (document.getElementById('tnd-search')?.value||'').toLowerCase();
   const hoy = today();
   let prods = (DB.productos||[]).filter(p => {
