@@ -3104,6 +3104,7 @@ try { Object.defineProperty(DB, 'pedidosOnline', { value: [], writable: true, co
 
 let editingProductId = null;
 let editingFiadoId = null;
+const _fiadosAbiertos = new Set();
 let chartVentas = null, chartMetodos = null, chartReporte = null;
 let posFilterCat = '';
 // scannerStream eliminado — html5-qrcode gestiona su propio stream
@@ -5322,7 +5323,13 @@ function renderFiados() {
         <button class="btn btn-outline btn-sm" onclick="abrirHistorialCliente(${cid},event)">📋 Ver historial completo</button>
       </div>
     </div>`;
-  }).join('');
+ }).join('');
+  _fiadosAbiertos.forEach(id => {
+    const el = document.getElementById(id);
+    const arr = document.getElementById('arr-' + id);
+    if (el) el.style.display = 'block';
+    if (arr) arr.textContent = '▲';
+  });
 }
 
 function limpiarFiltrosInternosFiado(cid) {
@@ -5530,9 +5537,10 @@ function toggleFiadoDetalle(id) {
   const el = document.getElementById(id);
   const arr = document.getElementById('arr-' + id);
   if (!el) return;
-  const open = el.style.display !== 'none';
+  const open = el.style.display === 'block';
   el.style.display = open ? 'none' : 'block';
   if (arr) arr.textContent = open ? '▼' : '▲';
+  if (open) _fiadosAbiertos.delete(id); else _fiadosAbiertos.add(id);
 }
 
 function abrirPagoFiado(id) {
@@ -5571,7 +5579,7 @@ function abrirPagoFiado(id) {
 function confirmarPagoFiado() {
   const f = DB.fiados.find(x => x.id === editingFiadoId);
   const monto = parseFloat(document.getElementById('fiado-pago-monto').value) || 0;
-  const pendiente = f.total - f.pagado;
+const pendiente = Math.round((f.total - f.pagado) * 100) / 100;
   if (monto <= 0 || monto > pendiente) { alert('Monto inválido. Máximo: ' + sol(pendiente)); return; }
   if (!f.pagos) f.pagos = [];
   f.pagos.push({ fecha: today(), hora: nowTime(), cajero: currentUser, monto });
