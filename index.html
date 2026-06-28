@@ -1999,7 +1999,7 @@ background: #F5F3FF;
             <div style="border-top:1px solid var(--gray-200);margin:1rem 0;padding-top:1rem">
               <div style="font-weight:700;font-size:.85rem;margin-bottom:.75rem">⚡ Servicios WhatsApp</div>
              <div class="form-group"><label>Número WhatsApp servicios</label><input type="text" class="form-control" id="cfg-wa-servicios" placeholder="980037284" /></div>
-              <div class="form-group"><label>Imagen banner servicios (URL Firebase Storage)</label><input type="text" class="form-control" id="cfg-servicios-banner" placeholder="https://firebasestorage... (800×300px recomendado)" /><div style="font-size:.72rem;color:var(--gray-400);margin-top:.2rem">Al hacer clic en el banner abre WhatsApp. Si no hay imagen, se muestran las cards individuales.</div></div>
+             <div class="form-group"><label>Imagen banner servicios (800×300px recomendado)</label><div style="display:flex;gap:.5rem;align-items:center"><input type="text" class="form-control" id="cfg-servicios-banner" placeholder="https://firebasestorage..." style="flex:1"/><input type="file" id="_svc-banner-file" accept="image/*" style="display:none" onchange="_uploadConfigImg(this,'cfg-servicios-banner','tienda/banner-servicios.webp')"><button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('_svc-banner-file').click()">📁 Subir</button></div><div style="font-size:.72rem;color:var(--gray-400);margin-top:.2rem">Al hacer clic en el banner abre WhatsApp. Si no hay imagen, se muestran las cards individuales.</div></div>
               <div id="cfg-servicios-wa"></div>
             </div>
             <button type="button" class="btn btn-primary" onclick="guardarConfigTienda()">Guardar configuración tienda</button>
@@ -6367,6 +6367,40 @@ async function migrarImagenesAStorage() {
   alert(`✅ Migración completa.\n${ok} imágenes migradas a Storage.\n${err ? '⚠️ '+err+' errores.' : 'Sin errores.'}`);
 }
 // ===================== CONFIGURACION =====================
+function _uploadConfigImg(fileInput, targetFieldId, storagePath) {
+  const file = fileInput.files[0];
+  if (!file) return;
+  if (!fbStorage) { alert('Storage no disponible'); return; }
+  const btn = fileInput.nextElementSibling;
+  if (btn) { btn.disabled = true; btn.textContent = '⏳'; }
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    const img = new Image();
+    img.onload = function() {
+      const MAX = 800;
+      const ratio = Math.min(MAX/img.width, MAX/img.height);
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(img.width * ratio);
+      canvas.height = Math.round(img.height * ratio);
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob(async (blob) => {
+        try {
+          const ref = fbStorage.ref(storagePath);
+          await ref.put(blob, { contentType: 'image/webp' });
+          const url = await ref.getDownloadURL();
+          const field = document.getElementById(targetFieldId);
+          if (field) field.value = url;
+          if (btn) { btn.disabled = false; btn.textContent = '📁 Subir'; }
+        } catch(err) {
+          alert('Error al subir: ' + (err.code || err.message));
+          if (btn) { btn.disabled = false; btn.textContent = '📁 Subir'; }
+        }
+      }, 'image/webp', 0.85);
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
 function renderConfigTienda() {
   const cfg = DB.config || {};
   // Inicializar campos si no existen aún en Firebase
@@ -6398,7 +6432,7 @@ function renderConfigTienda() {
   if (te) te.innerHTML = (cfg.tiendasExternas || []).map((t, i) => `
     <div style="border:1px solid var(--gray-200);border-radius:8px;padding:.75rem;margin-bottom:.5rem">
       <div style="font-weight:700;font-size:.82rem;margin-bottom:.5rem">${t.nombre}</div>
-      <div class="form-group"><label style="font-size:.75rem">URL imagen</label><input type="text" class="form-control" id="cfg-te-img-${i}" value="${t.imagen||''}" placeholder="https://firebasestorage..." /></div>
+<div class="form-group"><label style="font-size:.75rem">URL imagen</label><div style="display:flex;gap:.4rem;align-items:center"><input type="text" class="form-control" id="cfg-te-img-${i}" value="${t.imagen||''}" placeholder="https://firebasestorage..." style="flex:1"/><input type="file" id="_te-file-${i}" accept="image/*" style="display:none" onchange="_uploadConfigImg(this,'cfg-te-img-${i}','tienda/${t.id}.webp')"><button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('_te-file-'+${i}).click()">📁</button></div></div>
       <div class="form-group"><label style="font-size:.75rem">Link destino (afiliado)</label><input type="text" class="form-control" id="cfg-te-url-${i}" value="${t.url||''}" placeholder="https://..." /></div>
       <label style="font-size:.75rem;display:flex;align-items:center;gap:.4rem"><input type="checkbox" id="cfg-te-vis-${i}" ${t.visible?'checked':''}> Visible en tienda</label>
     </div>`).join('');
