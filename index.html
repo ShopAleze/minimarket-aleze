@@ -4196,8 +4196,9 @@ function onProdImgSelect(e) {
         } catch(err) {
           // Si falla Storage, usa base64 como fallback
           document.getElementById('prod-img-data').value = previewData;
-          const lbl = document.getElementById('_img-upload-lbl');
-          if (lbl) lbl.textContent = '⚠️ Error Storage — imagen guardada local';
+          const l = document.getElementById('_cat-img-lbl');
+          if (l) l.textContent = '⚠️ Error Storage — imagen guardada local';
+          alert('Error Storage categoría: ' + (err.code || err.message));
         }
       }, 'image/webp', 0.78);
     };
