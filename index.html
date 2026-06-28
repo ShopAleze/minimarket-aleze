@@ -6367,7 +6367,7 @@ async function migrarImagenesAStorage() {
   alert(`✅ Migración completa.\n${ok} imágenes migradas a Storage.\n${err ? '⚠️ '+err+' errores.' : 'Sin errores.'}`);
 }
 // ===================== CONFIGURACION =====================
- function renderConfigTienda() {
+function renderConfigTienda() {
   const cfg = DB.config || {};
   // Inicializar campos si no existen aún en Firebase
   if (!cfg.tiendasExternas || !cfg.tiendasExternas.length) {
@@ -6386,12 +6386,11 @@ async function migrarImagenesAStorage() {
       {id:'escaneos',    nombre:'Escaneos',               emoji:'📋',  visible:true}
     ];
   }
-  const el = document.getElementById('cfg-eslogan');
+  const el = document.getElementById('cfg-eslogan'); if (el) el.value = cfg.eslogan || '';
   const bu = document.getElementById('cfg-banner-url'); if (bu) bu.value = cfg.bannerUrl || '';
   const bl = document.getElementById('cfg-banner-link'); if (bl) bl.value = cfg.bannerLink || '';
   const bv = document.getElementById('cfg-banner-visible'); if (bv) bv.checked = cfg.bannerVisible !== false;
-const sb = document.getElementById('cfg-servicios-banner'); if (sb) sb.value = cfg.serviciosBannerUrl || '';
-const tt = document.getElementById('cfg-tiendas-texto'); if (tt) tt.value = cfg.tiendasTexto || '';
+  const wa = document.getElementById('cfg-wa-servicios'); if (wa) wa.value = cfg.whatsappTienda || '';
   const sb = document.getElementById('cfg-servicios-banner'); if (sb) sb.value = cfg.serviciosBannerUrl || '';
   const tt = document.getElementById('cfg-tiendas-texto'); if (tt) tt.value = cfg.tiendasTexto || '';
   // Tiendas externas
