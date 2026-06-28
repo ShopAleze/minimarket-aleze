@@ -9854,9 +9854,12 @@ function _renderTienda() {
 <div class="tnd-main">
   <div class="tnd-search-bar">
     <span>🔍</span>
-    <input type="text" id="tnd-search" placeholder="Buscar producto..." oninput="tndFiltrar()" />
+    <input type="text" id="tnd-search" placeholder="Buscar producto..." oninput="tndBuscarDesdeHome()" />
   </div>
-  <div class="tnd-cats" id="tnd-cats"></div>
+  <div id="tnd-back-home" style="display:none;margin-bottom:.75rem">
+    <button onclick="_tndIrHome()" style="background:#f3f4f6;border:none;border-radius:8px;padding:.5rem 1rem;font-size:.85rem;font-weight:700;cursor:pointer;color:#374151">← Inicio</button>
+  </div>
+  <div class="tnd-cats" id="tnd-cats" style="display:none"></div>
   <div class="tnd-grid" id="tnd-grid"></div>
 </div>
 
@@ -9872,17 +9875,45 @@ function _renderTienda() {
 </div>
 `;
 
-  // Inicializar catálogo
-  tndRenderCats();
-  tndFiltrar();
+ // Mostrar home o catálogo según _tndVista
+  if (_tndVista === 'home') {
+    _tndRenderHome();
+  } else {
+    tndRenderCats();
+    tndFiltrar();
+  }
   } catch(e) {
     const tel = document.getElementById('tienda-publica');
     if (tel) tel.innerHTML = '<div style="padding:2rem;text-align:center;font-family:sans-serif"><p style="font-size:1.2rem">🛒 ' + (DB.config&&DB.config.nombre||'Minimarket Aleze') + '</p><p style="color:#6B7280;margin-top:0.5rem">Cargando catálogo...</p><button onclick="_renderTienda()" style="margin-top:1rem;padding:.6rem 1.5rem;background:#7C3AED;color:white;border:none;border-radius:8px;cursor:pointer">🔄 Reintentar</button></div>';
     console.warn('_renderTienda error:', e);
   }
 }
-
 let _tndCatActiva = '';
+let _tndVista = 'home'; // 'home' | 'catalogo'
+function _tndRenderHome() {
+  const cfg   = DB.config || {};
+  const waNum = (cfg.whatsappTienda || '980037284').replace(/\D/g,'');
+  const grid  = document.getElementById('tnd-grid');
+  const cats  = document.getElementById('tnd-cats');
+  const back  = document.getElementById('tnd-back-home');
+  if (!grid) return;
+  if (cats) cats.style.display = 'none';
+  if (back) back.style.display = 'none';
+  const bannerHtml = cfg.bannerVisible !== false && cfg.bannerUrl
+    ? `<div onclick="${cfg.bannerLink ? `window.open('${cfg.bannerLink}','_blank')` : ''}" style="cursor:${cfg.bannerLink?'pointer':'default'};border-radius:14px;overflow:hidden;margin-bottom:1rem;max-height:200px"><img src="${cfg.bannerUrl}" style="width:100%;height:100%;object-fit:cover;display:block" alt="Banner"/></div>`
+    : `<div style="background:linear-gradient(135deg,#5B21B6,#7C3AED);border-radius:14px;padding:1.5rem 1.25rem;margin-bottom:1rem;text-align:center"><div style="font-size:1.4rem;font-weight:900;color:#fff;margin-bottom:.3rem">${cfg.nombre||'Minimarket Aleze'}</div><div style="font-size:.95rem;color:rgba(255,255,255,.85)">${cfg.eslogan||'Todo lo que necesitas, cerca de ti'}</div></div>`;
+  const hoy = new Date().toISOString().slice(0,10);
+  const promsActivas = (DB.promociones||[]).filter(p => p.activa && p.hasta >= hoy);
+  const prodsPromo = promsActivas.map(pr => (DB.productos||[]).find(p => p.id === pr.prod1 && p.stock > 0)).filter(Boolean);
+  const promosHtml = prodsPromo.length ? `<div style="margin-bottom:1.25rem"><div style="font-weight:800;font-size:1rem;color:#1f2937;margin-bottom:.75rem">🔥 Promociones activas</div><div style="display:flex;gap:.75rem;overflow-x:auto;padding-bottom:.5rem;-webkit-overflow-scrolling:touch;scrollbar-width:none">${prodsPromo.slice(0,6).map(p => `<div onclick="tndSetCat(${p.cat})" style="cursor:pointer;flex-shrink:0;width:140px;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.08)">${p.imagen?`<img src="${p.imagen}" style="width:100%;height:90px;object-fit:cover">`:`<div style="height:90px;background:#f3f4f6;display:flex;align-items:center;justify-content:center;font-size:2rem">🏷️</div>`}<div style="padding:.5rem"><div style="font-size:.78rem;font-weight:700;color:#1f2937;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.nombre}</div><div style="font-size:.82rem;font-weight:900;color:#7C3AED">S/ ${(+p.precio).toFixed(2)}</div></div></div>`).join('')}</div></div>` : '';
+  const cats2 = (DB.categorias||[]).filter(c => c.nombre);
+  const catsHtml = cats2.length ? `<div style="margin-bottom:1.25rem"><div style="font-weight:800;font-size:1rem;color:#1f2937;margin-bottom:.75rem">📦 Nuestras categorías</div><div style="display:grid;grid-template-columns:repeat(2,1fr);gap:.75rem">${cats2.map(c => { const nProds=(DB.productos||[]).filter(p=>p.cat==c.id&&p.stock>0).length; return `<div onclick="tndSetCat(${c.id})" style="cursor:pointer;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.08)">${c.imagen?`<img src="${c.imagen}" style="width:100%;height:110px;object-fit:cover;display:block">`:`<div style="height:110px;background:linear-gradient(135deg,#5B21B6,#7C3AED);display:flex;align-items:center;justify-content:center;font-size:2.5rem">${c.emoji||'📦'}</div>`}<div style="padding:.6rem .75rem"><div style="font-weight:700;font-size:.88rem;color:#1f2937">${c.nombre}</div><div style="font-size:.75rem;color:#6b7280">${nProds} producto${nProds!==1?'s':''} disponible${nProds!==1?'s':''}</div></div></div>`; }).join('')}</div><button onclick="tndSetCat('')" style="width:100%;margin-top:.75rem;padding:.6rem;background:#f3f4f6;border:1.5px solid #e5e7eb;border-radius:10px;font-weight:700;font-size:.85rem;cursor:pointer;color:#374151">Ver todos los productos →</button></div>` : '';
+  const servicios = (cfg.serviciosWa||[]).filter(s => s.visible);
+  const serviciosHtml = servicios.length ? `<div style="margin-bottom:1.25rem"><div style="font-weight:800;font-size:1rem;color:#1f2937;margin-bottom:.75rem">⚡ Servicios rápidos</div><div style="display:grid;grid-template-columns:repeat(2,1fr);gap:.6rem">${servicios.map(s=>`<a href="https://wa.me/51${waNum}?text=${encodeURIComponent('Hola, quisiera: '+s.nombre)}" target="_blank" style="display:flex;align-items:center;gap:.6rem;background:#fff;border-radius:12px;padding:.75rem;box-shadow:0 2px 6px rgba(0,0,0,.07);text-decoration:none;color:#1f2937"><span style="font-size:1.4rem">${s.emoji}</span><span style="font-size:.82rem;font-weight:700">${s.nombre}</span></a>`).join('')}</div></div>` : '';
+  const tiendas = (cfg.tiendasExternas||[]).filter(t => t.visible && t.url);
+  const tiendasHtml = tiendas.length ? `<div style="margin-bottom:1.25rem"><div style="font-weight:800;font-size:1rem;color:#1f2937;margin-bottom:.75rem">🛍️ Electrodomésticos y más</div><div style="display:grid;grid-template-columns:repeat(2,1fr);gap:.75rem">${tiendas.map(t=>`<div style="background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.08)"><a href="${t.url}" target="_blank" style="display:block;text-decoration:none">${t.imagen?`<img src="${t.imagen}" style="width:100%;height:90px;object-fit:cover;display:block">`:`<div style="height:90px;background:#f3f4f6;display:flex;align-items:center;justify-content:center;font-size:.9rem;font-weight:700;color:#374151">${t.nombre}</div>`}</a>${t.waCatalogo?`<a href="https://wa.me/51${waNum}?text=${encodeURIComponent('Hola, quisiera hacer un pedido del catálogo '+t.nombre)}" target="_blank" style="display:block;text-align:center;padding:.5rem;font-size:.78rem;font-weight:700;color:#25D366;text-decoration:none;border-top:1px solid #f3f4f6">📲 Pedir por WhatsApp</a>`:''}</div>`).join('')}</div></div>` : '';
+  grid.innerHTML = bannerHtml + promosHtml + catsHtml + serviciosHtml + tiendasHtml;
+}
 let _tndMetodo = 'Yape';
 let _tndEntrega = 'recojo';
 let _tndStep = 'cart'; // cart | datos | pago | confirmacion
@@ -9897,11 +9928,48 @@ function tndRenderCats() {
     catsOrdenadas.map(c => `<span class="tnd-cat-tag" onclick="tndSetCat(${c.id})">${c.imagen ? `<img src="${c.imagen}" style="width:16px;height:16px;object-fit:cover;border-radius:3px;vertical-align:middle">` : c.emoji} ${c.nombre}</span>`).join('');
 }
 
+function tndBuscarDesdeHome() {
+  const q = document.getElementById('tnd-search')?.value || '';
+  if (q && _tndVista === 'home') {
+    _tndVista = 'catalogo';
+    _tndCatActiva = '';
+    const back = document.getElementById('tnd-back-home');
+    const cats = document.getElementById('tnd-cats');
+    if (back) back.style.display = 'block';
+    if (cats) cats.style.display = 'flex';
+    tndRenderCats();
+  }
+  tndFiltrar();
+}
 function tndSetCat(id) {
   _tndCatActiva = id;
-  document.querySelectorAll('.tnd-cat-tag').forEach(t => t.classList.remove('active'));
-  event.target.classList.add('active');
-  tndFiltrar();
+  if (_tndVista === 'home') {
+    _tndVista = 'catalogo';
+    const back = document.getElementById('tnd-back-home');
+    const cats = document.getElementById('tnd-cats');
+    if (back) back.style.display = 'block';
+    if (cats) cats.style.display = 'flex';
+    tndRenderCats();
+    tndFiltrar();
+  } else {
+    document.querySelectorAll('.tnd-cat-tag').forEach(t => t.classList.remove('active'));
+    const sel = id
+      ? document.querySelector(`.tnd-cat-tag[onclick="tndSetCat(${id})"]`)
+      : document.querySelector(`.tnd-cat-tag[onclick="tndSetCat('')"]`);
+    if (sel) sel.classList.add('active');
+    tndFiltrar();
+  }
+}
+function _tndIrHome() {
+  _tndVista = 'home';
+  _tndCatActiva = '';
+  const back = document.getElementById('tnd-back-home');
+  const cats = document.getElementById('tnd-cats');
+  const search = document.getElementById('tnd-search');
+  if (back) back.style.display = 'none';
+  if (cats) cats.style.display = 'none';
+  if (search) search.value = '';
+  _tndRenderHome();
 }
 
 function tndFiltrar() {
