@@ -1978,6 +1978,30 @@ background: #F5F3FF;
             <div class="form-group"><label>Días alerta vencimiento</label><input type="number" class="form-control" id="cfg-dias-venc" value="7" /></div>
             <div class="form-group"><label>💰 Monto apertura automática de caja (S/)</label><input type="number" class="form-control" id="cfg-monto-apertura" placeholder="0.00" min="0" step="0.50" /><div style="font-size:.72rem;color:var(--gray-400);margin-top:.25rem">La caja se abre automáticamente al primer uso del día con este monto</div></div>
             <button type="button" class="btn btn-primary" onclick="guardarConfig()">Guardar</button>
+            <!-- Tienda Pública config -->
+          <div class="card" style="margin-top:1rem">
+            <div class="card-title">🛍️ Tienda Pública</div>
+            <div class="form-group">
+              <label>Eslogan</label>
+              <input type="text" class="form-control" id="cfg-eslogan" placeholder="Todo lo que necesitas, cerca de ti" />
+            </div>
+            <div style="border-top:1px solid var(--gray-200);margin:1rem 0;padding-top:1rem">
+              <div style="font-weight:700;font-size:.85rem;margin-bottom:.75rem">🖼️ Banner principal</div>
+              <div class="form-group"><label>URL imagen banner (Firebase Storage)</label><input type="text" class="form-control" id="cfg-banner-url" placeholder="https://firebasestorage..." /></div>
+              <div class="form-group"><label>Link destino al hacer clic</label><input type="text" class="form-control" id="cfg-banner-link" placeholder="https://..." /></div>
+              <div class="form-group"><label style="display:flex;align-items:center;gap:.5rem"><input type="checkbox" id="cfg-banner-visible"> Mostrar banner</label></div>
+            </div>
+            <div style="border-top:1px solid var(--gray-200);margin:1rem 0;padding-top:1rem">
+              <div style="font-weight:700;font-size:.85rem;margin-bottom:.75rem">🏪 Tiendas externas</div>
+              <div id="cfg-tiendas-externas"></div>
+            </div>
+            <div style="border-top:1px solid var(--gray-200);margin:1rem 0;padding-top:1rem">
+              <div style="font-weight:700;font-size:.85rem;margin-bottom:.75rem">⚡ Servicios WhatsApp</div>
+              <div class="form-group"><label>Número WhatsApp servicios</label><input type="text" class="form-control" id="cfg-wa-servicios" placeholder="980037284" /></div>
+              <div id="cfg-servicios-wa"></div>
+            </div>
+            <button type="button" class="btn btn-primary" onclick="guardarConfigTienda()">Guardar configuración tienda</button>
+          </div>
           </div>
         </div>
       </div>
@@ -6341,6 +6365,51 @@ async function migrarImagenesAStorage() {
   alert(`✅ Migración completa.\n${ok} imágenes migradas a Storage.\n${err ? '⚠️ '+err+' errores.' : 'Sin errores.'}`);
 }
 // ===================== CONFIGURACION =====================
+  function renderConfigTienda() {
+  const cfg = DB.config || {};
+  const el = document.getElementById('cfg-eslogan'); if (el) el.value = cfg.eslogan || '';
+  const bu = document.getElementById('cfg-banner-url'); if (bu) bu.value = cfg.bannerUrl || '';
+  const bl = document.getElementById('cfg-banner-link'); if (bl) bl.value = cfg.bannerLink || '';
+  const bv = document.getElementById('cfg-banner-visible'); if (bv) bv.checked = cfg.bannerVisible !== false;
+  const wa = document.getElementById('cfg-wa-servicios'); if (wa) wa.value = cfg.whatsappTienda || '';
+  // Tiendas externas
+  const te = document.getElementById('cfg-tiendas-externas');
+  if (te) te.innerHTML = (cfg.tiendasExternas || []).map((t, i) => `
+    <div style="border:1px solid var(--gray-200);border-radius:8px;padding:.75rem;margin-bottom:.5rem">
+      <div style="font-weight:700;font-size:.82rem;margin-bottom:.5rem">${t.nombre}</div>
+      <div class="form-group"><label style="font-size:.75rem">URL imagen</label><input type="text" class="form-control" id="cfg-te-img-${i}" value="${t.imagen||''}" placeholder="https://firebasestorage..." /></div>
+      <div class="form-group"><label style="font-size:.75rem">Link destino (afiliado)</label><input type="text" class="form-control" id="cfg-te-url-${i}" value="${t.url||''}" placeholder="https://..." /></div>
+      <label style="font-size:.75rem;display:flex;align-items:center;gap:.4rem"><input type="checkbox" id="cfg-te-vis-${i}" ${t.visible?'checked':''}> Visible en tienda</label>
+    </div>`).join('');
+  // Servicios
+  const sw = document.getElementById('cfg-servicios-wa');
+  if (sw) sw.innerHTML = (cfg.serviciosWa || []).map((s, i) => `
+    <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.4rem">
+      <span style="font-size:1.2rem">${s.emoji}</span>
+      <input type="text" class="form-control" id="cfg-sw-nom-${i}" value="${s.nombre||''}" style="flex:1" />
+      <label style="font-size:.75rem;white-space:nowrap;display:flex;align-items:center;gap:.3rem"><input type="checkbox" id="cfg-sw-vis-${i}" ${s.visible?'checked':''}> Visible</label>
+    </div>`).join('');
+}
+function guardarConfigTienda() {
+  if (currentRole !== 'admin') return;
+  const cfg = DB.config;
+  cfg.eslogan    = document.getElementById('cfg-eslogan')?.value.trim() || 'Todo lo que necesitas, cerca de ti';
+  cfg.bannerUrl  = document.getElementById('cfg-banner-url')?.value.trim() || '';
+  cfg.bannerLink = document.getElementById('cfg-banner-link')?.value.trim() || '';
+  cfg.bannerVisible = document.getElementById('cfg-banner-visible')?.checked !== false;
+  cfg.whatsappTienda = document.getElementById('cfg-wa-servicios')?.value.trim() || cfg.whatsappTienda;
+  (cfg.tiendasExternas || []).forEach((t, i) => {
+    t.imagen   = document.getElementById(`cfg-te-img-${i}`)?.value.trim() || '';
+    t.url      = document.getElementById(`cfg-te-url-${i}`)?.value.trim() || '';
+    t.visible  = document.getElementById(`cfg-te-vis-${i}`)?.checked !== false;
+  });
+  (cfg.serviciosWa || []).forEach((s, i) => {
+    s.nombre  = document.getElementById(`cfg-sw-nom-${i}`)?.value.trim() || s.nombre;
+    s.visible = document.getElementById(`cfg-sw-vis-${i}`)?.checked !== false;
+  });
+  fbGuardar(); fbGuardarProductos();
+  alert('✅ Configuración de tienda guardada');
+}
 function renderConfiguracion() {
   if (currentRole !== 'admin') return;
   document.getElementById('cfg-nombre').value    = DB.config.nombre    || 'Minimarket Aleze';
@@ -6368,7 +6437,8 @@ document.getElementById('cfg-ruc').value = DB.config.ruc || '';
         <label style="font-size:.72rem">Premio máx (S/)</label>
         <input type="number" class="form-control" id="nv-m-${i}" value="${n.max}" />
       </div>
-    </div>`).join('');
+   </div>`).join('');
+  renderConfigTienda();
 }
 
 function guardarConfig() {
