@@ -6365,9 +6365,26 @@ async function migrarImagenesAStorage() {
   alert(`✅ Migración completa.\n${ok} imágenes migradas a Storage.\n${err ? '⚠️ '+err+' errores.' : 'Sin errores.'}`);
 }
 // ===================== CONFIGURACION =====================
-  function renderConfigTienda() {
+ function renderConfigTienda() {
   const cfg = DB.config || {};
-  const el = document.getElementById('cfg-eslogan'); if (el) el.value = cfg.eslogan || '';
+  // Inicializar campos si no existen aún en Firebase
+  if (!cfg.tiendasExternas || !cfg.tiendasExternas.length) {
+    cfg.tiendasExternas = [
+      {id:'efe',     nombre:'Tienda Efe',  imagen:'', url:'', visible:true,  waCatalogo:false},
+      {id:'curacao', nombre:'Curacao',     imagen:'', url:'', visible:true,  waCatalogo:false},
+      {id:'juntoz',  nombre:'Juntoz',      imagen:'', url:'', visible:true,  waCatalogo:false},
+      {id:'bata',    nombre:'Bata',        imagen:'', url:'', visible:true,  waCatalogo:true}
+    ];
+  }
+  if (!cfg.serviciosWa || !cfg.serviciosWa.length) {
+    cfg.serviciosWa = [
+      {id:'impresiones', nombre:'Impresiones y copias', emoji:'🖨️', visible:true},
+      {id:'recargas',    nombre:'Recargas celular',      emoji:'📱',  visible:true},
+      {id:'pagos',       nombre:'Pago de servicios',     emoji:'💡',  visible:true},
+      {id:'escaneos',    nombre:'Escaneos',               emoji:'📋',  visible:true}
+    ];
+  }
+  const el = document.getElementById('cfg-eslogan');
   const bu = document.getElementById('cfg-banner-url'); if (bu) bu.value = cfg.bannerUrl || '';
   const bl = document.getElementById('cfg-banner-link'); if (bl) bl.value = cfg.bannerLink || '';
   const bv = document.getElementById('cfg-banner-visible'); if (bv) bv.checked = cfg.bannerVisible !== false;
