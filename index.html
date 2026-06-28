@@ -1992,12 +1992,14 @@ background: #F5F3FF;
               <div class="form-group"><label style="display:flex;align-items:center;gap:.5rem"><input type="checkbox" id="cfg-banner-visible"> Mostrar banner</label></div>
             </div>
             <div style="border-top:1px solid var(--gray-200);margin:1rem 0;padding-top:1rem">
-              <div style="font-weight:700;font-size:.85rem;margin-bottom:.75rem">🏪 Tiendas externas</div>
+             <div style="font-weight:700;font-size:.85rem;margin-bottom:.75rem">🏪 Tiendas externas</div>
+              <div class="form-group"><label style="font-size:.78rem">Texto informativo (usuario, contraseña, contacto)</label><input type="text" class="form-control" id="cfg-tiendas-texto" placeholder="Ej: Ingresa con usuario: publico / contraseña: aleze123. Info: 980037284" /></div>
               <div id="cfg-tiendas-externas"></div>
             </div>
             <div style="border-top:1px solid var(--gray-200);margin:1rem 0;padding-top:1rem">
               <div style="font-weight:700;font-size:.85rem;margin-bottom:.75rem">⚡ Servicios WhatsApp</div>
-              <div class="form-group"><label>Número WhatsApp servicios</label><input type="text" class="form-control" id="cfg-wa-servicios" placeholder="980037284" /></div>
+             <div class="form-group"><label>Número WhatsApp servicios</label><input type="text" class="form-control" id="cfg-wa-servicios" placeholder="980037284" /></div>
+              <div class="form-group"><label>Imagen banner servicios (URL Firebase Storage)</label><input type="text" class="form-control" id="cfg-servicios-banner" placeholder="https://firebasestorage... (800×300px recomendado)" /><div style="font-size:.72rem;color:var(--gray-400);margin-top:.2rem">Al hacer clic en el banner abre WhatsApp. Si no hay imagen, se muestran las cards individuales.</div></div>
               <div id="cfg-servicios-wa"></div>
             </div>
             <button type="button" class="btn btn-primary" onclick="guardarConfigTienda()">Guardar configuración tienda</button>
@@ -3042,7 +3044,7 @@ let DB = {
   mermas: [],
   promociones: [],
   movimientos: [],
- config: { nombre: 'Minimarket Aleze', direccion: 'Jr. Tigrillo Mz. Ll4 Lt. 5 Asoc. Percin Deza SJL', telefono: '', ticketMsg: '¡Gracias por su compra!', diasVenc: 7, whatsappTienda: '980037284', montoAperturaAuto: 0, eslogan: 'Todo lo que necesitas, cerca de ti', bannerUrl: '', bannerLink: '', bannerVisible: true, tiendasExternas: [{id:'efe',nombre:'Tienda Efe',imagen:'',url:'',visible:true,waCatalogo:false},{id:'curacao',nombre:'Curacao',imagen:'',url:'',visible:true,waCatalogo:false},{id:'juntoz',nombre:'Juntoz',imagen:'',url:'',visible:true,waCatalogo:false},{id:'bata',nombre:'Bata',imagen:'',url:'',visible:true,waCatalogo:true}], serviciosWa: [{id:'impresiones',nombre:'Impresiones y copias',emoji:'🖨️',visible:true},{id:'recargas',nombre:'Recargas celular',emoji:'📱',visible:true},{id:'pagos',nombre:'Pago de servicios',emoji:'💡',visible:true},{id:'escaneos',nombre:'Escaneos',emoji:'📋',visible:true}] },
+ config: { nombre: 'Minimarket Aleze', direccion: 'Jr. Tigrillo Mz. Ll4 Lt. 5 Asoc. Percin Deza SJL', telefono: '', ticketMsg: '¡Gracias por su compra!', diasVenc: 7, whatsappTienda: '980037284', montoAperturaAuto: 0, eslogan: 'Todo lo que necesitas, cerca de ti', bannerUrl: '', bannerLink: '', bannerVisible: true, tiendasExternas: [{id:'efe',nombre:'Tienda Efe',imagen:'',url:'',visible:true,waCatalogo:false},{id:'curacao',nombre:'Curacao',imagen:'',url:'',visible:true,waCatalogo:false},{id:'juntoz',nombre:'Juntoz',imagen:'',url:'',visible:true,waCatalogo:false},{id:'bata',nombre:'Bata',imagen:'',url:'',visible:true,waCatalogo:true}], serviciosWa: [{id:'impresiones',nombre:'Impresiones y copias',emoji:'🖨️',visible:true},{id:'recargas',nombre:'Recargas celular',emoji:'📱',visible:true},{id:'pagos',nombre:'Pago de servicios',emoji:'💡',visible:true},{id:'escaneos',nombre:'Escaneos',emoji:'📋',visible:true}], serviciosBannerUrl: '', tiendasTexto: '' },
   caja: { abierta: false, inicial: 0, ingresos: 0, egresos: 0, turnoInicio: null, cajero: '', fecha: '' },
   historialVentas: [],
   pedidosOnline: []
