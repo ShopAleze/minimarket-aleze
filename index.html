@@ -3443,7 +3443,9 @@ function navigate(page) {
   }
   // Layout resuelto por CSS (dvh + height fijo) — sin paddingBottom dinámico
 }
-
+function _norm(s) {
+  return (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+}
 // ===================== UTILS =====================
 function sol(n) { return 'S/ ' + parseFloat(n || 0).toFixed(2); }
 function today() {
@@ -3651,7 +3653,7 @@ function renderPosGrid(search = '') {
   if (!currentUser) return;
   const s = search || document.getElementById('pos-search')?.value.toLowerCase() || '';
   let prods = DB.productos.filter(p => p.stock > 0 && (!p.esCombo || p.promoActiva !== false));
-  if (s) prods = prods.filter(p => p.nombre.toLowerCase().includes(s) || p.codigo.includes(s));
+ if (s) prods = prods.filter(p => _norm(p.nombre).includes(_norm(s)) || _norm(p.codigo||'').includes(_norm(s)));
   if (posFilterCat) prods = prods.filter(p => p.cat == posFilterCat);
   const promoActivas = DB.promociones.filter(p => p.activa && p.hasta >= today());
   document.getElementById('pos-grid').innerHTML = prods.map(p => {
@@ -4086,7 +4088,7 @@ function filterInventario() {
   const cat = document.getElementById('inv-cat').value;
   const estado = document.getElementById('inv-estado').value;
   let prods = DB.productos;
-  if (s) prods = prods.filter(p => p.nombre.toLowerCase().includes(s) || p.codigo.includes(s));
+if (s) prods = prods.filter(p => _norm(p.nombre).includes(_norm(s)) || _norm(p.codigo||'').includes(_norm(s)));
   if (cat) prods = prods.filter(p => p.cat == cat);
   if (estado === 'bajo') prods = prods.filter(p => p.stock <= p.stockMin);
   if (estado === 'vence') prods = prods.filter(p => p.venc && diasHasta(p.venc) <= 7 && diasHasta(p.venc) >= 0);
@@ -4648,7 +4650,7 @@ function renderQrMasivoLista() {
   const buscar = (document.getElementById('qrm-buscar')?.value || '').toLowerCase();
   let prods = DB.productos.filter(p =>
     (!catFil || p.cat == catFil) &&
-    (!buscar || p.nombre.toLowerCase().includes(buscar) || (p.codigo||'').toLowerCase().includes(buscar))
+  (!buscar || _norm(p.nombre).includes(_norm(buscar)) || _norm(p.codigo||'').includes(_norm(buscar)))
   );
   const el = document.getElementById('qrm-lista');
   if (!el) return;
@@ -4773,8 +4775,8 @@ function renderProveedores() {
   const qNombre = (document.getElementById('prov-buscar')?.value || '').toLowerCase();
   const qBoleta = (document.getElementById('prov-buscar-boleta')?.value || '').toLowerCase();
   let provs = DB.proveedores;
-  if (qNombre) provs = provs.filter(p => p.nombre.toLowerCase().includes(qNombre));
-  if (qBoleta) provs = provs.filter(p => (p.boletas||[]).some(b => b.num.toLowerCase().includes(qBoleta)));
+  if (qNombre) provs = provs.filter(p => _norm(p.nombre).includes(_norm(qNombre)));
+  if (qBoleta) provs = provs.filter(p => (p.boletas||[]).some(b => _norm(b.num).includes(_norm(qBoleta))));
   document.getElementById('prov-tbody').innerHTML = provs.map(p => `<tr>
     <td><strong>${p.nombre}</strong></td><td>${p.contacto}</td><td>${p.tel}</td>
     <td style="font-size:0.8rem">${p.productos}</td>
@@ -4875,7 +4877,7 @@ function filtrarBoletas() {
   const hasta = document.getElementById('bol-filtro-hasta')?.value || '';
   const boletas = (prov && prov.boletas) ? prov.boletas : [];
   let filtradas = boletas;
-  if (q) filtradas = filtradas.filter(b => (b.num+b.fecha+(b.desc||'')).toLowerCase().includes(q));
+  if (q)filtradas = filtradas.filter(b => _norm(b.num+b.fecha+(b.desc||'')).includes(_norm(q)));
   if (desde) filtradas = filtradas.filter(b => b.fecha >= desde);
   if (hasta) filtradas = filtradas.filter(b => b.fecha <= hasta);
   const total = filtradas.reduce((s, b) => s + (b.monto||0), 0);
@@ -4934,7 +4936,7 @@ function _boletaBuscar() {
   if (!sug) return;
   if (!q) { sug.style.display = 'none'; return; }
   const matches = DB.productos.filter(p =>
-    p.nombre.toLowerCase().includes(q) || (p.codigo||'').includes(q)
+_norm(p.nombre).includes(_norm(q)) || _norm(p.codigo||'').includes(_norm(q))
   ).slice(0, 8);
   if (!matches.length) {
     sug.innerHTML = '<div style="padding:.5rem;color:var(--gray-400)">Sin resultados — créalo primero en Inventario</div>';
@@ -5075,9 +5077,9 @@ function verHistorialCliente(id) {
 function renderClientes() {
   const buscar = (document.getElementById('cli-buscar')?.value || '').toLowerCase();
   const lista = buscar ? DB.clientes.filter(c =>
-    (c.nombre||'').toLowerCase().includes(buscar) ||
-    (c.alias||'').toLowerCase().includes(buscar) ||
-    (c.tel||'').toLowerCase().includes(buscar)
+    _norm(c.nombre||'').includes(_norm(buscar)) ||
+_norm(c.alias||'').includes(_norm(buscar)) ||
+_norm(c.tel||'').includes(_norm(buscar))
   ) : DB.clientes;
   document.getElementById('cli-tbody').innerHTML = lista.map(c => `<tr>
     <td><strong>${c.nombre}</strong></td>
@@ -6835,8 +6837,8 @@ function renderGastos() {
   if (fDesde)  gastosVis = gastosVis.filter(g => g.fecha >= fDesde);
   if (fHasta)  gastosVis = gastosVis.filter(g => g.fecha <= fHasta);
   if (fBuscar) gastosVis = gastosVis.filter(g =>
-    (g.desc||'').toLowerCase().includes(fBuscar) ||
-    (g.tipo||'').toLowerCase().includes(fBuscar));
+    _norm(g.desc||'').includes(_norm(fBuscar)) ||
+_norm(g.tipo||'').includes(_norm(fBuscar)));
 
   document.getElementById('gastos-tbody').innerHTML = gastosVis.map(g => `
     <tr>
@@ -7817,7 +7819,7 @@ function mobFilterPos() {
   const activeCat = document.querySelector('#mob-pos-categorias .tag.active');
   const catId = activeCat ? activeCat.dataset.cat : '';
   let prods = DB.productos;
-  if (s) prods = prods.filter(p => p.nombre.toLowerCase().includes(s) || p.codigo.includes(s));
+if (s) prods = prods.filter(p => _norm(p.nombre).includes(_norm(s)) || _norm(p.codigo||'').includes(_norm(s)));
   if (catId) prods = prods.filter(p => p.cat == catId);
   renderMobPosGrid(prods);
 }
@@ -8447,9 +8449,9 @@ function renderHistorialVentas() {
   if (estado) lista = lista.filter(v => v.estado === estado);
   if (origen) lista = lista.filter(v => v.origen === origen);
   if (buscar) lista = lista.filter(v =>
-    (v.cajero||'').toLowerCase().includes(buscar) ||
-    (v.clienteNombre||getClienteNombre(v.clienteId)||'').toLowerCase().includes(buscar) ||
-    (v.items||[]).some(i => (i.nombre||'').toLowerCase().includes(buscar))
+_norm(v.cajero||'').includes(_norm(buscar)) ||
+_norm(v.clienteNombre||getClienteNombre(v.clienteId)||'').includes(_norm(buscar)) ||
+(v.items||[]).some(i => _norm(i.nombre||'').includes(_norm(buscar)))
   );
   lista.sort((a,b) => (b.id || 0) > (a.id || 0) ? 1 : -1);
 
@@ -9797,7 +9799,7 @@ function tndFiltrar() {
   const hoy = today();
   let prods = (DB.productos||[]).filter(p => {
     if (_tndCatActiva && p.cat != _tndCatActiva) return false;
-    if (buscar && !(p.nombre||'').toLowerCase().includes(buscar)) return false;
+  if (buscar && !_norm(p.nombre||'').includes(_norm(buscar))) return false;
     if (p.venc && p.venc < hoy) return false;
     if (p.esCombo && p.promoActiva === false) return false; // ocultar combos desactivados
     return true;
