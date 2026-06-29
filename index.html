@@ -1328,11 +1328,7 @@ background: #F5F3FF;
         <div class="nav-item" onclick="navigate('frecuentes')" title="Programa de puntos y premios">
           <span class="icon">⭐</span><span class="nav-label">Frecuentes</span>
         </div>
-        <div class="nav-item" onclick="navigate('fiados')" title="Control de fiados">
-          <span class="icon">📋</span><span class="nav-label">Fiados</span>
-        </div>
-
-        <div class="nav-section-label" style="margin-top:0.5rem">Operaciones</div>
+      <div class="nav-section-label" style="margin-top:0.5rem">Operaciones</div>
         <div class="nav-item" onclick="navigate('caja')" title="Apertura y cierre de caja">
           <span class="icon">💰</span><span class="nav-label">Caja</span>
         </div>
@@ -1362,13 +1358,16 @@ background: #F5F3FF;
           <span class="icon">⚙️</span><span class="nav-label">Configuración</span>
         </div>
       </div>
-      <!-- Pedidos Online: visible para admin, vendedor 1 y vendedor 2 -->
+ <!-- Pedidos Online y Fiados: visible para admin, vendedor 1 y vendedor 2 -->
       <div class="nav-section" id="vendedor-nav">
         <div class="nav-section-label">Pedidos</div>
         <div class="nav-item" onclick="navigate('pedidos-online')" title="Pedidos recibidos por la tienda online">
           <span class="icon">🛍️</span>
           <span class="nav-label">Pedidos Online</span>
           <span id="po-nav-badge" style="display:none;background:var(--danger);color:white;border-radius:10px;font-size:.7rem;padding:1px 6px;margin-left:auto;font-weight:700"></span>
+        </div>
+        <div class="nav-item" onclick="navigate('fiados')" title="Control de fiados">
+          <span class="icon">📋</span><span class="nav-label">Fiados</span>
         </div>
       </div>
     </aside>
