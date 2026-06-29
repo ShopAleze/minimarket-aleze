@@ -3992,6 +3992,7 @@ delete _vPayload.productos; delete _vPayload.categorias; delete _vPayload.pedido
   try { generarReporte(); } catch(e){}
   mostrarTicket(venta);
   clearCart();
+  const _pc = document.getElementById('pos-cliente'); if (_pc) { _pc.value = ''; onClienteChange(); }
   updateAlertCount();
 }
 
@@ -4048,8 +4049,10 @@ delete _vPayload.productos; delete _vPayload.categorias; delete _vPayload.pedido
   fbGuardarProductos();
   try { renderDashboard(); } catch(e){}
   try { renderCaja(); } catch(e){}
-  alert('Fiado registrado para ' + getClienteNombre(clienteId) + ': ' + sol(total));
-  clearCart(); updateAlertCount();
+ alert('Fiado registrado para ' + getClienteNombre(clienteId) + ': ' + sol(total));
+  clearCart();
+  const _pc2 = document.getElementById('pos-cliente'); if (_pc2) { _pc2.value = ''; onClienteChange(); }
+  updateAlertCount();
 }
 
 // ===================== TICKET =====================
@@ -8200,12 +8203,13 @@ delete _vPayload.productos; delete _vPayload.categorias; delete _vPayload.pedido
 
   cart = [];
   mobRenderCart(); mobCalcTotal(); mobUpdateBar();
-  const descEl = document.getElementById('pos-descuento');
+ const descEl = document.getElementById('pos-descuento');
   if (descEl) descEl.value = '';
+  const _mc = document.getElementById('mob-pos-cliente'); if (_mc) { _mc.value = ''; mobOnClienteChange(); }
   renderMobPosGrid(); toggleMobCart(); updateAlertCount();
 }
 
-function mobProcesarVenta() {
+function mobProcesarVenta(){
   if (cart.length === 0) { alert('El carrito está vacío'); return; }
   const sub = cart.reduce((s, i) => s + i.precio * i.cant, 0);
   const desc = parseFloat(document.getElementById('pos-descuento')?.value) || 0;
@@ -8259,12 +8263,11 @@ function mobProcesarVenta() {
   mobRenderCart(); mobCalcTotal(); mobUpdateBar();
   const descEl2 = document.getElementById('pos-descuento');
   if (descEl2) descEl2.value = '';
+  const _mc2 = document.getElementById('mob-pos-cliente'); if (_mc2) { _mc2.value = ''; mobOnClienteChange(); }
   renderMobPosGrid();
   updateAlertCount();
   mostrarTicket(venta);
 }
-
-
 
 function renderMobPos() {
   if (!isMobile()) return;
