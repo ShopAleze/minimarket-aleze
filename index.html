@@ -1222,7 +1222,7 @@ background: #F5F3FF;
       <div class="stat-item"><span class="stat-num">480+</span><span class="stat-lbl">Productos</span></div>
       <div class="stat-item"><span class="stat-num">4.9</span><span class="stat-lbl">Calificación</span></div>
     </div>
-    <button type="button" class="btn-personal" onclick="document.getElementById('login-welcome').style.display='none';document.getElementById('login-form-panel').style.display='block';document.getElementById('login-pass').focus();">🔒 Acceso personal</button>
+    <button type="button" class="btn-personal" onclick="document.getElementById('login-welcome').style.display='none';document.getElementById('login-form-panel').style.display='block';const _lu=localStorage.getItem('aleze_last_user');const _ls=document.getElementById('login-user');if(_lu&&_ls)_ls.value=_lu;document.getElementById('login-pass').focus();">🔒 Acceso personal</button>
     <div style="color:var(--gray-400);font-size:.7rem;margin-top:.5rem">v1.0.1</div>
   </div>
 
@@ -3332,7 +3332,8 @@ async function doLogin() {
   if (btnEl) { btnEl.disabled = false; btnEl.textContent = 'Ingresar'; btnEl.style.opacity = ''; }
 
   currentUser = name;
-  currentRole = role;
+currentRole = role;
+  localStorage.setItem('aleze_last_user', sel);
 
   // ── PASO 5: Mostrar UI — solo después de tener datos ──
   document.getElementById('login-screen').classList.remove('visible');
@@ -3381,7 +3382,6 @@ function doLogout() {
   // Volver a pantalla de login
   document.getElementById('login-screen').classList.add('visible');
   document.getElementById('app').classList.remove('visible');
-    document.getElementById('login-user').value = '';
     document.getElementById('login-pass').value = '';
     const errEl = document.getElementById('login-error');
     if (errEl) errEl.style.display = 'none';
