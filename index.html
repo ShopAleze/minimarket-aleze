@@ -3044,11 +3044,11 @@ let DB = {
   mermas: [],
   promociones: [],
   movimientos: [],
- config: { nombre: 'Minimarket Aleze', direccion: 'Jr. Tigrillo Mz. Ll4 Lt. 5 Asoc. Percin Deza SJL', telefono: '', ticketMsg: '¡Gracias por su compra!', diasVenc: 7, whatsappTienda: '980037284', montoAperturaAuto: 0, eslogan: 'Todo lo que necesitas, cerca de ti', bannerUrl: '', bannerLink: '', bannerVisible: true, tiendasExternas: [{id:'efe',nombre:'Tienda Efe',imagen:'',url:'',visible:true,waCatalogo:false},{id:'curacao',nombre:'Curacao',imagen:'',url:'',visible:true,waCatalogo:false},{id:'juntoz',nombre:'Juntoz',imagen:'',url:'',visible:true,waCatalogo:false},{id:'bata',nombre:'Bata',imagen:'',url:'',visible:true,waCatalogo:true}], serviciosWa: [{id:'impresiones',nombre:'Impresiones y copias',emoji:'🖨️',visible:true},{id:'recargas',nombre:'Recargas celular',emoji:'📱',visible:true},{id:'pagos',nombre:'Pago de servicios',emoji:'💡',visible:true},{id:'escaneos',nombre:'Escaneos',emoji:'📋',visible:true}], serviciosBannerUrl: '', tiendasTexto: '' },
+ config: { nombre: 'Minimarket Aleze', direccion: 'Jr. Tigrillo Mz. Ll4 Lt. 5 Asoc. Percin Deza SJL', telefono: '', ticketMsg: '¡Gracias por su compra!', diasVenc: 7, whatsappTienda: '980037284', montoAperturaAuto: 0, eslogan: 'Todo lo que necesitas, cerca de ti', bannerUrl: '', bannerLink: '', bannerVisible: true, tiendasExternas: [{id:'efe',nombre:'Tienda Efe',imagen:'',url:'',visible:true,waCatalogo:false},{id:'curacao',nombre:'Curacao',imagen:'',url:'',visible:true,waCatalogo:false},{id:'juntoz',nombre:'Juntoz',imagen:'',url:'',visible:true,waCatalogo:false},{id:'bata',nombre:'Bata',imagen:'',url:'',visible:true,waCatalogo:true}], serviciosWa: [{id:'impresiones',nombre:'Impresiones y copias',emoji:'🖨️',visible:true},{id:'recargas',nombre:'Recargas celular',emoji:'📱',visible:true},{id:'pagos',nombre:'Pago de servicios',emoji:'💡',visible:true},{id:'escaneos',nombre:'Escaneos',emoji:'📋',visible:true}], serviciosBannerUrl: '', tiendasTexto: '', alertasIgnoradas: {} },
   caja: { abierta: false, inicial: 0, ingresos: 0, egresos: 0, turnoInicio: null, cajero: '', fecha: '' },
   historialVentas: [],
   pedidosOnline: []
-};
+};  
 
 let cart = [];
 
@@ -3497,26 +3497,40 @@ function precioSugerido(costo, margen) { return Math.ceil(costo*(1+margen/100)*1
 function getNivel(totalAnual) { return [...DB_EXT.niveles].sort((a,b)=>b.umbral-a.umbral).find(n=>totalAnual>=n.umbral)||null; }
 
 function getAlertas() {
+  const ignoradas = DB.config.alertasIgnoradas || {};
   const alertas = [];
   const diasVenc = parseInt(DB.config.diasVenc) || 7;
   DB.productos.forEach(p => {
-    if (p.stock <= p.stockMin) alertas.push({ tipo: 'danger', titulo: 'Stock bajo: ' + p.nombre, sub: 'Stock: ' + p.stock + ' ' + p.unidad + ' (mín: ' + p.stockMin + ')' });
-    if (p.venc && diasHasta(p.venc) <= diasVenc && diasHasta(p.venc) >= 0) alertas.push({ tipo: 'warning', titulo: 'Vence pronto: ' + p.nombre, sub: 'Vence el ' + formatDate(p.venc) + ' (' + diasHasta(p.venc) + ' días)' });
-    if (p.venc && diasHasta(p.venc) < 0) alertas.push({ tipo: 'danger', titulo: 'VENCIDO: ' + p.nombre, sub: 'Venció el ' + formatDate(p.venc) });
+    if (p.stock <= p.stockMin) {
+      const key = 'stock_' + p.id;
+      if (!ignoradas[key]) alertas.push({ tipo:'danger', titulo:'Stock bajo: '+p.nombre, sub:'Stock: '+p.stock+' '+p.unidad+' (mín: '+p.stockMin+')', key });
+    }
+    if (p.venc && diasHasta(p.venc) <= diasVenc && diasHasta(p.venc) >= 0) {
+      const key = 'venc_soon_' + p.id;
+      if (!ignoradas[key]) alertas.push({ tipo:'warning', titulo:'Vence pronto: '+p.nombre, sub:'Vence el '+formatDate(p.venc)+' ('+diasHasta(p.venc)+' días)', key });
+    }
+    if (p.venc && diasHasta(p.venc) < 0) {
+      const key = 'venc_exp_' + p.id;
+      if (!ignoradas[key]) alertas.push({ tipo:'danger', titulo:'VENCIDO: '+p.nombre, sub:'Venció el '+formatDate(p.venc), key });
+    }
   });
   // Cumpleaños
   const hd = new Date();
+  const _yr = hd.getFullYear();
   DB.clientes.forEach(c => {
     if (!c.cumple) return;
     const [,m,d] = c.cumple.split('-');
     const diff = Math.ceil((new Date(hd.getFullYear(),parseInt(m)-1,parseInt(d)) - hd) / 86400000);
-    if (diff === 0) alertas.push({tipo:'success', titulo:'🎂 ¡Hoy cumple '+(c.alias||c.nombre)+'!', sub:'Recuerda el detalle especial (S/5-10)'});
-    else if (diff === 1) alertas.push({tipo:'info', titulo:'🎂 Mañana cumple '+(c.alias||c.nombre), sub:'Prepara el regalo'});
-    else if (diff === 2) alertas.push({tipo:'info', titulo:'🎂 En 2 días cumple '+(c.alias||c.nombre), sub:'Anticipa el detalle'});
+    if (diff === 0) { const key='bday_'+c.id+'_'+_yr; if (!ignoradas[key]) alertas.push({tipo:'success', titulo:'🎂 ¡Hoy cumple '+(c.alias||c.nombre)+'!', sub:'Recuerda el detalle especial (S/5-10)', key}); }
+    else if (diff === 1) { const key='bday1_'+c.id+'_'+_yr; if (!ignoradas[key]) alertas.push({tipo:'info', titulo:'🎂 Mañana cumple '+(c.alias||c.nombre), sub:'Prepara el regalo', key}); }
+    else if (diff === 2) { const key='bday2_'+c.id+'_'+_yr; if (!ignoradas[key]) alertas.push({tipo:'info', titulo:'🎂 En 2 días cumple '+(c.alias||c.nombre), sub:'Anticipa el detalle', key}); }
   });
   DB.fiados.forEach(f => {
-    const pendiente = f.total - f.pagado;
-    if (pendiente > 0) alertas.push({ tipo: 'info', titulo: 'Fiado pendiente: ' + getClienteNombre(f.clienteId), sub: 'Debe ' + sol(pendiente) });
+    const pendiente = Math.round((f.total - f.pagado) * 100) / 100;
+    if (pendiente > 0) {
+      const key = 'fiado_' + f.id + '_' + pendiente;
+      if (!ignoradas[key]) alertas.push({ tipo:'info', titulo:'Fiado pendiente: '+getClienteNombre(f.clienteId), sub:'Debe '+sol(pendiente), key });
+    }
   });
   return alertas;
 }
@@ -3529,11 +3543,24 @@ function updateAlertCount() {
 
 function showAlerts() {
   const alertas = getAlertas();
-  const icons = { danger: '🔴', warning: '🟡', info: '🔵' };
+  const icons = { danger:'🔴', warning:'🟡', info:'🔵', success:'🟢' };
   document.getElementById('modal-alertas-content').innerHTML = alertas.length === 0
     ? '<p style="text-align:center;color:var(--gray-500);padding:1rem">✅ Sin alertas activas</p>'
-    : alertas.map(a => `<div class="alert-item ${a.tipo}"><span class="alert-icon">${icons[a.tipo]}</span><div class="alert-text"><strong>${a.titulo}</strong><span>${a.sub}</span></div></div>`).join('');
+    : alertas.map(a => `<div class="alert-item ${a.tipo}" style="position:relative;padding-right:2rem">
+        <span class="alert-icon">${icons[a.tipo]||'🔵'}</span>
+        <div class="alert-text"><strong>${a.titulo}</strong><span>${a.sub}</span></div>
+        <button onclick="ignorarAlerta('${a.key}')" title="Ignorar alerta" style="position:absolute;top:.4rem;right:.4rem;background:none;border:none;cursor:pointer;font-size:1rem;color:var(--gray-400);line-height:1">✕</button>
+      </div>`).join('');
   abrirModal('modal-alertas');
+}
+function ignorarAlerta(key) {
+  if (!key) return;
+  if (!DB.config.alertasIgnoradas) DB.config.alertasIgnoradas = {};
+  DB.config.alertasIgnoradas[key] = Date.now();
+  fbGuardar();
+  fbGuardarProductos();
+  showAlerts();
+  updateAlertCount();
 }
 
 function abrirModal(id) { document.getElementById(id).classList.add('open'); }
