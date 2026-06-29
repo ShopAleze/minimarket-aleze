@@ -8476,8 +8476,8 @@ function fbEscuchar() {
     const activePage = document.querySelector('.page.active');
     const pageId = activePage ? activePage.id.replace('page-','') : '';
     try {
-      if (pageId === 'pos')        { renderPos(); if (typeof renderMobPos === 'function') renderMobPos(); }
-      if (pageId === 'inventario') { renderInvTable(); }
+  if (pageId === 'pos')        { renderPos(); if (typeof mobFilterPos === 'function') mobFilterPos(); else if (typeof renderMobPos === 'function') renderMobPos(); }
+      if (pageId === 'inventario') { filterInventario(); }
       if (pageId === 'categorias') { renderCategorias(); }
     } catch(e){}
   }, err => { console.warn('Firestore db_productos listener error:', err.code); });
