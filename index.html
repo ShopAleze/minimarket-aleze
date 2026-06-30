@@ -5513,17 +5513,27 @@ Escribe 1 para confirmar:`;
     alert('✅ Fiado eliminado y stock restaurado.');
   } else if (resp.trim() === '2' && pend > 0) {
     // Registrar como merma
+ let _algunaMermaRegistrada = false;
+    const propPend = pend / f.total;
     f.items.forEach(i => {
       const prod = DB.productos.find(p => p.id === i.prodId);
       if (!prod) return;
-      const propPend = pend / f.total;
-      const cantMerma = Math.round(i.cant * propPend * 100) / 100;
-      if (cantMerma <= 0) return;
+      const cantMermaExacta = i.cant * propPend;
+      const cantMerma = Math.round(cantMermaExacta * 100) / 100;
+      const perdidaMonto = Math.round(prod.costo * cantMermaExacta * 100) / 100;
+      if (perdidaMonto <= 0) return;
       DB.mermas.push({ id: getId(), prodId: i.prodId, cant: cantMerma, motivo: 'Fiado incobrable', obs: 'Fiado #' + f.id + ' — ' + getClienteNombre(f.clienteId), fecha: today(), usuario: currentUser });
       ensureCajaAbierta();
-      DB.caja.egresos = (DB.caja.egresos||0) + prod.costo * cantMerma;
-      DB.movimientos.push({ tipo:'egreso', desc:'Merma fiado incobrable: ' + prod.nombre, monto: prod.costo * cantMerma, hora: nowTime(), fecha: today(), usuario: currentUser });
+      DB.caja.egresos = (DB.caja.egresos||0) + perdidaMonto;
+      DB.movimientos.push({ tipo:'egreso', desc:'Merma fiado incobrable: ' + prod.nombre, monto: perdidaMonto, hora: nowTime(), fecha: today(), usuario: currentUser });
+      _algunaMermaRegistrada = true;
     });
+    // Garantía final: si por redondeo ningún producto calificó, igual se registra el saldo como pérdida
+    if (!_algunaMermaRegistrada && pend > 0) {
+      ensureCajaAbierta();
+      DB.caja.egresos = (DB.caja.egresos||0) + pend;
+      DB.movimientos.push({ tipo:'egreso', desc:'Fiado incobrable (saldo, sin detalle por producto) — ' + getClienteNombre(f.clienteId), monto: pend, hora: nowTime(), fecha: today(), usuario: currentUser });
+    }
     DB.fiados = DB.fiados.filter(x => x.id !== id);
     const cli = DB.clientes.find(c => c.id === f.clienteId);
     if (cli) cli.deuda = Math.max(0, cli.deuda - pend);
