@@ -5327,7 +5327,7 @@ function renderFiados() {
         </div>
         <div style="text-align:right;display:flex;align-items:center;gap:.75rem">
           <div>
-            <div style="font-weight:700;color:var(--danger);font-size:1rem">${sol(pendienteCli)} pendiente</div>
+          <div style="font-weight:700;color:${pendienteCli>0?'var(--danger)':'var(--accent)'};font-size:1rem">${pendienteCli>0?sol(pendienteCli)+' pendiente':'✅ Pagado'}</div>
             <div style="font-size:.72rem;color:var(--gray-500)">Total: ${sol(totalCli)} | Pagado: ${sol(pagadoCli)}</div>
           </div>
           <span id="arr-${detalleId}" style="font-size:1.1rem;color:var(--gray-400)">▼</span>
@@ -5659,7 +5659,7 @@ function abrirHistorialCliente(cid, e) {
     <span>🛒 <strong>${fiados.length}</strong> venta(s)</span>
     <span>💰 Total acumulado: <strong>${sol(totalCli)}</strong></span>
     <span style="color:var(--accent)">✅ Pagado: <strong>${sol(pagadoCli)}</strong></span>
-    <span style="color:var(--danger)">⏳ Pendiente: <strong>${sol(pendienteCli)}</strong></span>`;
+<span style="color:${pendienteCli>0?'var(--danger)':'var(--accent)'}">${pendienteCli>0?'⏳ Pendiente':'✅ Sin deuda'}: <strong>${sol(pendienteCli)}</strong></span>`;
   document.getElementById('hcli-filtro-tipo').value = 'todo';
   document.getElementById('hcli-desde').value = '';
   document.getElementById('hcli-hasta').value = '';
@@ -8374,6 +8374,8 @@ function fbProdDocRef()  { return fbFS.collection('aleze').doc('db_productos'); 
 // ── Guardar operaciones (excluye productos y categorias) ──
 // Debounce 1200ms — agrupa cambios rápidos en 1 sola escritura
 let _fbSaveTimerProd = null;
+let _fbWritingDB = false;   // Previene escrituras paralelas a aleze/db
+let _fbWritingProd = false; // Previene escrituras paralelas a aleze/db_productos
 function fbGuardar() {
   if (!fbFS) return;
   // Protección contra borrado accidental: no guardar si todos los arrays operativos están vacíos
@@ -8382,17 +8384,19 @@ function fbGuardar() {
   if (todoVacio) { console.warn('fbGuardar: bloqueado — todos los arrays operativos están vacíos'); return; }
   _fbLastWriteTs = Date.now();
   clearTimeout(_fbSaveTimer);
-_fbSaveTimer = setTimeout(() => {
+_fbSaveTimer = setTimeout(function _tryGuardar() {
+    if (_fbWritingDB) { _fbSaveTimer = setTimeout(_tryGuardar, 500); return; }
     _fbSaveTimer = null;
     _fbEscribiendo = true;
+    _fbWritingDB = true;
     // Excluir productos y categorias — tienen su propio documento
     const payload = JSON.parse(JSON.stringify(DB));
   delete payload.productos;
     delete payload.categorias;
     delete payload.pedidosOnline;
     fbDocRef().set(payload)
-      .then(() => { setTimeout(() => { _fbEscribiendo = false; }, 300); })
-      .catch(e => { _fbEscribiendo = false; console.warn('Firestore write error:', e); });
+      .then(() => { _fbWritingDB = false; setTimeout(() => { _fbEscribiendo = false; }, 300); })
+      .catch(e => { _fbWritingDB = false; _fbEscribiendo = false; console.warn('Firestore write error:', e); });
   }, 1200);
 }
 
@@ -8403,8 +8407,10 @@ function fbGuardarProductos() {
   if (!fbAuth || !fbAuth.currentUser) return;
   _fbLastWriteProdTs = Date.now();
   clearTimeout(_fbSaveTimerProd);
-  _fbSaveTimerProd = setTimeout(() => {
+ _fbSaveTimerProd = setTimeout(function _tryGuardarProd() {
+    if (_fbWritingProd) { _fbSaveTimerProd = setTimeout(_tryGuardarProd, 500); return; }
     _fbEscribiendo = true;
+    _fbWritingProd = true;
     const payload = {
       productos:  JSON.parse(JSON.stringify(DB.productos)),
       categorias: JSON.parse(JSON.stringify(DB.categorias)),
@@ -8413,9 +8419,10 @@ function fbGuardarProductos() {
     fbProdDocRef().set(payload)
       .then(() => {
         _fbProdCacheTs = Date.now(); // actualizar timestamp caché
+        _fbWritingProd = false;
         setTimeout(() => { _fbEscribiendo = false; }, 300);
       })
-      .catch(e => { _fbEscribiendo = false; alert('⚠️ Error al guardar stock. Avisa al administrador.\nCódigo: ' + (e.code || e.message || 'desconocido')); });
+      .catch(e => { _fbWritingProd = false; _fbEscribiendo = false; alert('⚠️ Error al guardar stock. Avisa al administrador.\nCódigo://' + (e.code || e.message || 'desconocido')); });
   }, 1200);
 }
 
