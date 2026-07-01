@@ -1657,7 +1657,7 @@ background: #F5F3FF;
         </div>
         <div class="card" style="padding:0.75rem 1rem;margin-bottom:0.75rem">
           <div style="display:flex;gap:0.75rem;flex-wrap:wrap;align-items:center">
-            <input type="text" class="form-control" id="inv-search" placeholder="Buscar..." style="width:200px" oninput="filterInventario()" />
+      <input type="text" class="form-control" id="inv-search" placeholder="Buscar..." style="width:200px" oninput="filterInventario()" onkeydown="if(event.key==='Enter')_invEnterScan()" />
             <select class="form-control" id="inv-cat" style="width:160px" onchange="filterInventario()">
               <option value="">Todas las categorías</option>
             </select>
@@ -3750,6 +3750,20 @@ function renderPosGrid(search = '') {
 }
 
 function filterPosProducts() { renderPosGrid(); }
+function _posEnterScan() {
+  const s = document.getElementById('pos-search')?.value || '';
+  if (!s) return;
+  const matches = DB.productos.filter(p =>
+    p.stock > 0 &&
+    (!p.esCombo || p.promoActiva !== false) &&
+    (_norm(p.codigo||'') === _norm(s) || _norm(p.nombre).includes(_norm(s)) || _norm(p.codigo||'').includes(_norm(s)))
+  );
+  if (matches.length === 1) {
+    addToCart(matches[0].id);
+    document.getElementById('pos-search').value = '';
+    filterPosProducts();
+  }
+}
 
 function addToCart(prodId) {
   const prod = DB.productos.find(p => p.id === prodId);
@@ -4156,6 +4170,20 @@ function renderInvTable(prods) {
   }).join('') || '<tr><td colspan="13" style="text-align:center;padding:1.5rem;color:var(--gray-400)">Sin productos</td></tr>';
 }
 
+function _invEnterScan() {
+  const s = document.getElementById('inv-search')?.value || '';
+  if (!s) return;
+  const matches = DB.productos.filter(p =>
+    _norm(p.codigo||'') === _norm(s) ||
+    _norm(p.nombre).includes(_norm(s)) ||
+    _norm(p.codigo||'').includes(_norm(s))
+  );
+  if (matches.length === 1) {
+    document.getElementById('inv-search').value = '';
+    filterInventario();
+    editarProducto(matches[0].id);
+  }
+}
 function filterInventario() {
   const s = document.getElementById('inv-search').value.toLowerCase();
   const cat = document.getElementById('inv-cat').value;
