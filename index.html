@@ -745,10 +745,19 @@ background: #F5F3FF;
     .product-card .p-name { font-size: 0.75rem; line-height: 1.2; }
     .product-card .p-price { font-size: 0.9rem; }
     .product-card .p-stock { font-size: 0.65rem; }
-
-    /* Ocultar elementos del POS desktop en móvil */
+/* Ocultar elementos del POS desktop en móvil */
     .pos-wrap { display: none !important; }
 
+    /* Inventario: título y botones apilados en móvil */
+    #page-inventario .flex-between {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: .75rem;
+    }
+    #page-inventario .flex-between > div[style*="flex-wrap"] {
+      width: 100%;
+      justify-content: flex-start;
+    }
 
   }
 
