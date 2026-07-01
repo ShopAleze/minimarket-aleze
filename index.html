@@ -1178,7 +1178,7 @@ background: #F5F3FF;
     grid-template-columns: 1fr 1fr;
     gap: 0.5rem;
   }
-  .btn-pos-fiado {
+.btn-pos-fiado {
     padding: 0.65rem;
     font-size: 0.9rem;
   }
@@ -1186,6 +1186,23 @@ background: #F5F3FF;
     padding: 0.65rem;
     font-size: 0.95rem;
     font-weight: 700;
+  }
+
+  /* ── DESKTOP SPLIT MODE: carrito siempre visible (≥761px) ── */
+  @media (min-width: 761px) {
+    :root { --cart-split-w: clamp(360px, 38%, 580px); }
+    .pos-wrap { margin-right: var(--cart-split-w); }
+    #pos-cart-panel {
+      width: var(--cart-split-w) !important;
+      transform: translateX(0) !important;
+      transition: none !important;
+      box-shadow: -2px 0 12px rgba(0,0,0,.08) !important;
+    }
+    #pos-cart-btn { display: none !important; }
+    #pos-cart-panel .cart-header button[onclick="cerrarCartDrawer()"] { display: none !important; }
+    #pos-cart-overlay { display: none !important; }
+    .btn-pos-fiado  { padding: 0.9rem; font-size: 1rem; }
+    .btn-pos-cobrar { padding: 0.9rem; font-size: 1.1rem; font-weight: 700; }
   }
   
 </style>
@@ -1454,7 +1471,7 @@ background: #F5F3FF;
             <div class="pos-desktop-bar">
               <div class="pos-search">
                 <span class="pos-search-icon">🔍</span>
-                <input type="text" id="pos-search" placeholder="Buscar producto o código..." oninput="filterPosProducts()" />
+    <input type="text" id="pos-search" placeholder="Buscar producto o código..." oninput="filterPosProducts()" onkeydown="if(event.key==='Enter')_posEnterScan()" />
               </div>
               <button type="button" class="btn btn-outline btn-sm" onclick="openCamScanner()">📷 Escanear</button>
               <button type="button" class="btn btn-primary btn-sm" id="pos-cart-btn" onclick="abrirCartDrawer()">
