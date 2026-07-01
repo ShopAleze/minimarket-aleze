@@ -1188,9 +1188,9 @@ background: #F5F3FF;
     font-weight: 700;
   }
 
-  /* ── DESKTOP SPLIT MODE: carrito siempre visible (≥761px) ── */
+/* ── DESKTOP SPLIT MODE: carrito siempre visible (≥761px) ── */
   @media (min-width: 761px) {
-    :root { --cart-split-w: clamp(360px, 38%, 580px); }
+    :root { --cart-split-w: clamp(460px, 48%, 720px); }
     .pos-wrap { margin-right: var(--cart-split-w); }
     #pos-cart-panel {
       width: var(--cart-split-w) !important;
@@ -1203,6 +1203,19 @@ background: #F5F3FF;
     #pos-cart-overlay { display: none !important; }
     .btn-pos-fiado  { padding: 0.9rem; font-size: 1rem; }
     .btn-pos-cobrar { padding: 0.9rem; font-size: 1.1rem; font-weight: 700; }
+
+    /* Carrito +30% ancho y elementos internos amplificados */
+    #pos-cart-panel .cart-header h3 { font-size: 1.25rem; }
+    #pos-cart-panel .cart-header .btn-sm { font-size: 1rem; padding: 0.6rem 1rem; }
+    #pos-cart-panel #pos-cliente { font-size: 1rem; padding: 0.75rem; }
+    #pos-cart-panel .cart-item-name { font-size: 1rem; }
+    #pos-cart-panel .cart-item-price { font-size: 1.05rem; }
+    #pos-cart-panel #pos-descuento { font-size: 1rem; padding: 0.75rem; }
+    #pos-cart-panel .cart-total-label { font-size: 1.1rem; }
+    #pos-cart-panel .cart-total-val { font-size: 2rem; }
+    #pos-cart-panel #pos-metodo-pago { font-size: 1rem; padding: 0.65rem; margin-bottom: 0.85rem; }
+    #pos-cart-panel .btn-pos-fiado  { padding: 1.1rem; font-size: 1.1rem; }
+    #pos-cart-panel .btn-pos-cobrar { padding: 1.1rem; font-size: 1.2rem; font-weight: 700; }
   }
   
 </style>
