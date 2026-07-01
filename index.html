@@ -10069,7 +10069,7 @@ const servicios = (cfg.serviciosWa||[]).filter(s => s.visible);
   const serviciosHtml = cfg.serviciosBannerUrl
     ? `<div style="margin-bottom:1.25rem">
         <div style="font-weight:800;font-size:1rem;color:#1f2937;margin-bottom:.75rem">⚡ Servicios rápidos</div>
-        <a href="https://wa.me/51${waNum}?text=${encodeURIComponent('Hola, quisiera información sobre sus servicios')}" target="_blank" style="display:block;text-decoration:none;border-radius:14px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.1)">
+      <a href="https://wa.me/51${waNum}?text=${encodeURIComponent('Hola, quisiera información sobre sus servicios')}" target="_blank" style="display:block;text-decoration:none;border-radius:14px;box-shadow:0 2px 8px rgba(0,0,0,.1)">
    <img src="${cfg.serviciosBannerUrl}" style="width:100%;height:auto;object-fit:contain;display:block">
         </a>
        </div>`
