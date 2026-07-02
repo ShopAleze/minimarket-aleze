@@ -4,7 +4,7 @@
 // Versión: 1.0.0
 // ================================================
 
-const CACHE_NAME = 'aleze-shop-v11';
+const CACHE_NAME = 'aleze-shop-v12';
 const BASE_PATH = '/minimarket-aleze';
 
 // Archivos a pre-cachear al instalar
