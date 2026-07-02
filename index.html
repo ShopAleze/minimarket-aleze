@@ -3644,7 +3644,7 @@ document.getElementById('dash-ventas').textContent = sol(totalHoy + fiadosCobrad
   },0);
   const gastosHoy = (DB_EXT.gastos||[]).filter(g=>g.fecha===hoy).reduce((s,g)=>s+g.monto,0);
   const costoFiadosHoy = hvAll.filter(v => v.fecha === hoy && v.origen === 'pago_fiado').reduce((s,v) => {
-    const fiado = DB.fiados.find(f => f.clienteId === v.clienteId && f.total > 0);
+ const fiado = (v.fiadoId ? DB.fiados.find(f => f.id === v.fiadoId) : null) || DB.fiados.find(f => f.clienteId === v.clienteId && f.total > 0);
     if (!fiado) return s;
     const prop = Math.min(1, v.total / fiado.total);
     return s + (fiado.items||[]).reduce((ss,i) => ss + ((i.costoUnitario||0) * i.cant * prop), 0);
@@ -5746,7 +5746,7 @@ const pendiente = Math.round((f.total - f.pagado) * 100) / 100;
   DB.caja.ingresos += monto;
   DB.movimientos.push({ tipo:'ingreso', desc:'Pago fiado: ' + getClienteNombre(f.clienteId), monto, hora:nowTime(), fecha:today() });
   if (!DB.historialVentas) DB.historialVentas = [];
-  DB.historialVentas.push({ id: getId(), fecha: today(), hora: nowTime(), origen: 'pago_fiado', estado: 'completado', clienteId: f.clienteId, total: monto, cajero: currentUser });
+ DB.historialVentas.push({ id: getId(), fecha: today(), hora: nowTime(), origen: 'pago_fiado', estado: 'completado', clienteId: f.clienteId, fiadoId: f.id, total: monto, cajero: currentUser });
   fbGuardar();
   cerrarModal('modal-pago-fiado');
   renderFiados();
