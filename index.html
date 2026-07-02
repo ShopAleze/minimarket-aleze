@@ -4844,18 +4844,19 @@ function imprimirQrsMasivos() {
 
   // Tamaño FIJO independiente de cantidad — consistencia de etiquetas
   const COLS   = 4;
-  const LBL_W  = 160;
+ const LBL_W  = 160;
   const BC_H   = 60;
-  const BC_W   = 1.5;
+  const BC_W   = 1.2;
   const F_NAME = 14;
   const F_PRICE= 14;
+  const NAME_H = 36;
   const F_CODE = 10;
 
   const rows = prods.map((p, i) => {
     const codigo = p.codigo || String(p.id);
-    return `<div id="bc-wrap-${i}" style="display:inline-block;width:${LBL_W}px;margin:6px;text-align:center;border:1px solid #ddd;border-radius:6px;padding:8px 6px;page-break-inside:avoid;vertical-align:top;box-sizing:border-box">
-      <svg id="bc-${i}" style="display:block;margin:0 auto 4px;max-width:100%"></svg>
-      <div style="font-size:${F_NAME}px;font-weight:700;line-height:1.3;margin-bottom:3px;word-break:break-word;overflow-wrap:break-word">${p.nombre}</div>
+    return `<div id="bc-wrap-${i}" style="display:inline-block;width:${LBL_W}px;margin:6px;text-align:center;border:1px solid #ddd;border-radius:6px;padding:8px 6px;page-break-inside:avoid;vertical-align:top;box-sizing:border-box;overflow:hidden">
+     <div style="width:100%;overflow:hidden;margin-bottom:4px"><svg id="bc-${i}" style="display:block;margin:0 auto;width:100%;max-width:${LBL_W-12}px"></svg></div>
+    <div style="font-size:${F_NAME}px;font-weight:700;line-height:1.3;height:${NAME_H}px;overflow:hidden;margin-bottom:3px;word-break:break-word;overflow-wrap:break-word">${p.nombre}</div>
       <div style="font-size:${F_PRICE}px;font-weight:800;color:#6c3fff">S/ ${p.precio.toFixed(2)}</div>
     </div>`;
   }).join('');
