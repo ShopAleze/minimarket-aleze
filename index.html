@@ -1196,7 +1196,6 @@ background: #F5F3FF;
     font-size: 0.95rem;
     font-weight: 700;
   }
-
 /* ── DESKTOP SPLIT MODE: carrito siempre visible (≥761px) ── */
   @media (min-width: 761px) {
     :root { --cart-split-w: clamp(460px, 48%, 720px); }
@@ -1212,7 +1211,6 @@ background: #F5F3FF;
     #pos-cart-overlay { display: none !important; }
     .btn-pos-fiado  { padding: 0.9rem; font-size: 1rem; }
     .btn-pos-cobrar { padding: 0.9rem; font-size: 1.1rem; font-weight: 700; }
-
     /* Carrito +30% ancho y elementos internos amplificados */
     #pos-cart-panel .cart-header h3 { font-size: 1.25rem; }
     #pos-cart-panel .cart-header .btn-sm { font-size: 1rem; padding: 0.6rem 1rem; }
@@ -1220,11 +1218,25 @@ background: #F5F3FF;
     #pos-cart-panel .cart-item-name { font-size: 1rem; }
     #pos-cart-panel .cart-item-price { font-size: 1.05rem; }
     #pos-cart-panel #pos-descuento { font-size: 1rem; padding: 0.75rem; }
-   #pos-cart-panel .cart-total-label { font-size: 1.1rem; color: var(--primary); font-weight: 700; }
+    #pos-cart-panel .cart-total-label { font-size: 1.1rem; color: var(--primary); font-weight: 700; }
     #pos-cart-panel .cart-total-val { font-size: 2rem; color: var(--primary); }
     #pos-cart-panel #pos-metodo-pago { font-size: 1.5rem; padding: 0.98rem; margin-bottom: 0.85rem; }
- #pos-cart-panel .btn-pos-fiado  { padding: 16.93rem; font-size: 16.93rem; }
-    #pos-cart-panel .btn-pos-cobrar { padding: 16.93rem; font-size: 15.28rem; font-weight: 700; }
+    #pos-cart-panel .btn-pos-fiado  { padding: 16.93rem; font-size: 16.93rem; }
+    #pos-cart-panel .btn-pos-cobrar { padding: 3.93rem; font-size: 4.28rem; font-weight: 700; }
+    /* Buscador POS +60% con zona de escaneo destacada */
+    .pos-search input {
+      padding: 1.12rem 1.6rem 1.12rem 3rem;
+      border: 4px solid var(--primary);
+      border-radius: 14px;
+      font-size: 1.44rem;
+      background: rgba(124,58,237,.04);
+    }
+    .pos-search input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(124,58,237,.15);
+      background: rgba(124,58,237,.07);
+    }
+    .pos-search-icon { font-size: 1.3rem; left: 0.9rem; }
   }
   
 </style>
