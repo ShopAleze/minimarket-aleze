@@ -5555,13 +5555,16 @@ function abrirPagoGlobal(cid) {
 function ejecutarPagoGlobal(cid, montoTotal) {
   let saldo = montoTotal;
   const fiados = DB.fiados.filter(f => f.clienteId === cid && (f.total - f.pagado) > 0).sort((a,b) => a.fecha < b.fecha ? -1 : a.fecha > b.fecha ? 1 : a.id - b.id);
+  const _hvPagosGlobal = [];
   fiados.forEach(f => {
     if (saldo <= 0) return;
     const pendFiado = f.total - f.pagado;
+    let montoPagadoEsteFiado = 0;
     if (saldo >= pendFiado) {
       if (!f.pagos) f.pagos = [];
       f.pagos.push({ fecha: today(), hora: nowTime(), cajero: currentUser, monto: pendFiado, tipo: 'global' });
       f.pagado += pendFiado;
+      montoPagadoEsteFiado = pendFiado;
       saldo -= pendFiado;
     } else {
       const itemsOrdenados = [...f.items].sort((a,b) => (a.precio*a.cant) - (b.precio*b.cant));
@@ -5581,7 +5584,11 @@ function ejecutarPagoGlobal(cid, montoTotal) {
       if (!f.pagos) f.pagos = [];
       f.pagos.push({ fecha: today(), hora: nowTime(), cajero: currentUser, monto: saldo, tipo: 'global' });
       f.pagado += saldo;
+      montoPagadoEsteFiado = saldo;
       saldo = 0;
+    }
+    if (montoPagadoEsteFiado > 0) {
+      _hvPagosGlobal.push({ id: getId(), fecha: today(), hora: nowTime(), origen: 'pago_fiado', estado: 'completado', clienteId: cid, fiadoId: f.id, total: montoPagadoEsteFiado, cajero: currentUser });
     }
   });
   const cli = DB.clientes.find(c => c.id === cid);
@@ -5590,7 +5597,7 @@ function ejecutarPagoGlobal(cid, montoTotal) {
   DB.caja.ingresos += montoTotal;
   DB.movimientos.push({ tipo:'ingreso', desc:'Pago global fiado: ' + getClienteNombre(cid), monto: montoTotal, hora: nowTime(), fecha: today() });
   if (!DB.historialVentas) DB.historialVentas = [];
-  DB.historialVentas.push({ id: getId(), fecha: today(), hora: nowTime(), origen: 'pago_fiado', estado: 'completado', clienteId: cid, total: montoTotal, cajero: currentUser });
+  _hvPagosGlobal.forEach(entry => DB.historialVentas.push(entry));
   fbGuardar();
   renderFiados();
   updateAlertCount();
