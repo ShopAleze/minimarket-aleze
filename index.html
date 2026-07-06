@@ -1505,7 +1505,7 @@ background: #F5F3FF;
             <div class="pos-desktop-bar">
               <div class="pos-search">
                 <span class="pos-search-icon">🔍</span>
-    <input type="text" id="pos-search" placeholder="Buscar producto o código..." oninput="filterPosProducts()" onkeydown="if(event.key==='Enter')_posEnterScan()" />
+    <input type="text" id="pos-search" placeholder="Buscar producto o código..." oninput="filterPosProducts()" onkeydown="if(Date.now() - _lastScannerKeyTime < 35){ _isHardwareScanner = true; } _lastScannerKeyTime = Date.now(); if(event.key==='Enter') _posEnterScan();" />
               </div>
               <button type="button" class="btn btn-outline btn-sm" onclick="openCamScanner()">📷 Escanear</button>
               <button type="button" class="btn btn-primary btn-sm" id="pos-cart-btn" onclick="abrirCartDrawer()">
@@ -1575,7 +1575,7 @@ background: #F5F3FF;
           <div class="mob-pos-topbar-row1">
             <div class="pos-search" style="flex:1;margin:0;position:relative">
               <span class="pos-search-icon">🔍</span>
-              <input type="text" id="mob-pos-search" placeholder="Buscar producto o código..." oninput="mobFilterPos()" />
+            <input type="text" id="mob-pos-search" placeholder="Buscar producto o código..." oninput="mobFilterPos()" onkeydown="if(Date.now() - _lastScannerKeyTime < 35){ _isHardwareScanner = true; } _lastScannerKeyTime = Date.now(); if(event.key==='Enter') _mobPosEnterScan();" />
             </div>
             <button type="button" class="mob-scan-btn" onclick="openCamScanner()">📷 Escanear</button>
             <button type="button" class="mob-scan-btn" style="background:rgba(124,58,237,0.15);color:var(--primary);border:1.5px solid var(--primary);position:relative;" onclick="toggleMobCart()">
@@ -3784,18 +3784,56 @@ function renderPosGrid(search = '') {
 }
 
 function filterPosProducts() { renderPosGrid(); }
+// Variables de control de ráfaga física (Aisladas de Firebase y la lógica de negocio)
+let _lastScannerKeyTime = Date.now();
+let _isHardwareScanner = false;
+
 function _posEnterScan() {
   const s = document.getElementById('pos-search')?.value || '';
   if (!s) return;
+  
   const matches = DB.productos.filter(p =>
     p.stock > 0 &&
     (!p.esCombo || p.promoActiva !== false) &&
     (_norm(p.codigo||'') === _norm(s) || _norm(p.nombre).includes(_norm(s)) || _norm(p.codigo||'').includes(_norm(s)))
   );
+  
   if (matches.length === 1) {
     addToCart(matches[0].id);
     document.getElementById('pos-search').value = '';
     filterPosProducts();
+    _isHardwareScanner = false; 
+  } else {
+    // Si la entrada provino de la lectora (velocidad física) o es un código numérico largo erróneo
+    if (_isHardwareScanner || (s.length >= 8 && !isNaN(s))) {
+      document.getElementById('pos-search').value = '';
+      filterPosProducts();
+    }
+    _isHardwareScanner = false; 
+  }
+}
+
+function _mobPosEnterScan() {
+  const s = document.getElementById('mob-pos-search')?.value || '';
+  if (!s) return;
+  
+  const matches = DB.productos.filter(p =>
+    p.stock > 0 &&
+    (!p.esCombo || p.promoActiva !== false) &&
+    (_norm(p.codigo||'') === _norm(s) || _norm(p.nombre).includes(_norm(s)) || _norm(p.codigo||'').includes(_norm(s)))
+  );
+  
+  if (matches.length === 1) {
+    mobAddToCart(matches[0].id);
+    document.getElementById('mob-pos-search').value = '';
+    mobFilterPos();
+    _isHardwareScanner = false; 
+  } else {
+    if (_isHardwareScanner || (s.length >= 8 && !isNaN(s))) {
+      document.getElementById('mob-pos-search').value = '';
+      mobFilterPos();
+    }
+    _isHardwareScanner = false; 
   }
 }
 
