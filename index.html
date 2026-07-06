@@ -4226,7 +4226,11 @@ function renderInvTable(prods) {
       <td><strong>${p.nombre}</strong></td>
       <td>${getCategoriaNombre(p.cat)}</td>
       <td><span class="badge badge-${p.tipo==='granel'?'blue':'gray'}">${p.tipo==='granel'?'Granel':'Unidad'}</span></td>
-      <td><strong style="color:${p.stock<=p.stockMin?'var(--danger)':'inherit'}">${p.stock} ${p.unidad}</strong></td>
+     <td>
+  <strong style="color:${p.stock<=p.stockMin?'var(--danger)':'inherit'}">
+    ${p.unidad === 'kg' ? parseFloat(Number(p.stock || 0).toFixed(3)) : parseFloat(Number(p.stock || 0).toFixed(2))} ${p.unidad}
+  </strong>
+</td>
       <td>${p.stockMin}</td>
       <td>${sol(p.costo)}</td>
       <td><strong>${sol(p.precio)}</strong></td>
@@ -4653,7 +4657,8 @@ function guardarProducto() {
   const cat = parseInt(document.getElementById('prod-cat').value);
   const costo = parseFloat(document.getElementById('prod-costo').value);
   const precio = parseFloat(document.getElementById('prod-precio').value);
-  const stock = parseFloat(document.getElementById('prod-stock').value);
+ const stockRaw = parseFloat(document.getElementById('prod-stock').value);
+const stock = isNaN(stockRaw) ? 0 : Math.round(stockRaw * 1000) / 1000;
   if (!nombre || !cat || isNaN(costo) || isNaN(precio) || isNaN(stock)) { alert('Completa los campos obligatorios'); return; }
 
   const prod = {
