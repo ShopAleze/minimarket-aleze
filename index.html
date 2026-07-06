@@ -4056,20 +4056,24 @@ function procesarVenta() {
   if (!DB.historialVentas) DB.historialVentas = [];
   DB.historialVentas.push({ ...venta, origen: 'pos', estado: 'completado', estadoStock: 'descontado' });
 
-  // Actualizar stock
+ // Actualizar stock (Saneado contra residuo de coma flotante)
   _fbLastWriteProdTs = Date.now();
- cart.forEach(item => {
+  cart.forEach(item => {
     const prod = DB.productos.find(p => p.id === item.prodId);
     if (prod) {
-        if (!prod.esCombo) prod.stock = Math.max(0, prod.stock - item.cant);
-        if (prod.esCombo && prod.componentes) {
-            prod.componentes.forEach(comp => {
-                const cp = DB.productos.find(x => x.id === comp.prodId);
-                if (cp) cp.stock = Math.max(0, cp.stock - comp.cant * item.cant);
-            });
-        }
+      if (!prod.esCombo) {
+        prod.stock = Math.max(0, Math.round((prod.stock - item.cant) * 1000) / 1000);
+      }
+      if (prod.esCombo && prod.componentes) {
+        prod.componentes.forEach(comp => {
+          const cp = DB.productos.find(x => x.id === comp.prodId);
+          if (cp) {
+            cp.stock = Math.max(0, Math.round((cp.stock - comp.cant * item.cant) * 1000) / 1000);
+          }
+        });
+      }
     }
-});
+  });
 
   // Caja: register always (ensureCajaAbierta abre si hace falta)
   ensureCajaAbierta();
@@ -4122,7 +4126,7 @@ function cobrarFiado() {
   if (!DB.historialVentas) DB.historialVentas = [];
 DB.historialVentas.push({ ...fiado, origen: 'pos', estado: 'fiado', estadoStock: 'descontado' });
 
-  _fbLastWriteProdTs = Date.now();
+ _fbLastWriteProdTs = Date.now();
   cart.forEach(item => {
     const prod = DB.productos.find(p => p.id === item.prodId);
     if (prod) {
