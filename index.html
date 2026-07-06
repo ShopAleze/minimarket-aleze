@@ -3954,14 +3954,18 @@ function ensureCajaAbierta() {
   const fechaHoy = today();
   const montoAuto = parseFloat(DB.config && DB.config.montoAperturaAuto) || 0;
   if (DB.caja.abierta && DB.caja.fecha === fechaHoy) return; // already open today
+  let inicialNuevo = montoAuto; // fallback: solo si nunca hubo caja previa (primer uso del sistema)
   if (DB.caja.abierta && DB.caja.fecha && DB.caja.fecha !== fechaHoy) {
     const saldoAnt = (DB.caja.inicial||0) + (DB.caja.ingresos||0) - (DB.caja.egresos||0);
     DB.movimientos.push({ tipo:'cierre-auto', desc:'Cierre automático — '+DB.caja.fecha+' Saldo: '+sol(saldoAnt), monto:saldoAnt, hora:'23:59', fecha:DB.caja.fecha });
+    inicialNuevo = saldoAnt; // ENCADENA: el saldo real de ayer es el punto de partida de hoy
     try { fbGuardar(); } catch(e) {}
+  } else if (typeof DB.caja.saldoFinal === 'number') {
+    inicialNuevo = DB.caja.saldoFinal; // reapertura tras cierre manual: hereda el saldo real
   }
-  DB.caja = { abierta:true, inicial:montoAuto, ingresos:0, egresos:0, turnoInicio:nowTime(), cajero:currentUser||'Sistema', fecha:fechaHoy, apertura:'auto' };
+  DB.caja = { abierta:true, inicial:inicialNuevo, ingresos:0, egresos:0, turnoInicio:nowTime(), cajero:currentUser||'Sistema', fecha:fechaHoy, apertura:'auto' };
   if (!DB.movimientos) DB.movimientos = [];
-  DB.movimientos.push({ tipo:'ingreso', desc:'Apertura automática — '+fechaHoy, monto:montoAuto, hora:nowTime(), fecha:fechaHoy });
+  DB.movimientos.push({ tipo:'ingreso', desc:'Apertura automática — '+fechaHoy+' (saldo heredado: '+sol(inicialNuevo)+')', monto:0, hora:nowTime(), fecha:fechaHoy });
 }
 
 function checkAutoAbrirCaja() {
@@ -5704,17 +5708,12 @@ Escribe 1 para confirmar:`;
       const cantMerma = Math.round(cantMermaExacta * 100) / 100;
       const perdidaMonto = Math.round(prod.costo * cantMermaExacta * 100) / 100;
       if (perdidaMonto <= 0) return;
-      DB.mermas.push({ id: getId(), prodId: i.prodId, cant: cantMerma, motivo: 'Fiado incobrable', obs: 'Fiado #' + f.id + ' — ' + getClienteNombre(f.clienteId), fecha: today(), usuario: currentUser });
-      ensureCajaAbierta();
-      DB.caja.egresos = (DB.caja.egresos||0) + perdidaMonto;
-      DB.movimientos.push({ tipo:'egreso', desc:'Merma fiado incobrable: ' + prod.nombre, monto: perdidaMonto, hora: nowTime(), fecha: today(), usuario: currentUser });
+    DB.mermas.push({ id: getId(), prodId: i.prodId, cant: cantMerma, motivo: 'Fiado incobrable', obs: 'Fiado #' + f.id + ' — ' + getClienteNombre(f.clienteId), fecha: today(), usuario: currentUser });
       _algunaMermaRegistrada = true;
     });
 
-    if (!_algunaMermaRegistrada && pend > 0) {
-      ensureCajaAbierta();
-      DB.caja.egresos = (DB.caja.egresos||0) + pend;
-      DB.movimientos.push({ tipo:'egreso', desc:'Fiado incobrable (saldo, sin detalle por producto) — ' + getClienteNombre(f.clienteId), monto: pend, hora: nowTime(), fecha: today(), usuario: currentUser });
+   if (!_algunaMermaRegistrada && pend > 0) {
+      DB.mermas.push({ id: getId(), prodId: null, cant: 0, motivo: 'Fiado incobrable', obs: 'Fiado #' + f.id + ' (saldo, sin detalle por producto) — ' + getClienteNombre(f.clienteId) + ' — Pérdida: ' + sol(pend), fecha: today(), usuario: currentUser });
     }
     DB.fiados = DB.fiados.filter(x => x.id !== id);
     const cli = DB.clientes.find(c => c.id === f.clienteId);
@@ -5988,11 +5987,14 @@ function renderCaja() {
   } else {
     document.getElementById('caja-cerrada').style.display = 'block';
     document.getElementById('caja-abierta').style.display = 'none';
-    const montoAuto = parseFloat(DB.config && DB.config.montoAperturaAuto) || 0;
+ const montoAuto = parseFloat(DB.config && DB.config.montoAperturaAuto) || 0;
+    const saldoHeredado = typeof DB.caja.saldoFinal === 'number' ? DB.caja.saldoFinal : montoAuto;
     const elMonto = document.getElementById('caja-monto-inicial');
     const hint = document.getElementById('caja-auto-hint');
-    if (elMonto && montoAuto > 0) elMonto.value = montoAuto;
-    if (hint) hint.textContent = montoAuto > 0 ? `Monto automático configurado: S/ ${montoAuto.toFixed(2)}` : 'Sin monto automático — configúralo en Configuración';
+    if (elMonto) elMonto.value = saldoHeredado;
+    if (hint) hint.textContent = typeof DB.caja.saldoFinal === 'number'
+      ? `Saldo real heredado del cierre anterior: S/ ${saldoHeredado.toFixed(2)} (editable si hiciste un conteo físico distinto)`
+      : (montoAuto > 0 ? `Monto automático configurado: S/ ${montoAuto.toFixed(2)}` : 'Sin monto automático — configúralo en Configuración');
   }
 }
 
@@ -6178,25 +6180,12 @@ if (editingMermaId) {
     const diferencia = costoNuevo - costoAnterior;
     old.prodId = prodId; old.cant = cant; old.motivo = motivo; old.obs = obs;
     prod.stock -= cant;
- // Register difference as movement
-    if (diferencia !== 0) {
-      ensureCajaAbierta();
-      const tipoMov = diferencia > 0 ? 'egreso' : 'ingreso';
-      DB.movimientos.push({ tipo: tipoMov, desc:`Ajuste merma: ${prod.nombre} x${cant} (${motivo})`, monto: Math.abs(diferencia), hora:nowTime(), fecha:today(), usuario:currentUser });
-      if (diferencia > 0 && DB.caja.abierta) DB.caja.egresos = (DB.caja.egresos||0) + diferencia;
-      if (diferencia < 0 && DB.caja.abierta) DB.caja.egresos = Math.max(0, (DB.caja.egresos||0) + diferencia);
-   }
-    fbGuardar(); fbGuardarProductos();
+fbGuardar(); fbGuardarProductos();
   } else {
     if (cant > prod.stock) { alert('La cantidad supera el stock disponible'); return; }
-    const nuevaMerma = { id: getId(), prodId, cant, motivo, obs, fecha: today(), usuario: currentUser };
+  const nuevaMerma = { id: getId(), prodId, cant, motivo, obs, fecha: today(), usuario: currentUser };
     DB.mermas.push(nuevaMerma);
     prod.stock -= cant;
-    // Register as egreso - always, ensureCajaAbierta handles closed-caja case
-    const costoPerdida = prod.costo * cant;
-    ensureCajaAbierta();
-    DB.movimientos.push({ tipo:'egreso', desc:`Merma: ${prod.nombre} x${cant} (${motivo})`, monto: costoPerdida, hora:nowTime(), fecha:today(), usuario:currentUser });
-   DB.caja.egresos = (DB.caja.egresos||0) + costoPerdida;
     fbGuardar(); fbGuardarProductos();
   }
   cerrarModal('modal-merma');
@@ -7338,14 +7327,21 @@ function guardarGasto() {
 }
 
 function eliminarGasto(id) {
-  if (!confirm('¿Eliminar este gasto? No se revertirá el movimiento en caja.')) return;
+  const gasto = DB_EXT.gastos.find(x => x.id === id);
+  if (!confirm('¿Eliminar este gasto? Se devolverá el monto al efectivo disponible como corrección.')) return;
   DB_EXT.gastos = DB_EXT.gastos.filter(x => x.id !== id);
+  if (gasto && gasto.monto > 0) {
+    ensureCajaAbierta();
+    DB.caja.ingresos = (DB.caja.ingresos||0) + gasto.monto;
+    DB.movimientos.push({ tipo:'ingreso', desc:`Corrección por eliminación de gasto: ${gasto.desc} (${gasto.tipo})`, monto: gasto.monto, hora: nowTime(), fecha: today(), usuario: currentUser });
+    fbGuardar();
+  }
   fbGuardarExt();
   renderGastos();
+  try { renderCaja(); } catch(e){}
   try { renderDashboard(); } catch(e){}
   try { generarReporte(); } catch(e){}
 }
-
 function abrirModalGastoRec() {
   ['gr-desc','gr-monto'].forEach(id => document.getElementById(id).value = '');
   abrirModal('modal-gasto-rec');
@@ -7508,9 +7504,16 @@ function confirmarAddCapital() {
   DB_EXT.capital.total += monto;
   const acum = DB_EXT.capital.hist.reduce((s,h) => s+h.monto, 0) + monto;
   DB_EXT.capital.hist.push({ tipo:'aporte', fecha: today(), desc, monto, acum });
+  // Reinyección real: esta plata entra físicamente al negocio, suma al efectivo disponible
+  ensureCajaAbierta();
+  DB.caja.ingresos = (DB.caja.ingresos||0) + monto;
+  DB.movimientos.push({ tipo:'ingreso', desc:'Aporte de capital: '+desc, monto, hora:nowTime(), fecha:today(), usuario:currentUser });
+  fbGuardar();
   fbGuardarExt();
   cerrarModal('modal-add-capital');
   renderCapital();
+  try { renderCaja(); } catch(e){}
+  try { renderDashboard(); } catch(e){}
 }
 
 function abrirCerrarMes() {
