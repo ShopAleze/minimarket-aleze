@@ -1831,11 +1831,14 @@ background: #F5F3FF;
           </div>
         </div>
         <div id="caja-abierta" style="display:none">
-          <div class="grid-4" style="margin-bottom:1rem">
+       <div class="grid-4" style="margin-bottom:1rem">
             <div class="stat-card"><div class="stat-label">Saldo Inicial</div><div class="stat-value" id="caja-inicial">S/ 0.00</div></div>
             <div class="stat-card green"><div class="stat-label">Ingresos</div><div class="stat-value" id="caja-ingresos">S/ 0.00</div></div>
             <div class="stat-card red"><div class="stat-label">Egresos</div><div class="stat-value" id="caja-egresos">S/ 0.00</div></div>
             <div class="stat-card"><div class="stat-label">Saldo Actual</div><div class="stat-value" id="caja-saldo">S/ 0.00</div></div>
+          </div>
+          <div style="text-align:right;margin-bottom:1rem">
+            <button type="button" class="btn btn-danger" onclick="cerrarCaja()">Cerrar Caja del Turno</button>
           </div>
           <div class="grid-2">
             <div class="card">
@@ -1874,9 +1877,6 @@ background: #F5F3FF;
               <table><thead><tr><th>Hora</th><th>Tipo</th><th>Descripción</th><th>Monto</th></tr></thead>
               <tbody id="caja-mov-tbody"></tbody></table>
             </div>
-          </div>
-          <div style="text-align:right;margin-top:1rem">
-            <button type="button" class="btn btn-danger" onclick="cerrarCaja()">Cerrar Caja del Turno</button>
           </div>
         </div>
       </div>
