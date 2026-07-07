@@ -9079,7 +9079,7 @@ function guardarActualizarVenta() {
 
     const montoReembolso = vDB.total;
 
-    // Restituir stock de TODOS los items
+// Restituir stock de TODOS los items
     (vDB.items||[]).forEach(item => {
       const prod = DB.productos.find(p => p.id === item.prodId);
       if (prod) {
@@ -9092,18 +9092,17 @@ function guardarActualizarVenta() {
       }
     });
 
-    // Registrar egreso en caja si está abierta
-    if (DB.caja.abierta) {
-      DB.caja.egresos = (DB.caja.egresos||0) + montoReembolso;
-      DB.movimientos.push({
-        tipo: 'egreso',
-        desc: `Reembolso anulación venta — ${vDB.cajero||vDB.clienteNombre||'cliente'} (${metodo})`,
-        monto: montoReembolso,
-        hora: nowTime(),
-        fecha: today(),
-        usuario: autoriza
-      });
-    }
+    // Registrar egreso en caja — si estaba cerrada, se reabre encadenando el saldo real antes de aplicar el reembolso
+    ensureCajaAbierta();
+    DB.caja.egresos = (DB.caja.egresos||0) + montoReembolso;
+    DB.movimientos.push({
+      tipo: 'egreso',
+      desc: `Reembolso anulación venta — ${vDB.cajero||vDB.clienteNombre||'cliente'} (${metodo})`,
+      monto: montoReembolso,
+      hora: nowTime(),
+      fecha: today(),
+      usuario: autoriza
+    });
 
     // Registrar devolución en la venta
     if (!vDB.devoluciones) vDB.devoluciones = [];
@@ -9119,18 +9118,6 @@ function guardarActualizarVenta() {
     vDB.estado        = 'anulado';
     vDB.total         = 0;
     vDB.fechaAnulacion = today() + ' ' + nowTime();
-
-
-
-    // Si la caja estaba cerrada registrar igualmente el movimiento
-    if (!DB.caja.abierta) {
-      DB.movimientos.push({
-        tipo: 'egreso',
-        desc: `Reembolso anulación (caja cerrada) — ${vDB.cajero||vDB.clienteNombre||'cliente'} (${metodo})`,
-        monto: montoReembolso, hora: nowTime(), fecha: today(), usuario: autoriza
-      });
-      DB.caja.egresos = (DB.caja.egresos||0) + montoReembolso;
-    }
 
     fbGuardar();
     fbGuardarProductos();
@@ -9191,28 +9178,19 @@ function guardarActualizarVenta() {
     }
   });
 
-  // Nuevo total
+// Nuevo total
   const nuevoTotal = Math.max(0, vDB.total - montoReembolso);
   vDB.total  = nuevoTotal;
   vDB.estado = nuevoTotal === 0 ? 'anulado' : 'parcial';
 
-
-
-  // Registrar egreso en caja (siempre, aunque esté cerrada)
-  if (DB.caja.abierta) {
-    DB.caja.egresos = (DB.caja.egresos||0) + montoReembolso;
-    DB.movimientos.push({
-      tipo: 'egreso',
-      desc: `Reembolso devolución parcial — ${vDB.cajero||vDB.clienteNombre||'cliente'} (${metodo})`,
-      monto: montoReembolso, hora: nowTime(), fecha: today(), usuario: autoriza
-    });
-  } else {
-    DB.movimientos.push({
-      tipo: 'egreso',
-      desc: `Reembolso parcial (caja cerrada) — ${vDB.cajero||vDB.clienteNombre||'cliente'} (${metodo})`,
-      monto: montoReembolso, hora: nowTime(), fecha: today(), usuario: autoriza
-    });
-  }
+  // Registrar egreso en caja — si estaba cerrada, se reabre encadenando el saldo real antes de aplicar el reembolso
+  ensureCajaAbierta();
+  DB.caja.egresos = (DB.caja.egresos||0) + montoReembolso;
+  DB.movimientos.push({
+    tipo: 'egreso',
+    desc: `Reembolso devolución parcial — ${vDB.cajero||vDB.clienteNombre||'cliente'} (${metodo})`,
+    monto: montoReembolso, hora: nowTime(), fecha: today(), usuario: autoriza
+  });
 
   // Registrar la devolución como traza de auditoría
   if (!vDB.devoluciones) vDB.devoluciones = [];
