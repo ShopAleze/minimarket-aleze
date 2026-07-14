@@ -4111,11 +4111,11 @@ function cobrarFiado() {
   if (cart.length === 0) { alert('El carrito está vacío'); return; }
   const clienteId = parseInt(document.getElementById('pos-cliente').value);
   if (!clienteId) { alert('Selecciona un cliente para registrar el fiado'); return; }
-  const sub = cart.reduce((s, i) => s + i.precio * i.cant, 0);
+  const sub = Math.round(cart.reduce((s, i) => s + i.precio * i.cant, 0) * 100) / 100;
   const desc = parseFloat(document.getElementById('pos-descuento').value) || 0;
   const comboInfo = calcComboDescuento(cart);
   const comboDesc = comboInfo.total;
-  const total = Math.max(0, sub - desc - comboDesc);
+const total = Math.round(Math.max(0, sub - desc - comboDesc) * 100) / 100;
   const itemsConPrecioReal = aplicarPreciosProporcionales(cart, comboInfo);
 
   const fiado = {
@@ -5468,12 +5468,12 @@ function renderFiados() {
     const tel = cli ? cli.tel : '';
     let fiados = porCliente[cid];
     if (desde || hasta) fiados = fiados.filter(f => (!desde || f.fecha >= desde) && (!hasta || f.fecha <= hasta));
-    const totalCli = fiados.reduce((s, f) => s + f.total, 0);
-    const pagadoCli = fiados.reduce((s, f) => s + f.pagado, 0);
-    const pendienteCli = totalCli - pagadoCli;
-    const detalleId = 'fiado-detalle-' + cid;
-    const detalle = fiados.map(f => {
-      const pend = f.total - f.pagado;
+   const totalCli = Math.round(fiados.reduce((s, f) => s + f.total, 0) * 100) / 100;
+const pagadoCli = Math.round(fiados.reduce((s, f) => s + f.pagado, 0) * 100) / 100;
+const pendienteCli = Math.round((totalCli - pagadoCli) * 100) / 100;
+const detalleId = 'fiado-detalle-' + cid;
+const detalle = fiados.map(f => {
+  const pend = Math.round((f.total - f.pagado) * 100) / 100;
       return `<div style="border-left:3px solid var(--warning);padding:.5rem .75rem;margin-bottom:.5rem;background:white;border-radius:0 6px 6px 0">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.3rem">
           <span style="font-size:.75rem;color:var(--gray-500)">${formatDate(f.fecha)}</span>
@@ -5601,7 +5601,7 @@ function compartirResumenFiadoCliente(cid) {
 function abrirPagoGlobal(cid) {
   const cli = DB.clientes.find(c => c.id === cid);
   const nombre = cli ? (cli.alias || cli.nombre) : 'Cliente';
-  const pendienteTotal = DB.fiados.filter(f => f.clienteId === cid).reduce((s,f) => s + Math.max(0, f.total - f.pagado), 0);
+ const pendienteTotal = Math.round(DB.fiados.filter(f => f.clienteId === cid).reduce((s,f) => s + Math.max(0, f.total - f.pagado), 0) * 100) / 100;
   if (pendienteTotal <= 0) { alert('Este cliente no tiene deuda pendiente.'); return; }
   const monto = parseFloat(prompt(`Pago global para ${nombre}\nDeuda total: ${sol(pendienteTotal)}\n\nIngresa el monto a pagar:`));
   if (!monto || isNaN(monto) || monto <= 0) return;
@@ -8346,10 +8346,10 @@ function mobCobrarFiado() {
   if (cart.length === 0) { alert('El carrito está vacío'); return; }
   const clienteId = parseInt(document.getElementById('mob-pos-cliente')?.value) || 0;
   if (!clienteId) { alert('Selecciona un cliente para registrar el fiado'); return; }
-  const sub = cart.reduce((s, i) => s + i.precio * i.cant, 0);
+ const sub = Math.round(cart.reduce((s, i) => s + i.precio * i.cant, 0) * 100) / 100;
   const desc = parseFloat(document.getElementById('pos-descuento')?.value) || 0;
   const comboInfo = calcComboDescuento(cart);
-  const total = Math.max(0, sub - desc - comboInfo.total);
+  const total = Math.round(Math.max(0, sub - desc - comboInfo.total) * 100) / 100;
   const itemsConPrecioReal = aplicarPreciosProporcionales(cart, comboInfo);
 
   const fiado = {
@@ -10505,7 +10505,7 @@ function tndEnviarPedido() {
   if (_tiendaCart.length === 0) {
     alert('Tu carrito está vacío'); return;
   }
-  const subtotal = _tiendaCart.reduce((s,i) => s+i.precio*i.cant, 0);
+ const subtotal = Math.round(_tiendaCart.reduce((s,i) => s+i.precio*i.cant, 0) * 100) / 100;
   if (!subtotal || subtotal <= 0) {
     alert('El total del pedido no es válido'); return;
   }
