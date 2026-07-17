@@ -5667,14 +5667,14 @@ function compartirResumenFiadoCliente(cid) {
   let fiados  = DB.fiados.filter(f => f.clienteId === cid);
   if (desde) fiados = fiados.filter(f => f.fecha >= desde);
   if (hasta) fiados = fiados.filter(f => f.fecha <= hasta);
-  if (tipo === 'pendiente') fiados = fiados.filter(f => (f.total - f.pagado) > 0);
-  if (tipo === 'pagado')    fiados = fiados.filter(f => (f.total - f.pagado) <= 0);
-  const totalPend = fiados.reduce((s, f) => s + Math.max(0, f.total - f.pagado), 0);
+  if (tipo === 'pendiente') fiados = fiados.filter(f => (Math.round((f.total - f.pagado) * 100) / 100) > 0);
+  if (tipo === 'pagado')    fiados = fiados.filter(f => (Math.round((f.total - f.pagado) * 100) / 100) <= 0);
+  const totalPend = Math.round(fiados.reduce((s, f) => s + Math.max(0, f.total - f.pagado), 0) * 100) / 100;
   let msg = `Hola ${nombre}, su resumen de fiados en *Minimarket Aleze*:\n`;
   if (desde || hasta) msg += `📅 Período: ${desde ? formatDate(desde) : 'inicio'} al ${hasta ? formatDate(hasta) : 'hoy'}\n`;
   msg += '\n';
   fiados.forEach(f => {
-    const pend = f.total - f.pagado;
+    const pend = Math.round((f.total - f.pagado) * 100) / 100;
     msg += `📌 ${formatDate(f.fecha)}: ${f.items.map(i => i.nombre + ' x' + i.cant).join(', ')} → ${sol(f.total)}`;
     msg += pend > 0 ? ` _(pendiente: ${sol(pend)})_\n` : ` ✅\n`;
   });
@@ -5823,14 +5823,14 @@ function compartirResumenFiado(cid) {
   let fiados = DB.fiados.filter(f => f.clienteId === cid);
   if (desde) fiados = fiados.filter(f => f.fecha >= desde);
   if (hasta) fiados = fiados.filter(f => f.fecha <= hasta);
-  if (estado === 'pendiente') fiados = fiados.filter(f => (f.total - f.pagado) > 0);
-  if (estado === 'pagado') fiados = fiados.filter(f => (f.total - f.pagado) <= 0);
-  const totalPend = fiados.reduce((s, f) => s + Math.max(0, f.total - f.pagado), 0);
+   if (estado === 'pendiente') fiados = fiados.filter(f => (Math.round((f.total - f.pagado) * 100) / 100) > 0);
+  if (estado === 'pagado') fiados = fiados.filter(f => (Math.round((f.total - f.pagado) * 100) / 100) <= 0);
+  const totalPend = Math.round(fiados.reduce((s, f) => s + Math.max(0, f.total - f.pagado), 0) * 100) / 100;
   let msg = `Hola ${nombre}, su resumen de fiados en *Minimarket Aleze*:\n`;
   if (desde || hasta) msg += `📅 Período: ${desde ? formatDate(desde) : 'inicio'} al ${hasta ? formatDate(hasta) : 'hoy'}\n`;
   msg += '\n';
-  fiados.forEach(f => {
-    const pend = f.total - f.pagado;
+   fiados.forEach(f => {
+    const pend = Math.round((f.total - f.pagado) * 100) / 100;
     msg += `📌 ${formatDate(f.fecha)}: ${f.items.map(i => i.nombre + ' x' + i.cant).join(', ')}`;
     msg += ` → ${sol(f.total)}`;
     msg += pend > 0 ? ` _(pendiente: ${sol(pend)})_\n` : ` ✅\n`;
@@ -5911,10 +5911,11 @@ f.pagos.push({ fecha: today(), hora: nowTime(), cajero: currentUser, monto });
 function compartirFiadoWhatsapp() {
   const f = DB.fiados.find(x => x.id === editingFiadoId);
   if (!f) return;
+  const pendiente = Math.round((f.total - f.pagado) * 100) / 100;
+  if (pendiente <= 0) { alert('Este fiado ya está pagado — no hay deuda que recordar.'); return; }
   const cli = DB.clientes.find(c => c.id === f.clienteId);
   const nombre = cli ? (cli.alias || cli.nombre) : 'Cliente';
   const tel = cli && cli.tel ? cli.tel.replace(/\s/g,'') : '';
-  const pendiente = f.total - f.pagado;
   const itemsPend = f.items.map(i => `• ${i.nombre} x${i.cant} = ${sol(i.precio*i.cant)}`).join('\n');
   const msg = `Hola ${nombre}, le recordamos su deuda en *Minimarket Aleze*:\n\n${itemsPend}\n\n*Total pendiente: ${sol(pendiente)}*\n\nGracias 🙏`;
   const url = tel ? `https://wa.me/51${tel}?text=${encodeURIComponent(msg)}` : `https://wa.me/?text=${encodeURIComponent(msg)}`;
@@ -6048,11 +6049,11 @@ function compartirHistorialWhatsapp() {
     pagos.forEach(p => { msg += `• ${p.fecha} ${p.hora} — ${sol(p.monto)} (${p.cajero})\n`; });
     msg += `\n*Total abonado: ${sol(total)}*\n`;
   } else {
-    if (tipo === 'pendientes') fiados = fiados.filter(f => (f.total - f.pagado) > 0);
-    else if (tipo === 'pagados') fiados = fiados.filter(f => (f.total - f.pagado) <= 0);
-    const totalPend = fiados.reduce((s, f) => s + Math.max(0, f.total - f.pagado), 0);
+ if (tipo === 'pendientes') fiados = fiados.filter(f => (Math.round((f.total - f.pagado) * 100) / 100) > 0);
+    else if (tipo === 'pagados') fiados = fiados.filter(f => (Math.round((f.total - f.pagado) * 100) / 100) <= 0);
+    const totalPend = Math.round(fiados.reduce((s, f) => s + Math.max(0, f.total - f.pagado), 0) * 100) / 100;
     fiados.forEach(f => {
-      const pend = f.total - f.pagado;
+      const pend = Math.round((f.total - f.pagado) * 100) / 100;
       msg += `📌 ${formatDate(f.fecha)}: ${f.items.map(i=>`${i.nombre} x${i.cant}`).join(', ')} → ${sol(f.total)}`;
       msg += pend > 0 ? ` _(pendiente: ${sol(pend)})_\n` : ` ✅\n`;
     });
