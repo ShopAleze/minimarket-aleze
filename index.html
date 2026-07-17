@@ -5557,7 +5557,7 @@ function renderFiados() {
 const pagadoCli = Math.round(fiados.reduce((s, f) => s + f.pagado, 0) * 100) / 100;
 const pendienteCli = Math.round((totalCli - pagadoCli) * 100) / 100;
 const detalleId = 'fiado-detalle-' + cid;
-const detalle = fiados.map(f => {
+const detalle = [...fiados].sort((a,b) => a.fecha < b.fecha ? 1 : a.fecha > b.fecha ? -1 : b.id - a.id).map(f => {
   const pend = Math.round((f.total - f.pagado) * 100) / 100;
       return `<div style="border-left:3px solid var(--warning);padding:.5rem .75rem;margin-bottom:.5rem;background:white;border-radius:0 6px 6px 0">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.3rem">
@@ -5635,7 +5635,7 @@ function renderDetalleFiado(cid) {
   if (hasta) fiados = fiados.filter(f => f.fecha <= hasta);
   if (tipo === 'pendiente') fiados = fiados.filter(f => (Math.round((f.total - f.pagado) * 100) / 100) > 0);
   if (tipo === 'pagado')    fiados = fiados.filter(f => (Math.round((f.total - f.pagado) * 100) / 100) <= 0);
-  const html = fiados.map(f => {
+    const html = [...fiados].sort((a,b) => a.fecha < b.fecha ? 1 : a.fecha > b.fecha ? -1 : b.id - a.id).map(f => {
     const pend = Math.round((f.total - f.pagado) * 100) / 100;
     return `<div style="border-left:3px solid var(--warning);padding:.5rem .75rem;margin-bottom:.5rem;background:white;border-radius:0 6px 6px 0">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.3rem">
@@ -5991,9 +5991,9 @@ function renderHistorialCliente() {
 
   const totalPend = fiados.reduce((s, f) => s + Math.max(0, f.total - f.pagado), 0);
   document.getElementById('hcli-resumen-filtro').textContent = `${fiados.length} venta(s) encontrada(s) · Pendiente: ${sol(totalPend)}`;
-  contenido.innerHTML = fiados.length === 0
+ contenido.innerHTML = fiados.length === 0
     ? '<p style="color:var(--gray-400);text-align:center;padding:1rem">Sin registros para los filtros seleccionados</p>'
-    : fiados.map(f => {
+    : [...fiados].sort((a,b) => a.fecha < b.fecha ? 1 : a.fecha > b.fecha ? -1 : b.id - a.id).map(f => {
         const pend = f.total - f.pagado;
         const pagosF = (f.pagos || []);
         return `<div style="border-left:3px solid ${pend>0?'var(--warning)':'var(--accent)'};padding:.6rem .75rem;margin-bottom:.6rem;background:white;border-radius:0 6px 6px 0;box-shadow:var(--shadow)">
