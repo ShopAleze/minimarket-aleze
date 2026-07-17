@@ -4037,6 +4037,11 @@ function updatePosClientes() {
   if (valorActual) sel.value = valorActual;
   updateMobPosClientes();
 }
+let _ventaPendiente = null; // recuerda un intento de venta fallido para reintentar con el mismo id
+
+function _firmaCarrito(items, metodo, clienteId) {
+  return JSON.stringify(items.map(i => [i.prodId, i.cant])) + '|' + metodo + '|' + clienteId;
+}
 
 function procesarVenta() {
   if (cart.length === 0) { alert('El carrito está vacío'); return; }
@@ -4047,65 +4052,102 @@ function procesarVenta() {
   const total = Math.max(0, sub - desc - comboDesc);
   const metodo = document.getElementById('pos-metodo-pago').value;
   const clienteId = parseInt(document.getElementById('pos-cliente').value) || null;
-
-  // Items with proportional combo prices for accurate margin reporting
   const itemsConPrecioReal = aplicarPreciosProporcionales(cart, comboInfo);
 
-  const venta = {
-    id: getId(), fecha: today(), hora: nowTime(), cajero: currentUser,
-    items: itemsConPrecioReal, subtotal: sub,
-    descuento: desc + comboDesc, descuentoManual: desc, descuentoCombo: comboDesc,
-    total, metodo, clienteId
-  };
-  if (!DB.historialVentas) DB.historialVentas = [];
-  DB.historialVentas.push({ ...venta, origen: 'pos', estado: 'completado', estadoStock: 'descontado' });
-
-// Actualizar stock (Saneado contra residuo de coma flotante)
-  _fbLastWriteProdTs = Date.now();
-  cart.forEach(item => {
-    const prod = DB.productos.find(p => p.id === item.prodId);
-    if (prod) {
-      if (!prod.esCombo) {
-        prod.stock = Math.max(0, Math.round((prod.stock - item.cant) * 1000) / 1000);
-      }
-      if (prod.esCombo && prod.componentes) {
-        prod.componentes.forEach(comp => {
-          const cp = DB.productos.find(x => x.id === comp.prodId);
-          if (cp) {
-            cp.stock = Math.max(0, Math.round((cp.stock - comp.cant * item.cant) * 1000) / 1000);
-          }
-        });
-      }
-    }
-  });
-
-  // Caja: register always (ensureCajaAbierta abre si hace falta)
-  ensureCajaAbierta();
-  DB.caja.ingresos += total;
-  DB.movimientos.push({ tipo:'ingreso', desc:`Venta #${venta.id} (${metodo})`, monto:total, hora:nowTime(), fecha:today(), cajero:currentUser });
-
-  // Actualizar cliente
-  if (clienteId) {
-    const cli = DB.clientes.find(c => c.id === clienteId);
-    if (cli) { cli.compras = (cli.compras||0)+1; cli.total = (cli.total||0)+total; cli.puntos=(cli.puntos||0)+Math.floor(total); }
+  const firma = _firmaCarrito(cart, metodo, clienteId);
+  let venta;
+  if (_ventaPendiente && _ventaPendiente.firma === firma) {
+    venta = _ventaPendiente.venta;
+  } else {
+    venta = {
+      id: getId(), fecha: today(), hora: nowTime(), cajero: currentUser,
+      items: itemsConPrecioReal, subtotal: sub,
+      descuento: desc + comboDesc, descuentoManual: desc, descuentoCombo: comboDesc,
+      total, metodo, clienteId
+    };
   }
+  _ventaPendiente = { firma, venta };
+  const cartSnapshot = cart.map(i => ({ ...i }));
 
-  _fbLastWriteTs = Date.now();
-  _fbEscribiendo = true;
-  const _vPayload = JSON.parse(JSON.stringify(DB));
-delete _vPayload.productos; delete _vPayload.categorias; delete _vPayload.pedidosOnline;
-  fbDocRef().set(_vPayload)
-    .then(() => { setTimeout(() => { _fbEscribiendo = false; }, 300); })
-    .catch(() => { _fbEscribiendo = false; });
-  fbGuardarProductos();
-  try { renderDashboard(); } catch(e){}
-  try { renderCaja(); } catch(e){}
-  try { generarReporte(); } catch(e){}
-  mostrarTicket(venta);
-  clearCart();
-  const _pc = document.getElementById('pos-cliente'); if (_pc) { _pc.value = ''; onClienteChange(); }
-  updateAlertCount();
+  fbFS.runTransaction(async (tx) => {
+    const dbSnap   = await tx.get(fbDocRef());
+    const prodSnap = await tx.get(fbProdDocRef());
+    const dbData   = dbSnap.data()   || {};
+    const prodData = prodSnap.data() || {};
+
+    const historialActual = dbData.historialVentas || [];
+    if (historialActual.some(v => v.id === venta.id)) {
+      return { duplicada: true };
+    }
+
+    const productos = JSON.parse(JSON.stringify(prodData.productos || []));
+    cartSnapshot.forEach(item => {
+      const prod = productos.find(p => p.id === item.prodId);
+      if (prod) {
+        if (!prod.esCombo) prod.stock = Math.max(0, Math.round((prod.stock - item.cant) * 1000) / 1000);
+        if (prod.esCombo && prod.componentes) {
+          prod.componentes.forEach(comp => {
+            const cp = productos.find(x => x.id === comp.prodId);
+            if (cp) cp.stock = Math.max(0, Math.round((cp.stock - comp.cant * item.cant) * 1000) / 1000);
+          });
+        }
+      }
+    });
+
+    const nuevoDb = JSON.parse(JSON.stringify(dbData));
+    nuevoDb.historialVentas = [...historialActual, { ...venta, origen: 'pos', estado: 'completado', estadoStock: 'descontado' }];
+
+    const fechaHoy = today();
+    let cajaFresca = JSON.parse(JSON.stringify(dbData.caja || {}));
+    let movimientosNuevos = [...(dbData.movimientos || [])];
+    if (!cajaFresca.abierta || cajaFresca.fecha !== fechaHoy) {
+      const montoAuto = parseFloat((dbData.config && dbData.config.montoAperturaAuto)) || 0;
+      let inicialNuevo = montoAuto;
+      if (cajaFresca.abierta && cajaFresca.fecha && cajaFresca.fecha !== fechaHoy) {
+        const saldoAnt = (cajaFresca.inicial||0) + (cajaFresca.ingresos||0) - (cajaFresca.egresos||0);
+        movimientosNuevos.push({ tipo:'cierre-auto', desc:'Cierre automático — '+cajaFresca.fecha+' Saldo: '+sol(saldoAnt), monto:saldoAnt, hora:'23:59', fecha:cajaFresca.fecha });
+        inicialNuevo = saldoAnt;
+      } else if (typeof cajaFresca.saldoFinal === 'number') {
+        inicialNuevo = cajaFresca.saldoFinal;
+      }
+      cajaFresca = { abierta:true, inicial:inicialNuevo, ingresos:0, egresos:0, turnoInicio:nowTime(), cajero:currentUser||'Sistema', fecha:fechaHoy, apertura:'auto' };
+      movimientosNuevos.push({ tipo:'ingreso', desc:'Apertura automática — '+fechaHoy+' (saldo heredado: '+sol(inicialNuevo)+')', monto:0, hora:nowTime(), fecha:fechaHoy });
+    }
+    cajaFresca.ingresos = (cajaFresca.ingresos||0) + total;
+    movimientosNuevos.push({ tipo:'ingreso', desc:`Venta #${venta.id} (${metodo})`, monto:total, hora:nowTime(), fecha:today(), cajero:currentUser });
+    nuevoDb.caja = cajaFresca;
+    nuevoDb.movimientos = movimientosNuevos;
+
+    if (clienteId) {
+      const cli = (nuevoDb.clientes || []).find(c => c.id === clienteId);
+      if (cli) { cli.compras = (cli.compras||0)+1; cli.total = (cli.total||0)+total; cli.puntos=(cli.puntos||0)+Math.floor(total); }
+    }
+
+    tx.set(fbDocRef(), nuevoDb);
+    tx.set(fbProdDocRef(), { productos, categorias: prodData.categorias || [], config: prodData.config || {} });
+    return { duplicada: false, productos, nuevoDb };
+  }).then((resultado) => {
+    _ventaPendiente = null;
+    if (resultado.nuevoDb) {
+      DB.productos = resultado.productos;
+      DB.historialVentas = resultado.nuevoDb.historialVentas;
+      DB.caja = resultado.nuevoDb.caja;
+      DB.movimientos = resultado.nuevoDb.movimientos;
+      DB.clientes = resultado.nuevoDb.clientes;
+    }
+    try { renderDashboard(); } catch(e){}
+    try { renderCaja(); } catch(e){}
+    try { generarReporte(); } catch(e){}
+    mostrarTicket(venta);
+    clearCart();
+    const _pc = document.getElementById('pos-cliente'); if (_pc) { _pc.value = ''; onClienteChange(); }
+    updateAlertCount();
+  }).catch((e) => {
+    alert('⚠️ No se pudo guardar la venta. El carrito NO se limpió — vuelve a presionar Cobrar para reintentar; el sistema no la duplicará aunque ya se haya guardado.\nCódigo: ' + (e.code || e.message || 'desconocido'));
+  });
 }
+let _fiadoPendiente = null; // recuerda un intento de fiado fallido para reintentar con el mismo id
+// nota: _firmaCarrito ya quedó declarada en el Bloque 1 — no la vuelvas a declarar aquí
 
 function cobrarFiado() {
   if (cart.length === 0) { alert('El carrito está vacío'); return; }
@@ -4115,60 +4157,105 @@ function cobrarFiado() {
   const desc = parseFloat(document.getElementById('pos-descuento').value) || 0;
   const comboInfo = calcComboDescuento(cart);
   const comboDesc = comboInfo.total;
-const total = Math.round(Math.max(0, sub - desc - comboDesc) * 100) / 100;
+  const total = Math.round(Math.max(0, sub - desc - comboDesc) * 100) / 100;
   const itemsConPrecioReal = aplicarPreciosProporcionales(cart, comboInfo);
 
-  const fiado = {
-    id: getId(), clienteId,
-    items: itemsConPrecioReal.map(i => {
-      const prod = DB.productos.find(p => p.id === i.prodId);
-      return { ...i, costoUnitario: prod ? prod.costo : 0 };
-    }),
-    total, pagado: 0, fecha: today(), descuentoCombo: comboDesc, descuentoManual: desc
-  };
-  DB.fiados.push(fiado);
-  if (!DB.historialVentas) DB.historialVentas = [];
-DB.historialVentas.push({ ...fiado, origen: 'pos', estado: 'fiado', estadoStock: 'descontado' });
+  const firma = _firmaCarrito(cart, 'FIADO', clienteId);
+  let fiado;
+  if (_fiadoPendiente && _fiadoPendiente.firma === firma) {
+    fiado = _fiadoPendiente.fiado;
+  } else {
+    fiado = {
+      id: getId(), clienteId,
+      items: itemsConPrecioReal.map(i => {
+        const prod = DB.productos.find(p => p.id === i.prodId);
+        return { ...i, costoUnitario: prod ? prod.costo : 0 };
+      }),
+      total, pagado: 0, fecha: today(), descuentoCombo: comboDesc, descuentoManual: desc
+    };
+  }
+  _fiadoPendiente = { firma, fiado };
+  const cartSnapshot = cart.map(i => ({ ...i }));
 
-// Descontar stock para fiados (Saneado contra residuo de coma flotante)
-  _fbLastWriteProdTs = Date.now();
-  cart.forEach(item => {
-    const prod = DB.productos.find(p => p.id === item.prodId);
-    if (prod) {
-      if (!prod.esCombo) {
-        prod.stock = Math.max(0, Math.round((prod.stock - item.cant) * 1000) / 1000);
-      }
-      if (prod.esCombo && prod.componentes) {
-        prod.componentes.forEach(comp => {
-          const cp = DB.productos.find(x => x.id === comp.prodId);
-          if (cp) {
-            cp.stock = Math.max(0, Math.round((cp.stock - comp.cant * item.cant) * 1000) / 1000);
-          }
-        });
-      }
+  fbFS.runTransaction(async (tx) => {
+    const dbSnap   = await tx.get(fbDocRef());
+    const prodSnap = await tx.get(fbProdDocRef());
+    const dbData   = dbSnap.data()   || {};
+    const prodData = prodSnap.data() || {};
+
+    const historialActual = dbData.historialVentas || [];
+    if (historialActual.some(v => v.id === fiado.id)) {
+      return { duplicada: true };
     }
+
+    const productos = JSON.parse(JSON.stringify(prodData.productos || []));
+    cartSnapshot.forEach(item => {
+      const prod = productos.find(p => p.id === item.prodId);
+      if (prod) {
+        if (!prod.esCombo) prod.stock = Math.max(0, Math.round((prod.stock - item.cant) * 1000) / 1000);
+        if (prod.esCombo && prod.componentes) {
+          prod.componentes.forEach(comp => {
+            const cp = productos.find(x => x.id === comp.prodId);
+            if (cp) cp.stock = Math.max(0, Math.round((cp.stock - comp.cant * item.cant) * 1000) / 1000);
+          });
+        }
+      }
+    });
+
+    const nuevoDb = JSON.parse(JSON.stringify(dbData));
+    nuevoDb.fiados = [...(nuevoDb.fiados || []), fiado];
+    nuevoDb.historialVentas = [...historialActual, { ...fiado, origen: 'pos', estado: 'fiado', estadoStock: 'descontado' }];
+
+    const cli = (nuevoDb.clientes || []).find(c => c.id === clienteId);
+    if (cli) {
+      cli.deuda = Math.round(((cli.deuda||0) + total) * 100) / 100;
+      cli.compras = (cli.compras||0) + 1;
+      cli.total = (cli.total||0) + total;
+      cli.puntos = (cli.puntos||0) + Math.floor(total);
+    }
+
+    const fechaHoy = today();
+    let cajaFresca = JSON.parse(JSON.stringify(dbData.caja || {}));
+    let movimientosNuevos = [...(dbData.movimientos || [])];
+    if (!cajaFresca.abierta || cajaFresca.fecha !== fechaHoy) {
+      const montoAuto = parseFloat((dbData.config && dbData.config.montoAperturaAuto)) || 0;
+      let inicialNuevo = montoAuto;
+      if (cajaFresca.abierta && cajaFresca.fecha && cajaFresca.fecha !== fechaHoy) {
+        const saldoAnt = (cajaFresca.inicial||0) + (cajaFresca.ingresos||0) - (cajaFresca.egresos||0);
+        movimientosNuevos.push({ tipo:'cierre-auto', desc:'Cierre automático — '+cajaFresca.fecha+' Saldo: '+sol(saldoAnt), monto:saldoAnt, hora:'23:59', fecha:cajaFresca.fecha });
+        inicialNuevo = saldoAnt;
+      } else if (typeof cajaFresca.saldoFinal === 'number') {
+        inicialNuevo = cajaFresca.saldoFinal;
+      }
+      cajaFresca = { abierta:true, inicial:inicialNuevo, ingresos:0, egresos:0, turnoInicio:nowTime(), cajero:currentUser||'Sistema', fecha:fechaHoy, apertura:'auto' };
+      movimientosNuevos.push({ tipo:'ingreso', desc:'Apertura automática — '+fechaHoy+' (saldo heredado: '+sol(inicialNuevo)+')', monto:0, hora:nowTime(), fecha:fechaHoy });
+    }
+    movimientosNuevos.push({ tipo:'fiado', desc:'Fiado — ' + getClienteNombre(clienteId), monto:total, hora:nowTime(), fecha:today(), cajero:currentUser });
+    nuevoDb.caja = cajaFresca;
+    nuevoDb.movimientos = movimientosNuevos;
+
+    tx.set(fbDocRef(), nuevoDb);
+    tx.set(fbProdDocRef(), { productos, categorias: prodData.categorias || [], config: prodData.config || {} });
+    return { duplicada: false, productos, nuevoDb };
+  }).then((resultado) => {
+    _fiadoPendiente = null;
+    if (resultado.nuevoDb) {
+      DB.productos = resultado.productos;
+      DB.historialVentas = resultado.nuevoDb.historialVentas;
+      DB.fiados = resultado.nuevoDb.fiados;
+      DB.caja = resultado.nuevoDb.caja;
+      DB.movimientos = resultado.nuevoDb.movimientos;
+      DB.clientes = resultado.nuevoDb.clientes;
+    }
+    try { renderDashboard(); } catch(e){}
+    try { renderCaja(); } catch(e){}
+    alert('Fiado registrado para ' + getClienteNombre(clienteId) + ': ' + sol(total));
+    clearCart();
+    const _pc2 = document.getElementById('pos-cliente'); if (_pc2) { _pc2.value = ''; onClienteChange(); }
+    updateAlertCount();
+  }).catch((e) => {
+    alert('⚠️ No se pudo registrar el fiado. El carrito NO se limpió — vuelve a presionar el botón para reintentar; el sistema no lo duplicará aunque ya se haya guardado.\nCódigo: ' + (e.code || e.message || 'desconocido'));
   });
-
-  const cli = DB.clientes.find(c => c.id === clienteId);
-if (cli) { cli.deuda = (cli.deuda||0) + total; cli.compras = (cli.compras||0) + 1; cli.total = (cli.total||0) + total; cli.puntos = (cli.puntos||0) + Math.floor(total); }
-
-  ensureCajaAbierta();
-  DB.movimientos.push({ tipo:'fiado', desc:'Fiado — ' + getClienteNombre(clienteId), monto:total, hora:nowTime(), fecha:today(), cajero:currentUser });
-
-  _fbLastWriteTs = Date.now();
-  _fbEscribiendo = true;
-  const _vPayload = JSON.parse(JSON.stringify(DB));
-delete _vPayload.productos; delete _vPayload.categorias; delete _vPayload.pedidosOnline;
-  fbDocRef().set(_vPayload)
-    .then(() => { setTimeout(() => { _fbEscribiendo = false; }, 300); })
-    .catch(() => { _fbEscribiendo = false; });
-  fbGuardarProductos();
-  try { renderDashboard(); } catch(e){}
-  try { renderCaja(); } catch(e){}
- alert('Fiado registrado para ' + getClienteNombre(clienteId) + ': ' + sol(total));
-  clearCart();
-  const _pc2 = document.getElementById('pos-cliente'); if (_pc2) { _pc2.value = ''; onClienteChange(); }
-  updateAlertCount();
 }
 
 // ===================== TICKET =====================
