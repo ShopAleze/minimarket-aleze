@@ -11485,9 +11485,12 @@ function iniciarBackupAutomatico() {
   delete payload.productos; delete payload.categorias; delete payload.pedidosOnline;
     payload._backupTs = ahora.toISOString();
     payload._backupUser = currentUser;
-    fbFS.collection('aleze_backups').doc(key).set(payload)
+ fbFS.collection('aleze_backups').doc(key).set(payload)
       .then(() => console.log('[Backup] Guardado:', key))
-      .catch(e => console.warn('[Backup] Error:', e));
+      .catch(e => {
+        console.warn('[Backup] Error:', e);
+        alert('⚠️ El respaldo automático de las ' + ahora.toLocaleTimeString('es-PE') + ' no se pudo guardar. Revisa tu conexión — el sistema lo reintentará en 30 minutos.');
+      });
   }, 30 * 60 * 1000);
 }
 function verBackups() {
@@ -11522,7 +11525,8 @@ function restaurarBackup(id) {
           try { renderDashboard(); } catch(e) {}
         })
         .catch(e => { _fbEscribiendo = false; alert('Error al restaurar: ' + e.message); });
-    });
+    })
+    .catch(e => { alert('⚠️ No se pudo leer el respaldo. Revisa tu conexión e intenta de nuevo.\nCódigo: ' + (e.code || e.message || 'desconocido')); });
 }
 </script>
 <!-- ── PWA: Registro del Service Worker ── -->
