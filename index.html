@@ -3346,12 +3346,12 @@ async function doLogin() {
 
   // ── PASO 3: Cargar datos desde Firebase ANTES de cualquier render ──
   if (btnEl) { btnEl.textContent = '⏳ Cargando datos...'; }
-
-  if (fbFS) {
+ if (fbFS) {
     try {
-      const [snapOp, snapProd] = await Promise.all([
+      const [snapOp, snapProd, snapExt] = await Promise.all([
         fbDocRef().get(),
-        fbProdDocRef().get()
+        fbProdDocRef().get(),
+        fbFS.collection('aleze').doc('db_ext').get()
       ]);
 
       if (snapOp.exists) {
@@ -3370,11 +3370,15 @@ async function doLogin() {
         if (pd.config)     DB.config     = { ...DB.config, ...pd.config };
         _fbProdCacheTs = Date.now();
       }
+
+      if (snapExt.exists) {
+        const ext = snapExt.data();
+        Object.keys(ext).forEach(k => { if (k in DB_EXT) DB_EXT[k] = ext[k]; });
+      }
     } catch(e) {
       console.warn('Error cargando datos en login, continuando con caché local:', e.message);
     }
   }
-
   fbPatchDB();
   // ── PASO 4: Estado de sesión — ahora que los datos están listos ──
   if (_loginIntervalo) { clearInterval(_loginIntervalo); _loginIntervalo = null; }
@@ -8953,25 +8957,9 @@ window.onload = async function() {
 
   if (fbOk) {
     try {
-      // Carga inicial: 3 lecturas simultáneas — render solo cuando todas llegan
-      const [snapOp, snapProd, snapExt] = await Promise.all([
-        fbDocRef().get(),
-        fbProdDocRef().get(),
-        fbFS.collection('aleze').doc('db_ext').get()
-      ]);
-
-      let esPrimeraVez = false;
-
-      if (snapOp.exists) {
-        const data = snapOp.data();
-        const camposOp = ['ventas','clientes','fiados','mermas','movimientos',
-                          'proveedores','promociones','caja','config',
-                     'inventariosMensuales','historialVentas'];
-        camposOp.forEach(k => { if (k in data && k in DB) DB[k] = data[k]; });
-        if (data.config && data.config.passwords) Object.assign(PASSWORDS, data.config.passwords);
-      } else {
-        esPrimeraVez = true;
-      }
+      // Carga inicial pre-login: solo el catálogo público (db_productos).
+      // 'db' y 'db_ext' ahora requieren sesión — se cargan en PASO 3 del login.
+      const snapProd = await fbProdDocRef().get();
 
       if (snapProd.exists) {
         const pd = snapProd.data();
@@ -8979,21 +8967,10 @@ window.onload = async function() {
         if (pd.categorias) DB.categorias = pd.categorias;
         if (pd.config)     DB.config     = { ...DB.config, ...pd.config };
         _fbProdCacheTs = Date.now();
-      } else if (esPrimeraVez) {
-        _semillaDemo(hoy);
-        fbGuardar();
-        fbGuardarProductos();
-      }
-
-      if (snapExt.exists) {
-        const ext = snapExt.data();
-        Object.keys(ext).forEach(k => { if (k in DB_EXT) DB_EXT[k] = ext[k]; });
       }
 
       _fbLastWriteTs = Date.now();
       fbPatchDB();
-      fbEscuchar();
-      checkAutoAbrirCaja();
       checkRoute();
       if (!window.location.pathname.includes('/tienda') && !window.location.hash.includes('/tienda')) {
         renderDashboard();
@@ -9007,7 +8984,6 @@ window.onload = async function() {
     _initLocal(hoy);
   }
 };
-
 // ===================== HISTORIAL DE VENTAS =====================
 function renderHistorialVentas() {
   if (!DB.historialVentas) DB.historialVentas = [];
