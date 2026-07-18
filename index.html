@@ -1560,8 +1560,8 @@ background: #F5F3FF;
                 <option value="Transferencia">🏦 Transferencia</option>
               </select>
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem">
-                <button type="button" class="btn btn-outline" style="padding:0.65rem;font-size:0.9rem" onclick="cobrarFiado()">📋 Fiado</button>
-                <button type="button" class="btn btn-accent w-full" style="padding:0.65rem;font-size:0.95rem;font-weight:700" onclick="procesarVenta()">✅ Cobrar</button>
+             <button type="button" class="btn btn-outline" id="btn-cobrar-fiado" style="padding:0.65rem;font-size:0.9rem" onclick="cobrarFiado()">📋 Fiado</button>
+<button type="button" class="btn btn-accent w-full" id="btn-cobrar-venta" style="padding:0.65rem;font-size:0.95rem;font-weight:700" onclick="procesarVenta()">✅ Cobrar</button>
               </div>
             </div>
           </div>
@@ -4037,7 +4037,8 @@ function updatePosClientes() {
   if (valorActual) sel.value = valorActual;
   updateMobPosClientes();
 }
-let _ventaPendiente = null; // recuerda un intento de venta fallido para reintentar con el mismo id
+
+ let _ventaPendiente = null; // recuerda un intento de venta fallido para reintentar con el mismo id
 
 function _firmaCarrito(items, metodo, clienteId) {
   return JSON.stringify(items.map(i => [i.prodId, i.cant])) + '|' + metodo + '|' + clienteId;
@@ -4045,6 +4046,10 @@ function _firmaCarrito(items, metodo, clienteId) {
 
 function procesarVenta() {
   if (cart.length === 0) { alert('El carrito está vacío'); return; }
+  const btn = document.getElementById('btn-cobrar-venta');
+  const txtOriginal = btn.textContent;
+  btn.disabled = true; btn.textContent = '⏳ Guardando...';
+
   const sub = cart.reduce((s, i) => s + i.precio * i.cant, 0);
   const desc = parseFloat(document.getElementById('pos-descuento').value) || 0;
   const comboInfo = calcComboDescuento(cart);
@@ -4137,21 +4142,27 @@ function procesarVenta() {
     try { renderDashboard(); } catch(e){}
     try { renderCaja(); } catch(e){}
     try { generarReporte(); } catch(e){}
+    btn.disabled = false; btn.textContent = txtOriginal;
     mostrarTicket(venta);
     clearCart();
     const _pc = document.getElementById('pos-cliente'); if (_pc) { _pc.value = ''; onClienteChange(); }
     updateAlertCount();
   }).catch((e) => {
+    btn.disabled = false; btn.textContent = txtOriginal;
     alert('⚠️ No se pudo guardar la venta. El carrito NO se limpió — vuelve a presionar Cobrar para reintentar; el sistema no la duplicará aunque ya se haya guardado.\nCódigo: ' + (e.code || e.message || 'desconocido'));
   });
 }
 let _fiadoPendiente = null; // recuerda un intento de fiado fallido para reintentar con el mismo id
-// nota: _firmaCarrito ya quedó declarada en el Bloque 1 — no la vuelvas a declarar aquí
+// nota: _firmaCarrito ya está declarada en el Bloque 1 — no la repitas aquí
 
 function cobrarFiado() {
   if (cart.length === 0) { alert('El carrito está vacío'); return; }
   const clienteId = parseInt(document.getElementById('pos-cliente').value);
   if (!clienteId) { alert('Selecciona un cliente para registrar el fiado'); return; }
+  const btn = document.getElementById('btn-cobrar-fiado');
+  const txtOriginal = btn.textContent;
+  btn.disabled = true; btn.textContent = '⏳ Guardando...';
+
   const sub = Math.round(cart.reduce((s, i) => s + i.precio * i.cant, 0) * 100) / 100;
   const desc = parseFloat(document.getElementById('pos-descuento').value) || 0;
   const comboInfo = calcComboDescuento(cart);
@@ -4247,11 +4258,13 @@ function cobrarFiado() {
     }
     try { renderDashboard(); } catch(e){}
     try { renderCaja(); } catch(e){}
+    btn.disabled = false; btn.textContent = txtOriginal;
     alert('Fiado registrado para ' + getClienteNombre(clienteId) + ': ' + sol(total));
     clearCart();
     const _pc2 = document.getElementById('pos-cliente'); if (_pc2) { _pc2.value = ''; onClienteChange(); }
     updateAlertCount();
   }).catch((e) => {
+    btn.disabled = false; btn.textContent = txtOriginal;
     alert('⚠️ No se pudo registrar el fiado. El carrito NO se limpió — vuelve a presionar el botón para reintentar; el sistema no lo duplicará aunque ya se haya guardado.\nCódigo: ' + (e.code || e.message || 'desconocido'));
   });
 }
