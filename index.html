@@ -1263,7 +1263,7 @@ background: #F5F3FF;
       <img src="/minimarket-aleze/logo.png"alt="Koalita Aleze"
            onerror="this.style.display='none';this.parentNode.innerHTML='🛒'"/>
     </div>
-    <h1>Minimarket Aleze</h1>
+   <h1 id="brand-nombre-1">Minimarket Aleze</h1>
     <p>Jr. Tigrillo Mz. Ll4 Lt. 5 – SJL</p>
     <button type="button" class="btn-compra" onclick="location.hash='#/tienda';initTienda()">
       🛍️ ¡Compra aquí!
@@ -1309,8 +1309,8 @@ background: #F5F3FF;
 
   <!-- PANEL 3: Login con contraseña (tras PIN correcto) -->
   <div id="login-form-panel" class="login-card" style="display:none">
-    <div class="login-logo">🔒</div>
-    <h1>Minimarket Aleze</h1>
+   <div class="login-logo">🔒</div>
+    <h1 id="brand-nombre-2">Minimarket Aleze</h1>
     <p>Jr. Tigrillo Mz. Ll4 Lt. 5 – SJL</p>
     <select id="login-user" class="form-control" style="margin-bottom:0.75rem">
       <option value="">Seleccionar usuario...</option>
@@ -1330,7 +1330,7 @@ background: #F5F3FF;
 <div id="app">
   <header>
     <button type="button" class="btn-hamburger" onclick="toggleMobSidebar()" title="Menú" id="mob-ham-btn">☰</button>
-    <div class="header-brand"><img id="header-logo-img" alt="Aleze" style="width:28px;height:28px;border-radius:6px;vertical-align:middle;margin-right:6px"> Minimarket Aleze</div>
+    <div class="header-brand"><img id="header-logo-img" alt="Aleze" style="width:28px;height:28px;border-radius:6px;vertical-align:middle;margin-right:6px"> <span id="header-nombre">Minimarket Aleze</span></div>
     <div class="header-spacer"></div>
     <div id="bday-banner" style="display:none;background:rgba(255,255,255,.2);border-radius:8px;padding:.3rem .7rem;font-size:.75rem;color:#fff;cursor:pointer;margin-right:.5rem" onclick="showAlerts()">🎂 <span id="bday-msg"></span></div>
     <div class="alert-badge" onclick="showAlerts()" id="alert-count" title="Alertas">0</div>
@@ -3363,13 +3363,14 @@ async function doLogin() {
         if (data.config && data.config.passwords) Object.assign(PASSWORDS, data.config.passwords);
       }
 
-      if (snapProd.exists) {
+       if (snapProd.exists) {
         const pd = snapProd.data();
         if (pd.productos)  DB.productos  = pd.productos;
         if (pd.categorias) DB.categorias = pd.categorias;
         if (pd.config)     DB.config     = { ...DB.config, ...pd.config };
         _fbProdCacheTs = Date.now();
       }
+      aplicarNombreNegocio();
 
       if (snapExt.exists) {
         const ext = snapExt.data();
@@ -5686,7 +5687,7 @@ function compartirResumenFiadoCliente(cid) {
   if (tipo === 'pendiente') fiados = fiados.filter(f => (Math.round((f.total - f.pagado) * 100) / 100) > 0);
   if (tipo === 'pagado')    fiados = fiados.filter(f => (Math.round((f.total - f.pagado) * 100) / 100) <= 0);
   const totalPend = Math.round(fiados.reduce((s, f) => s + Math.max(0, f.total - f.pagado), 0) * 100) / 100;
-  let msg = `Hola ${nombre}, su resumen de fiados en *Minimarket Aleze*:\n`;
+    let msg = `Hola ${nombre}, su resumen de fiados en *${DB.config.nombre||'Minimarket Aleze'}*:\n`;
   if (desde || hasta) msg += `📅 Período: ${desde ? formatDate(desde) : 'inicio'} al ${hasta ? formatDate(hasta) : 'hoy'}\n`;
   msg += '\n';
   fiados.forEach(f => {
@@ -5842,7 +5843,7 @@ function compartirResumenFiado(cid) {
    if (estado === 'pendiente') fiados = fiados.filter(f => (Math.round((f.total - f.pagado) * 100) / 100) > 0);
   if (estado === 'pagado') fiados = fiados.filter(f => (Math.round((f.total - f.pagado) * 100) / 100) <= 0);
   const totalPend = Math.round(fiados.reduce((s, f) => s + Math.max(0, f.total - f.pagado), 0) * 100) / 100;
-  let msg = `Hola ${nombre}, su resumen de fiados en *Minimarket Aleze*:\n`;
+    let msg = `Hola ${nombre}, su resumen de fiados en *${DB.config.nombre||'Minimarket Aleze'}*:\n`;
   if (desde || hasta) msg += `📅 Período: ${desde ? formatDate(desde) : 'inicio'} al ${hasta ? formatDate(hasta) : 'hoy'}\n`;
   msg += '\n';
    fiados.forEach(f => {
@@ -5933,7 +5934,7 @@ function compartirFiadoWhatsapp() {
   const nombre = cli ? (cli.alias || cli.nombre) : 'Cliente';
   const tel = cli && cli.tel ? cli.tel.replace(/\s/g,'') : '';
   const itemsPend = f.items.map(i => `• ${i.nombre} x${i.cant} = ${sol(i.precio*i.cant)}`).join('\n');
-  const msg = `Hola ${nombre}, le recordamos su deuda en *Minimarket Aleze*:\n\n${itemsPend}\n\n*Total pendiente: ${sol(pendiente)}*\n\nGracias 🙏`;
+   const msg = `Hola ${nombre}, le recordamos su deuda en *${DB.config.nombre||'Minimarket Aleze'}*:\n\n${itemsPend}\n\n*Total pendiente: ${sol(pendiente)}*\n\nGracias 🙏`;
   const url = tel ? `https://wa.me/51${tel}?text=${encodeURIComponent(msg)}` : `https://wa.me/?text=${encodeURIComponent(msg)}`;
   window.open(url, '_blank');
 }
@@ -6049,7 +6050,7 @@ function compartirHistorialWhatsapp() {
   if (desde) fiados = fiados.filter(f => f.fecha >= desde);
   if (hasta) fiados = fiados.filter(f => f.fecha <= hasta);
 
-  let msg = `Hola ${nombre}, aquí su resumen en *Minimarket Aleze*:\n`;
+  let msg = `Hola ${nombre}, aquí su resumen en *${DB.config.nombre||'Minimarket Aleze'}*:\n`;
   if (desde || hasta) msg += `📅 Período: ${desde ? formatDate(desde) : 'inicio'} al ${hasta ? formatDate(hasta) : 'hoy'}\n`;
   msg += '\n';
 
@@ -7144,7 +7145,7 @@ async function compartirWhatsapp() {
     canvas.toBlob(blob => {
       const file = new File([blob], 'ticket-aleze.png', { type: 'image/png' });
       if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-        navigator.share({ title: 'Ticket Minimarket Aleze', files: [file] })
+                navigator.share({ title: 'Ticket ' + (DB.config.nombre||'Minimarket Aleze'), files: [file] })
           .catch(() => fallbackWA());
       } else {
         const url = URL.createObjectURL(blob);
@@ -8949,6 +8950,13 @@ function fbPatchDB() {
     });
   });
 }
+function aplicarNombreNegocio() {
+  const nombre = (DB.config && DB.config.nombre) || 'Minimarket Aleze';
+  document.title = nombre;
+  const el1 = document.getElementById('brand-nombre-1'); if (el1) el1.textContent = nombre;
+  const el2 = document.getElementById('brand-nombre-2'); if (el2) el2.textContent = nombre;
+  const el3 = document.getElementById('header-nombre');  if (el3) el3.textContent = nombre;
+}
 
 // ===================== INIT =====================
 window.onload = async function() {
@@ -8961,13 +8969,14 @@ window.onload = async function() {
       // 'db' y 'db_ext' ahora requieren sesión — se cargan en PASO 3 del login.
       const snapProd = await fbProdDocRef().get();
 
-      if (snapProd.exists) {
+     if (snapProd.exists) {
         const pd = snapProd.data();
         if (pd.productos)  DB.productos  = pd.productos;
         if (pd.categorias) DB.categorias = pd.categorias;
         if (pd.config)     DB.config     = { ...DB.config, ...pd.config };
         _fbProdCacheTs = Date.now();
       }
+      aplicarNombreNegocio();
 
       _fbLastWriteTs = Date.now();
       fbPatchDB();
