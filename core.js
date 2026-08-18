@@ -14,9 +14,9 @@
 // respaldo de emergencia que usa fbPatchDB() SOLO si DB.config.usuariosStaff llega vacio desde
 // el servidor — la fuente real, editable, sigue siendo Configuración → Usuarios.
 const FIREBASE_USERS = {
-  'Aleze':     'tiendaaleze@gmail.com',    // admin (antes "Jose Carlos")
-  'Aleze I':   'sharote1212@gmail.com',    // vendedor 1 (antes "Shessira")
-  'Aleze II':  'joselezama.rom@gmail.com'  // vendedor 2 (antes "José Luis")
+  'ShopAleze':    'shopaleze@gmail.com',     // admin
+  'ShopAleze 1':  'sharote1212@gmail.com',   // vendedor 1 (Shessira)
+  'ShopAleze 2':  'joselezama.rom@gmail.com' // vendedor 2 (José Luis)
 };
 // Las contraseñas guardadas en Firestore se cargan en fbEscuchar/onload y sobreescriben estas
 let currentUser = null;
