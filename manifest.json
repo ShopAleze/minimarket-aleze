@@ -1,10 +1,10 @@
 {
-  "name": "Aleze Shop",
+  "name": "Tienda Aleze",
   "short_name": "Aleze",
-  "description": "Tu minimarket de confianza — Ventas e inventario Aleze SJL",
-  "id": "/minimarket-aleze/",
-  "start_url": "/minimarket-aleze/",
-  "scope": "/minimarket-aleze/",
+  "description": "Tu tienda de confianza — Ventas e inventario Aleze SJL",
+  "id": "/Tienda-Aleze/",
+  "start_url": "/Tienda-Aleze/#/tienda",
+  "scope": "/Tienda-Aleze/",
   "display": "standalone",
   "background_color": "#5B21B6",
   "theme_color": "#7C3AED",
@@ -24,21 +24,34 @@
       "purpose": "maskable"
     }
   ],
-  "categories": ["business", "productivity"],
+  "categories": [
+    "business",
+    "productivity"
+  ],
   "shortcuts": [
     {
       "name": "Punto de Venta",
       "short_name": "POS",
       "description": "Abrir caja rápida",
-      "url": "/minimarket-aleze/#pos",
-      "icons": [{ "src": "icon.svg", "sizes": "any" }]
+      "url": "/Tienda-Aleze/#pos",
+      "icons": [
+        {
+          "src": "icon.svg",
+          "sizes": "any"
+        }
+      ]
     },
     {
       "name": "Tienda Online",
       "short_name": "Tienda",
       "description": "Ver catálogo público",
-      "url": "/minimarket-aleze/#/tienda",
-      "icons": [{ "src": "icon.svg", "sizes": "any" }]
+      "url": "/Tienda-Aleze/#/tienda",
+      "icons": [
+        {
+          "src": "icon.svg",
+          "sizes": "any"
+        }
+      ]
     }
   ]
 }
