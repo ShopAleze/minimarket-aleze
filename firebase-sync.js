@@ -187,7 +187,7 @@ let _fbCanjesUnsub = null;
 // ── Inicializar Firestore ──
 // RECAPTCHA_SITE_KEY: reemplaza con tu clave de reCAPTCHA v3 desde Google reCAPTCHA Admin
 // Si aún no tienes clave, usa 'debug' temporalmente solo en localhost
-const RECAPTCHA_SITE_KEY = '6Le9bWMtAAAAAPWAyieo6txt9gh618Jk4FDp7OtF';
+const RECAPTCHA_SITE_KEY = '6Lcd8QctAAAAAIiLY3GPfFFP7U6K9ff4gON8TsE3';
 
 // VAPID_KEY: clave publica para notificaciones push (Firebase Console > Configuracion del
 // proyecto > Cloud Messaging > Certificados push web > "Generar par de claves"). Es publica
