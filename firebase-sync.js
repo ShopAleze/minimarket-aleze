@@ -193,7 +193,7 @@ const RECAPTCHA_SITE_KEY = '6Lcd8QctAAAAAIiLY3GPfFFP7U6K9ff4gON8TsE3';
 // proyecto > Cloud Messaging > Certificados push web > "Generar par de claves"). Es publica
 // a proposito, va en el codigo igual que RECAPTCHA_SITE_KEY. Mientras diga 'PENDIENTE', las
 // notificaciones push quedan dormidas — no rompe nada, solo no se activan hasta pegarla acá.
-const VAPID_KEY = 'BBWLZJaIhkWmkeYT9B2GG9D0lK1uljNgCA7Jkelm8I06o6269EO-uywu-FoH4iicBksg5i1vSgeWhrL9l87bNng';
+const VAPID_KEY = 'BAPx23Gdw3djUaz8c7YIMc1oMx4zI-wli9PZmgu72J2Su9dYKfGzsob3iW9vg6B0Yx3I9fFbxmpnGqUvESZKEaY';
 
 async function iniciarFirebase() {
   // DIAGNOSTICO TEMPORAL — cronometro real en cada etapa, para encontrar exactamente donde
