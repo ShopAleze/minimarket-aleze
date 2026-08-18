@@ -48,14 +48,14 @@
         letter-spacing="6"
         opacity="1">ALEZE</text>
 
-  <!-- Texto SHOP pequeño -->
+  <!-- Texto TIENDA pequeño -->
   <text x="256" y="425" 
         text-anchor="middle" 
         font-family="'Arial', sans-serif" 
         font-size="28" 
         font-weight="400" 
         fill="#C4B5FD" 
-        letter-spacing="12">SHOP</text>
+        letter-spacing="8">TIENDA</text>
 
   <!-- Punto decorativo acento verde -->
   <circle cx="390" cy="360" r="8" fill="#10B981"/>
