@@ -21,12 +21,12 @@ import { getMessaging, onBackgroundMessage } from 'https://www.gstatic.com/fireb
 // menos un dispositivo — sin eso, esto no recibe nada, no rompe nada.
 try {
   const app = initializeApp({
-    apiKey: "PENDIENTE_CONFIGURAR",
-    authDomain: "PENDIENTE_CONFIGURAR",
-    projectId: "PENDIENTE_CONFIGURAR",
-    storageBucket: "PENDIENTE_CONFIGURAR",
-    messagingSenderId: "PENDIENTE_CONFIGURAR",
-    appId: "PENDIENTE_CONFIGURAR"
+    apiKey: "AIzaSyBXelkwsha7QzyOLxIbb4wP0ePEbSyi5IE",
+    authDomain: "minimarket-aleze-400b5.firebaseapp.com",
+    projectId: "minimarket-aleze-400b5",
+    storageBucket: "minimarket-aleze-400b5.firebasestorage.app",
+    messagingSenderId: "163471177129",
+    appId: "1:163471177129:web:26538e58618e74703240b8"
   });
 
   const messaging = getMessaging(app);
