@@ -11,12 +11,12 @@ const APP_VERSION = '1.0.1';
 // (Shop Aleze / minimarket-aleze), NUNCA debe compartir proyecto de Firebase con Tienda Aleze
 // real. Reemplazar estos 6 valores con los del proyecto Shop Aleze antes de usar el sistema.
 const FIREBASE_CONFIG = {
-  apiKey: "PENDIENTE_CONFIGURAR",
-  authDomain: "PENDIENTE_CONFIGURAR",
-  projectId: "PENDIENTE_CONFIGURAR",
-  storageBucket: "PENDIENTE_CONFIGURAR",
-  messagingSenderId: "PENDIENTE_CONFIGURAR",
-  appId: "PENDIENTE_CONFIGURAR"
+  apiKey: "AIzaSyBXelkwsha7QzyOLxIbb4wP0ePEbSyi5IE",
+  authDomain: "minimarket-aleze-400b5.firebaseapp.com",
+  projectId: "minimarket-aleze-400b5",
+  storageBucket: "minimarket-aleze-400b5.firebasestorage.app",
+  messagingSenderId: "163471177129",
+  appId: "1:163471177129:web:26538e58618e74703240b8"
 };
 
 // (fbApp Compat eliminado — App Check ahora vive por completo en appModular, ver mas abajo)
