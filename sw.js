@@ -1,11 +1,70 @@
+// CRITICO: import() dinamico esta prohibido en el scope de un Service Worker por la propia
+// especificacion HTML (confirmado con el error real: "import() is disallowed on
+// ServiceWorkerGlobalScope") — ni siquiera envuelto en una IIFE async se puede usar. La unica
+// forma permitida de usar import aca es estatico, al inicio absoluto del archivo, antes de
+// cualquier otro codigo — por eso este bloque va primero, no despues de los comentarios.
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getMessaging, onBackgroundMessage } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-sw.js';
+
 // ================================================
-// Service Worker — Aleze Shop
+// Service Worker — Tienda Aleze
 // Estrategia: Network First, fallback a caché
 // Versión: 1.0.0
 // ================================================
 
-const CACHE_NAME = 'aleze-shop-v27';
-const BASE_PATH = '/minimarket-aleze';
+// ── Notificaciones push (FCM) en segundo plano ──────────────────────────────
+// Esto es lo que permite avisar de un pedido nuevo aunque la app este cerrada
+// o el celular bloqueado — new Notification() directo desde index.html (usado
+// para cuando la app SI esta abierta) no puede hacer esto, tiene que salir de
+// acá, en el Service Worker, que sigue vivo aunque la pestaña este cerrada.
+// Dormido hasta que se configure VAPID_KEY en index.html y se registre al
+// menos un dispositivo — sin eso, esto no recibe nada, no rompe nada.
+try {
+  const app = initializeApp({
+    apiKey: "PENDIENTE_CONFIGURAR",
+    authDomain: "PENDIENTE_CONFIGURAR",
+    projectId: "PENDIENTE_CONFIGURAR",
+    storageBucket: "PENDIENTE_CONFIGURAR",
+    messagingSenderId: "PENDIENTE_CONFIGURAR",
+    appId: "PENDIENTE_CONFIGURAR"
+  });
+
+  const messaging = getMessaging(app);
+
+  // El mensaje llega como "data" (sin campo "notification", ver Cloud Function) —
+  // por eso hay que armar la notificación acá a mano, en vez de que el navegador
+  // la muestre solo (eso evitaría poder personalizar el ícono y el clic).
+  onBackgroundMessage(messaging, (payload) => {
+    const datos = payload.data || {};
+    self.registration.showNotification(datos.titulo || '🛍️ Nuevo pedido online', {
+      body: datos.cuerpo || '',
+      icon: '/minimarket-aleze/icon.svg',
+      tag: 'pedido-' + (datos.pedidoId || Date.now()),
+      data: { pedidoId: datos.pedidoId },
+      vibrate: [300, 100, 300, 100, 300], // el sonido lo decide el sistema operativo, no esto —
+      silent: false,                       // pero la vibracion si es confiable en Android
+      requireInteraction: true             // se queda visible hasta que se toque, no desaparece sola
+    });
+  });
+} catch (e) {
+  console.warn('[SW] Notificaciones push no disponibles:', e);
+}
+
+// Al tocar la notificación, abrir la app (o enfocar la pestaña si ya está abierta)
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if (client.url.includes('/minimarket-aleze/') && 'focus' in client) return client.focus();
+      }
+      if (clients.openWindow) return clients.openWindow('/minimarket-aleze/');
+    })
+  );
+});
+
+const CACHE_NAME = 'tienda-aleze-test-v4';
+const BASE_PATH = '/Tienda-Aleze';
 
 // Archivos a pre-cachear al instalar
 const PRECACHE_URLS = [
@@ -70,7 +129,13 @@ self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
 
   event.respondWith(
-    fetch(event.request)
+    // CRITICO: { cache: 'no-store' } fuerza a que este fetch ignore el cache HTTP normal del
+    // navegador y vaya de verdad a la red — sin esto, "Network First" podia devolver una
+    // respuesta guardada por el navegador mismo (no por este Service Worker) sin llegar
+    // realmente a GitHub Pages, sobre todo en apps instaladas como PWA, mas propensas a
+    // reusar respuestas viejas. Esto explicaba por que el codigo actualizado a veces no se
+    // reflejaba incluso despues de cerrar y volver a abrir.
+    fetch(event.request, { cache: 'no-store' })
       .then(networkResponse => {
         // Respuesta válida — guardar en caché y devolver
         if (networkResponse && networkResponse.status === 200) {
