@@ -1205,4 +1205,3 @@ function aplicarNombreNegocio() {
   const el2 = document.getElementById('brand-nombre-2'); if (el2) el2.textContent = nombre;
   const el3 = document.getElementById('header-nombre');  if (el3) el3.textContent = nombre;
 }
-
