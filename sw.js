@@ -1,3 +1,4 @@
+
 // CRITICO: import() dinamico esta prohibido en el scope de un Service Worker por la propia
 // especificacion HTML (confirmado con el error real: "import() is disallowed on
 // ServiceWorkerGlobalScope") — ni siquiera envuelto en una IIFE async se puede usar. La unica
@@ -5,13 +6,13 @@
 // cualquier otro codigo — por eso este bloque va primero, no despues de los comentarios.
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getMessaging, onBackgroundMessage } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-sw.js';
-
+ 
 // ================================================
 // Service Worker — Tienda Aleze
 // Estrategia: Network First, fallback a caché
 // Versión: 1.0.0
 // ================================================
-
+ 
 // ── Notificaciones push (FCM) en segundo plano ──────────────────────────────
 // Esto es lo que permite avisar de un pedido nuevo aunque la app este cerrada
 // o el celular bloqueado — new Notification() directo desde index.html (usado
@@ -28,9 +29,9 @@ try {
     messagingSenderId: "163471177129",
     appId: "1:163471177129:web:26538e58618e74703240b8"
   });
-
+ 
   const messaging = getMessaging(app);
-
+ 
   // El mensaje llega como "data" (sin campo "notification", ver Cloud Function) —
   // por eso hay que armar la notificación acá a mano, en vez de que el navegador
   // la muestre solo (eso evitaría poder personalizar el ícono y el clic).
@@ -49,7 +50,7 @@ try {
 } catch (e) {
   console.warn('[SW] Notificaciones push no disponibles:', e);
 }
-
+ 
 // Al tocar la notificación, abrir la app (o enfocar la pestaña si ya está abierta)
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
@@ -62,10 +63,10 @@ self.addEventListener('notificationclick', (event) => {
     })
   );
 });
-
+ 
 const CACHE_NAME = 'tienda-aleze-test-v4';
-const BASE_PATH = '/Tienda-Aleze';
-
+const BASE_PATH = '/minimarket-aleze';
+ 
 // Archivos a pre-cachear al instalar
 const PRECACHE_URLS = [
   BASE_PATH + '/',
@@ -77,7 +78,7 @@ const PRECACHE_URLS = [
   'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/JsBarcode/3.11.6/JsBarcode.all.min.js',
 ];
-
+ 
 // ── INSTALACIÓN ──────────────────────────────────
 self.addEventListener('install', event => {
   event.waitUntil(
@@ -93,7 +94,7 @@ self.addEventListener('install', event => {
     }).then(() => self.skipWaiting())
   );
 });
-
+ 
 // ── ACTIVACIÓN ───────────────────────────────────
 self.addEventListener('activate', event => {
   event.waitUntil(
@@ -109,11 +110,11 @@ self.addEventListener('activate', event => {
     ).then(() => self.clients.claim())
   );
 });
-
+ 
 // ── FETCH: Network First ──────────────────────────
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
-
+ 
   // No interceptar Firebase, APIs externas ni chrome-extension
   if (
     url.hostname.includes('firebaseio.com') ||
@@ -124,10 +125,10 @@ self.addEventListener('fetch', event => {
   ) {
     return; // Dejar pasar sin tocar
   }
-
+ 
   // Solo interceptar GET
   if (event.request.method !== 'GET') return;
-
+ 
   event.respondWith(
     // CRITICO: { cache: 'no-store' } fuerza a que este fetch ignore el cache HTTP normal del
     // navegador y vaya de verdad a la red — sin esto, "Network First" podia devolver una
