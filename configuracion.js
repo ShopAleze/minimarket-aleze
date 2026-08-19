@@ -1,3 +1,4 @@
+
 // ===================== CONFIGURACION =====================
 function _uploadConfigImg(fileInput, targetFieldId, storagePath) {
   const file = fileInput.files[0];
@@ -147,7 +148,7 @@ function eliminarServicioBanner(i) {
   fbGuardar(); fbGuardarProductos();
   renderConfiguracion();
 }
-
+ 
 function guardarConfigTienda(_silencioso) {
   if (currentRole !== 'admin') return;
   const cfg = DB.config;
@@ -203,7 +204,7 @@ document.getElementById('cfg-ruc').value = DB.config.ruc || '';
   renderUsuariosStaff();
   renderCfgUserSelect();
 }
-
+ 
 function guardarConfigPasarela() {
   if (currentRole !== 'admin') { alert('⛔ Solo el administrador puede modificar la pasarela de pago.'); return; }
   DB.config.pasarelaPago = {
@@ -214,7 +215,7 @@ function guardarConfigPasarela() {
   fbGuardarProductos();
   alert('✅ Configuración guardada.' + (DB.config.pasarelaPago.activa ? '\n\nRecuerda: esto solo funciona si ya desplegaste las Cloud Functions del repositorio — activar el interruptor no las despliega solas.' : ''));
 }
-
+ 
 // Regimen tributario y comprobante electronico solo los necesita el staff (POS, confirmar
 // entrega de pedido online) — a diferencia de pasarelaPago, aca no hay ningun boton visible
 // para el cliente final en tienda publica que dependa de esto, asi que basta con fbGuardar()
@@ -230,7 +231,7 @@ function guardarConfigComprobante() {
   fbGuardar();
   alert('✅ Configuración guardada.' + (DB.config.comprobanteElectronico.activa ? '\n\nRecuerda: esto solo funciona si ya desplegaste las Cloud Functions del repositorio y configuraste el Token del proveedor como Secret — activar el interruptor no hace eso solo.' : ''));
 }
-
+ 
 // Comprobantes que el proveedor no pudo emitir (caído, dato mal configurado, etc.) — la
 // venta en si ya esta guardada de todas formas, esto es solo un panel de seguimiento para
 // que el admin decida cuando reintentar. Vive en 2 colecciones (ventas y fiados), asi que se
@@ -265,7 +266,7 @@ async function _cargarComprobantesConError() {
     cont.innerHTML = '<div style="color:var(--danger)">No se pudo cargar la lista: ' + (e.message||'error desconocido') + '</div>';
   }
 }
-
+ 
 // Pide al servidor que vuelva a intentar emitir un comprobante puntual — solo staff
 // autenticado puede llamar esto (verificado del lado del servidor también, ver
 // reintentarComprobante() en functions/index.js). La venta ya existe de antes; esto nunca la
@@ -283,7 +284,7 @@ async function reintentarComprobante(coleccion, id, btnEl) {
     if (btnEl) { btnEl.disabled = false; btnEl.textContent = '🔄 Reintentar'; }
   }
 }
-
+ 
 function guardarConfig() {
   if (currentRole !== 'admin') { alert('⛔ Solo el administrador puede modificar la configuración.'); return; }
   DB.config.nombre    = document.getElementById('cfg-nombre').value;
@@ -299,7 +300,7 @@ function guardarConfig() {
   try { renderDashboard(); } catch(e){}
   alert('✅ Configuración guardada');
 }
-
+ 
 // ── Gestión de usuarios (nombre/correo/rol/sede) — editable sin tocar código ──
 // Nota: esto NO crea la cuenta en Firebase Authentication. Esa cuenta (correo+contraseña)
 // se sigue creando manualmente en la consola de Firebase; aquí solo se administra
@@ -312,13 +313,13 @@ function renderLoginDropdown() {
     (DB.config.usuariosStaff || []).map(u => `<option value="${u.nombre}|${u.rol}">${u.nombre}</option>`).join('');
   if (valorActual) sel.value = valorActual;
 }
-
+ 
 function renderCfgUserSelect() {
   const sel = document.getElementById('cfg-user-sel');
   if (!sel) return;
   sel.innerHTML = (DB.config.usuariosStaff || []).map(u => `<option>${u.nombre}</option>`).join('');
 }
-
+ 
 function renderUsuariosStaff() {
   const cont = document.getElementById('usuarios-staff-list');
   if (!cont) return;
@@ -339,7 +340,7 @@ function renderUsuariosStaff() {
       <button type="button" class="btn btn-xs" style="background:var(--danger-light);color:var(--danger)" onclick="eliminarUsuarioStaff(${i})">🗑️</button>
     </div>`).join('');
 }
-
+ 
 function agregarUsuarioStaff() {
   if (currentRole !== 'admin') { alert('⛔ Solo el administrador puede agregar usuarios.'); return; }
   const nombre = document.getElementById('nuevo-usr-nombre').value.trim();
@@ -357,7 +358,7 @@ function agregarUsuarioStaff() {
   fbGuardarProductos(); fbGuardar();
   alert('✅ Usuario agregado. Recuerda crear su cuenta (correo + contraseña) directamente en Firebase Authentication — el sistema no la crea automáticamente.');
 }
-
+ 
 function cambiarRolUsuarioStaff(i, nuevoRol) {
   // CRITICO: sin este chequeo, un vendedor podia llamar esta funcion directo desde la
   // consola sobre si mismo, cambiando su propio rol a admin en usuariosStaff — la misma
@@ -369,7 +370,7 @@ function cambiarRolUsuarioStaff(i, nuevoRol) {
   renderLoginDropdown();
   fbGuardarProductos(); fbGuardar();
 }
-
+ 
 function eliminarUsuarioStaff(i) {
   if (currentRole !== 'admin') { alert('⛔ Solo el administrador puede quitar usuarios.'); return; }
   const u = DB.config.usuariosStaff[i];
@@ -378,35 +379,35 @@ function eliminarUsuarioStaff(i) {
   renderUsuariosStaff(); renderLoginDropdown(); renderCfgUserSelect();
   fbGuardarProductos(); fbGuardar();
 }
-
+ 
 function guardarSueldos() {
   if (currentRole !== 'admin') { alert('⛔ Solo el administrador puede modificar sueldos.'); return; }
   DB_EXT.sueldos['Jose Carlos'] = parseFloat(document.getElementById('sueldo-jc').value) || 0;
   DB_EXT.sueldos['Shessira']    = parseFloat(document.getElementById('sueldo-sh').value) || 0;
   DB_EXT.sueldos['José Luis']   = parseFloat(document.getElementById('sueldo-jl').value) || 0;
-  fbGuardarExt();
+  fbGuardarExt('sueldos');
   alert('✅ Sueldos guardados');
 }
-
+ 
 async function cambiarPassword() {
   const user  = document.getElementById('cfg-user-sel').value;
   const nueva = document.getElementById('cfg-pass-nueva').value;
   const conf  = document.getElementById('cfg-pass-conf').value;
   if (!nueva || nueva.length < 6) { alert('La contraseña debe tener al menos 6 caracteres'); return; }
   if (nueva !== conf) { alert('Las contraseñas no coinciden'); return; }
-
+ 
   // Solo el admin puede cambiar su propia contraseña (usuario autenticado actualmente)
   if (!authModular || !authModular.currentUser) {
     alert('⚠️ Debes estar autenticado para cambiar la contraseña'); return;
   }
-
+ 
   // Verificar que el admin esté cambiando su propia cuenta
   const _usrCfg = (DB.config.usuariosStaff || []).find(u => u.nombre === user);
   const emailEsperado = _usrCfg ? _usrCfg.email : null;
   if (authModular.currentUser.email !== emailEsperado) {
     alert('⚠️ Solo puedes cambiar tu propia contraseña. Pide al usuario que inicie sesión.'); return;
   }
-
+ 
   try {
     // Actualizar en Firebase Auth (fuente de verdad)
     await window.__fbModular.auth.updatePassword(authModular.currentUser, nueva);
@@ -423,9 +424,9 @@ async function cambiarPassword() {
     }
   }
 }
-
+ 
 // ===================== RESET DE DATOS — SOLO ADMIN =====================
-
+ 
 // ── Vacía una colección completa via batches (Firestore no tiene "borrar todo" en una sola llamada) ──
 // Sin esto, Reset limpia lo local pero deja el historial completo intacto en Firestore — un
 // reset que no resetea de verdad. No bloqueante — si falla, el reset local ya ocurrió igual.
@@ -451,7 +452,7 @@ function _reiniciarCaja() {
   DB._cajas.principal = { ...vacia };
   if (dbModular) setDocM(docM(dbModular, 'caja', 'principal'), vacia).catch(()=>{}); // [SDK modular]
 }
-
+ 
 const RESET_CONFIG = {
   dashboard: {
     nombre: 'Dashboard (todos los datos operativos)',
@@ -469,7 +470,7 @@ const RESET_CONFIG = {
       });
       DB_EXT.gastos = [];
       DB_EXT.capital = { prestamo: 0, cuota: 0, meta: 0 };
-      const _payload = JSON.parse(JSON.stringify(DB)); delete _payload.productos; delete _payload.categorias; delete _payload.caja; _payload.cajas = DB._cajas; _payload._resetToken = true; _fbLastWriteTs = Date.now(); setDocM(docM(dbModular, 'aleze', 'db'), _payload); fbGuardarExt(); // [SDK modular]
+      const _payload = JSON.parse(JSON.stringify(DB)); delete _payload.productos; delete _payload.categorias; delete _payload.caja; _payload.cajas = DB._cajas; _payload._resetToken = true; _fbLastWriteTs = Date.now(); setDocM(docM(dbModular, 'aleze', 'db'), _payload); fbGuardarExt('capital'); // [SDK modular]
       ['ventas','fiados','mermas','movimientos','gastos','capital_movimientos'].forEach(_vaciarColeccion);
       DB.capitalMovimientos = [];
       try { renderDashboard(); } catch(e) {}
@@ -505,7 +506,8 @@ const RESET_CONFIG = {
     detalle: '• Todo el historial de gastos registrados<br>• (Los gastos recurrentes configurados se conservan)',
     accion: () => {
       DB_EXT.gastos = [];
-      fbGuardarExt();
+      // Sin fbGuardarExt() acá a propósito: 'gastos' nunca vive en el documento db_ext (tiene
+      // su propia colección real), así que no hay ningún campo real de db_ext para escribir.
       _vaciarColeccion('gastos');
       try { renderGastos(); } catch(e) {}
       try { renderDashboard(); } catch(e) {}
@@ -516,7 +518,7 @@ const RESET_CONFIG = {
     detalle: '• Capital total, cuota y meta se reinician a 0<br>• Todo el historial de movimientos de capital',
     accion: () => {
    DB_EXT.capital = { total: 0, cuota: 0, meta: 0, recuperado: 0, prestamo: 0, prestamoPagado: 0, hist: [] };
-      fbGuardarExt();
+      fbGuardarExt('capital');
       try { renderCapital(); } catch(e) {}
       try { renderDashboard(); } catch(e) {}
     }
@@ -528,16 +530,18 @@ const RESET_CONFIG = {
       DB.ventas = [];
       DB_EXT.gastos = [];
       DB.clientes.forEach(c => { c.compras = 0; c.total = 0; });
-      fbGuardar(); fbGuardarExt();
+      // Sin fbGuardarExt() acá a propósito: mismo caso que el reset de 'gastos' — 'gastos'
+      // nunca vive en el documento db_ext, no hay ningún campo real de db_ext para escribir.
+      fbGuardar();
       ['ventas','gastos'].forEach(_vaciarColeccion);
       try { generarReporte(); } catch(e) {}
       try { renderDashboard(); } catch(e) {}
     }
   }
 };
-
+ 
 let _resetModuloActual = null;
-
+ 
 function abrirReset(modulo) {
   if (currentRole !== 'admin') {
     alert('⛔ Solo el administrador puede limpiar datos.');
@@ -552,7 +556,7 @@ function abrirReset(modulo) {
   document.getElementById('btn-reset-ejecutar').disabled = true;
   abrirModal('modal-reset');
 }
-
+ 
 function ejecutarReset() {
   if (currentRole !== 'admin') { alert('⛔ Solo el administrador puede limpiar datos.'); return; }
   const input = document.getElementById('reset-confirm-input').value;
@@ -563,6 +567,6 @@ function ejecutarReset() {
   cfg.accion();
   _resetModuloActual = null;
 }
-
+ 
 // ===================== FIN RESET =====================
 
