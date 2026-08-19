@@ -363,6 +363,13 @@ function _extBuildPayload() {
 }
 function fbGuardarExt(campo) {
   if (!dbModular) return; // [SDK modular]
+  // Mismo guard que fbGuardarProductos()/fbGuardarConfig() — hoy ningun caller de esta funcion
+  // corre sin sesion de staff (todos estan en caja.js/clientes.js/configuracion.js, detras de
+  // login), asi que esto no corrige ningun bug activo. Se agrega igual como blindaje
+  // preventivo, para que quede protegida ante cualquier caller nuevo que en el futuro la
+  // llame desde un contexto sin autenticar — exactamente el error que se acaba de corregir en
+  // fbGuardarConfig().
+  if (!authModular || !authModular.currentUser) return;
   if (campo) _extDirty.add(campo);
   clearTimeout(window._fbExtTimer);
   window._fbExtTimer = setTimeout(() => {
@@ -420,6 +427,16 @@ function _cfgBuildPayload() {
 }
 function fbGuardarConfig(campo) {
   if (!dbModular) return; // [SDK modular]
+  // CRITICO: fbPatchDB() (que llama a esta funcion con 'usuariosStaff' o 'montoAperturaAuto'
+  // en sus ramas de default/respaldo) corre en 2 contextos SIN sesion de staff autenticada:
+  // la tienda publica (visitante anonimo, core.js) y la pantalla de login misma, antes de
+  // pulsar "Ingresar" (para poblar el selector de usuario). Sin este guard — el mismo que ya
+  // tiene fbGuardarProductos() — cualquiera de los 2 dispara un intento de escritura real a
+  // aleze/config sin usuario logueado, que Firestore rechaza (correctamente) con
+  // permission-denied, mostrando una alerta de error tanto a un cliente navegando la tienda
+  // como a un cajero que todavia ni empezo a loguearse. Confirmado con evidencia real de
+  // consola en Shop Aleze.
+  if (!authModular || !authModular.currentUser) return;
   if (campo) { (Array.isArray(campo) ? campo : [campo]).forEach(c => _cfgDirty.add(c)); }
   clearTimeout(window._fbConfigTimer);
   window._fbConfigTimer = setTimeout(() => {
