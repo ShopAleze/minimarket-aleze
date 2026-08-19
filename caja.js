@@ -11,7 +11,7 @@ function renderCaja() {
   if (_cerradaAdmin) _cerradaAdmin.style.display = _esAdmin ? '' : 'none';
   const _cerradaVendedor = document.getElementById('caja-cerrada-vendedor');
   if (_cerradaVendedor) _cerradaVendedor.style.display = _esAdmin ? 'none' : '';
-
+ 
   if (DB.caja.abierta) {
     document.getElementById('caja-cerrada').style.display = 'none';
     document.getElementById('caja-abierta').style.display = 'block';
@@ -31,13 +31,13 @@ function renderCaja() {
     }
   }
 }
-
+ 
 async function abrirCaja() {
   if (currentRole !== 'admin') { alert('⛔ Solo el administrador puede abrir caja. Puedes ver el estado actual, pero no modificarlo.'); return; }
   const monto = parseFloat(document.getElementById('caja-monto-inicial').value) || 0;
   const sede = sedeAdminEfectiva();
   if (!dbModular) { alert('⚠️ Sin conexión con el sistema en este momento. Espera unos segundos e intenta de nuevo.'); return; } // [SDK modular]
-
+ 
   // CRITICO: runTransaction() en vez de lote — garantiza que la lectura es siempre real del
   // servidor (nunca de cache), igual criterio que ensureCajaAbierta(). Si dos personas abren
   // caja al mismo instante, Firestore resuelve el orden solo, sin que se pisen entre si.
@@ -59,14 +59,14 @@ async function abrirCaja() {
     _sincError('apertura_caja_manual', sede, e, 'la apertura de caja — no se aplicó nada. Revisa tu conexión e intenta de nuevo');
     return;
   }
-
+ 
   // La escritura real ya la hizo la transacción de arriba — esto solo actualiza la copia local.
   DB._cajas[sede] = _resultado.cajaNueva;
   if (!DB.movimientos) DB.movimientos = [];
   DB.movimientos.push(_resultado._movData);
   renderCaja();
 }
-
+ 
 function guardarMontoAperturaDefault() {
   if (currentRole !== 'admin') { alert('⛔ Solo el administrador puede configurar el monto de apertura.'); return; }
   const m = parseFloat(document.getElementById('caja-monto-inicial').value) || 0;
@@ -76,7 +76,7 @@ function guardarMontoAperturaDefault() {
   if (hint) { hint.textContent = `✅ Monto default guardado: S/ ${m.toFixed(2)}`; hint.style.color='var(--accent)'; }
   setTimeout(() => { try { renderConfiguracion(); } catch(e){} }, 300);
 }
-
+ 
 // ── Arqueo de caja (Fase 4): compara efectivo físico contra el teórico SOLO en efectivo — ──
 // Yape/tarjeta/transferencia nunca pasan por el cajón, no se cuentan acá. No bloquea el cierre.
 function _saldoEfectivoTeorico() {
@@ -96,7 +96,7 @@ async function abrirRetiroEfectivo() {
   if (!monto || isNaN(monto) || monto <= 0) return;
   if (monto > disponible && !confirm(`El monto supera el efectivo disponible (${sol(disponible)}). ¿Continuar de todas formas?`)) return;
   const destino = prompt('¿A dónde va? (ej. "Depósito BCP", "Guardado en casa")') || 'Sin especificar';
-
+ 
   // Paquete atomico: el retiro (campo de caja) y su movimiento de auditoria viajan juntos.
   const sede = sedeAdminEfectiva();
   const batch = writeBatchM(dbModular);
@@ -105,7 +105,7 @@ async function abrirRetiroEfectivo() {
   const _movId = getId();
   const _movData = { id:_movId, tipo:'retiro', desc:`Retiro de efectivo — ${destino}`, monto, hora:nowTime(), fecha:today(), cajero:currentUser, sedeId: sede };
   batch.set(docM(dbModular, 'movimientos', String(_movId)), _movData);
-
+ 
   _sincIniciar('retiro_caja_lote', _movId);
   try {
     await batch.commit();
@@ -114,7 +114,7 @@ async function abrirRetiroEfectivo() {
     _sincError('retiro_caja_lote', _movId, e, 'el retiro de efectivo — no se aplicó nada');
     return;
   }
-
+ 
   // El lote ya fue aceptado — recien ahora se refleja en memoria local. Caja es un objeto
   // plano, esta asignacion solo actualiza la copia local.
   DB.caja.retiros = (DB.caja.retiros||0) + monto;
@@ -147,7 +147,7 @@ async function confirmarCierreCaja() {
   if (isNaN(contado) || contado < 0) { alert('Ingresa el efectivo contado.'); return; }
   const nota = document.getElementById('cc-nota').value.trim();
   if (!dbModular) { alert('⚠️ Sin conexión con el sistema en este momento. Espera unos segundos e intenta de nuevo.'); return; } // [SDK modular]
-
+ 
   // CRITICO: runTransaction() en vez de lote — el saldo a cerrar se calcula DENTRO de la
   // transaccion, leyendo el estado real del servidor en ese instante (nunca de cache local
   // ni de lo que esta pantalla venia mostrando) — asi una venta de ultimo segundo, ya
@@ -165,13 +165,13 @@ async function confirmarCierreCaja() {
       const saldo = (cajaServidor.inicial||0) + (cajaServidor.ingresos||0) - (cajaServidor.egresos||0);
       const saldoEfectivo = (cajaServidor.inicialEfectivo ?? cajaServidor.inicial ?? 0) + (cajaServidor.ingresosEfectivo||0) - (cajaServidor.egresosEfectivo||0) - (cajaServidor.retiros||0);
       const diff = Math.round((contado - saldoEfectivo) * 100) / 100;
-
+ 
       tx.set(cajaRef, { abierta:false, fechaCierre: today(), saldoFinal: saldo, saldoFinalEfectivo: contado }, { merge: true });
-
+ 
       const _movCierreId = getId();
       const _movCierre = { id:_movCierreId, tipo:'cierre', desc:`Cierre de caja — Saldo total: ${sol(saldo)}`, monto:saldo, hora:nowTime(), fecha:today(), sedeId: sede };
       tx.set(docM(dbModular, 'movimientos', String(_movCierreId)), _movCierre);
-
+ 
       let _movArqueo = null;
       if (diff !== 0) {
         const _movArqueoId = getId();
@@ -189,7 +189,7 @@ async function confirmarCierreCaja() {
     _sincError('cierre_caja_manual', sede, e, 'el cierre de caja — no se aplicó nada, la caja sigue abierta. Revisa tu conexión e intenta de nuevo');
     return;
   }
-
+ 
   // La transacción ya fue aceptada — recién ahora se refleja en memoria local.
   DB.caja.abierta = false;
   DB.caja.fechaCierre = today();
@@ -199,11 +199,11 @@ async function confirmarCierreCaja() {
   if (!DB.movimientos) DB.movimientos = [];
   DB.movimientos.push(_resultado._movCierre);
   if (_resultado._movArqueo) DB.movimientos.push(_resultado._movArqueo);
-
+ 
   cerrarModal('modal-cerrar-caja');
   renderCaja();
 }
-
+ 
 function updateCajaStats() {
   const ingresos = DB.caja.ingresos;
   const egresos = DB.caja.egresos;
@@ -218,14 +218,14 @@ const saldo = DB.caja.inicial + ingresos - egresos;
   const noEfectivoEl = document.getElementById('caja-noefectivo');
   if (efectivoEl) efectivoEl.textContent = sol(_saldoEfectivoTeorico());
   if (noEfectivoEl) noEfectivoEl.textContent = sol(Math.max(0, ingresos - (DB.caja.ingresosEfectivo||0)));
-
+ 
   const fDesde  = document.getElementById('caja-filtro-desde')?.value  || '';
   const fHasta  = document.getElementById('caja-filtro-hasta')?.value  || '';
   const fTipo   = document.getElementById('caja-filtro-tipo')?.value   || '';
-
+ 
   const _limiteLocalMov = new Date(); _limiteLocalMov.setDate(_limiteLocalMov.getDate() - 30);
   const _limiteLocalMovStr = _limiteLocalMov.toISOString().split('T')[0];
-
+ 
   if (fDesde && fDesde < _limiteLocalMovStr) {
     // Fuera de la ventana local podada (30 días) — consultar movimientos/{id} directo
     document.getElementById('caja-mov-tbody').innerHTML = '<tr><td colspan="4" style="text-align:center;padding:1rem;color:var(--gray-400)">⏳ Cargando...</td></tr>';
@@ -253,7 +253,7 @@ const saldo = DB.caja.inicial + ingresos - egresos;
     _renderMovsTabla(movsVis);
   }
 }
-
+ 
 // ── Fase 4: pintar tabla de movimientos — separado para reusar entre ruta local y ruta consultada ──
 function _renderMovsTabla(movsVis) {
   // CRITICO: esta variable vivia en updateCajaStats() pero nunca se usaba ahi — se usa ACA,
@@ -280,7 +280,7 @@ function _renderMovsTabla(movsVis) {
     <td style="color:${color};font-weight:700">${signo}${sol(Math.abs(m.monto))}</td>
   </tr>`;
   }).join('') || '<tr><td colspan="4" style="text-align:center;padding:1rem;color:var(--gray-400)">Sin movimientos</td></tr>';
-
+ 
   const metodos = {};
   ventasHoy.forEach(v => metodos[v.metodo] = (metodos[v.metodo]||0) + v.total);
   if (chartMetodos) chartMetodos.destroy();
@@ -293,7 +293,7 @@ function _renderMovsTabla(movsVis) {
     options: { plugins: { legend: { position: 'right', labels: { font: { size: 11 }, boxWidth: 12 } } }, responsive: true, maintainAspectRatio: false }
   });
 }
-
+ 
 async function registrarMovimiento() {
   if (currentRole !== 'admin') { alert('⛔ Solo el administrador puede registrar movimientos manuales. Puedes ver el estado actual, pero no modificarlo.'); return; }
   const tipo = document.getElementById('mov-tipo').value;
@@ -312,7 +312,7 @@ async function registrarMovimiento() {
   const _movId = getId();
   const _movData = { id:_movId, tipo, desc: desc || tipo, monto, hora: nowTime(), fecha: today(), sedeId: sede };
   batch.set(docM(dbModular, 'movimientos', String(_movId)), _movData);
-
+ 
   _sincIniciar('mov_manual_lote', _movId);
   try {
     await batch.commit();
@@ -321,7 +321,7 @@ async function registrarMovimiento() {
     _sincError('mov_manual_lote', _movId, e, 'el movimiento — no se aplicó nada');
     return;
   }
-
+ 
   if (tipo === 'ingreso') { DB.caja.ingresos += monto; DB.caja.ingresosEfectivo = (DB.caja.ingresosEfectivo||0) + monto; }
   else { DB.caja.egresos += monto; DB.caja.egresosEfectivo = (DB.caja.egresosEfectivo||0) + monto; }
   
@@ -330,10 +330,10 @@ async function registrarMovimiento() {
   document.getElementById('mov-monto').value = ''; document.getElementById('mov-desc').value = '';
   updateCajaStats();
 }
-
+ 
 // ===================== GASTOS =====================
 let chartGastos = null;
-
+ 
 function renderGastos() {
   const mes = getMesActual();
   // Gastos variables (DB_EXT.gastos) son por sede — sueldos/recurrentes son costos
@@ -348,7 +348,7 @@ function renderGastos() {
   document.getElementById('g-fijos').textContent   = sol(totFij);
   document.getElementById('g-var').textContent     = sol(totVar);
   document.getElementById('g-sueldos').textContent = sol(totSu);
-
+ 
   document.getElementById('gastos-rec-list').innerHTML = DB_EXT.gastosRec.map(g => `
     <div class="flex-between" style="padding:.4rem 0;border-bottom:1px solid var(--gray-100)">
       <span style="font-size:.82rem">${g.tipo} — ${g.desc}</span>
@@ -367,7 +367,7 @@ function renderGastos() {
   if (fBuscar) gastosVis = gastosVis.filter(g =>
     _norm(g.desc||'').includes(_norm(fBuscar)) ||
 _norm(g.tipo||'').includes(_norm(fBuscar)));
-
+ 
   document.getElementById('gastos-tbody').innerHTML = gastosVis.map(g => `
     <tr>
       <td>${formatDate(g.fecha)}</td>
@@ -391,9 +391,9 @@ _norm(g.tipo||'').includes(_norm(fBuscar)));
     options: { plugins: { legend: { position: 'right', labels: { font: { size: 10 }, boxWidth: 12 } } }, responsive: true, maintainAspectRatio: false }
   });
 }
-
+ 
 let _editingGastoId = null;
-
+ 
 function abrirModalGasto() {
   _editingGastoId = null;
   ['g-desc','g-monto'].forEach(id => document.getElementById(id).value = '');
@@ -413,7 +413,7 @@ function abrirModalGasto() {
   }
   abrirModal('modal-gasto');
 }
-
+ 
 function onGastoRecChange() {
   const id = parseInt(document.getElementById('g-rec-sel').value);
   if (!id) return;
@@ -423,7 +423,7 @@ function onGastoRecChange() {
   document.getElementById('g-desc').value  = g.desc;
   document.getElementById('g-monto').value = g.monto;
 }
-
+ 
 function editarGasto(id) {
   const g = DB_EXT.gastos.find(x => x.id === id);
   if (!g) return;
@@ -437,7 +437,7 @@ function editarGasto(id) {
   document.getElementById('g-rec-wrap').style.display = 'none';
   abrirModal('modal-gasto');
 }
-
+ 
 async function guardarGasto() {
   // Vendedor puede registrar gastos operativos chicos de su sede (pagar por instalar un foco,
   // etc.) sin depender de admin. Solo eliminar sigue siendo de admin.
@@ -448,10 +448,10 @@ async function guardarGasto() {
   const fecha = document.getElementById('g-fecha').value;
   const metodo = document.getElementById('g-metodo')?.value || 'Efectivo';
   const sede = sedeAdminEfectiva();
-
+ 
   if (!dbModular) { alert('⚠️ Sin conexión con el sistema en este momento. Espera unos segundos e intenta de nuevo.'); return; } // [SDK modular]
   await ensureCajaAbierta(); // antes de armar el lote/transaccion — ver nota en ensureCajaAbierta()
-
+ 
   if (_editingGastoId) {
     // CRITICO: runTransaction — lee el gasto real del servidor antes de calcular el diff
     // (diferencia entre el monto nuevo y el viejo), para no calcular mal el ajuste de caja si
@@ -464,9 +464,9 @@ async function guardarGasto() {
         if (!snap.exists()) throw new Error('Este gasto ya no existe — puede que ya se haya eliminado.'); // en modular, exists es un METODO
         const oldServidor = snap.data();
         const diff = Math.round((monto - (oldServidor.monto||0)) * 100) / 100;
-
+ 
         tx.set(gastoRef, { tipo, desc, monto, fecha, metodo }, { merge: true });
-
+ 
         let _movData = null;
         if (diff !== 0) {
           const _cajaUpdate = {};
@@ -493,7 +493,7 @@ async function guardarGasto() {
       alert('⚠️ No se pudo guardar el gasto editado: ' + (e.message || 'intenta de nuevo') + '\n\nNo se aplicó nada.');
       return;
     }
-
+ 
     // La transaccion ya fue aceptada — recien ahora se refleja en memoria local.
     const old = DB_EXT.gastos.find(x => x.id === _editingGastoId);
     if (old) { old.tipo = tipo; old.desc = desc; old.monto = monto; old.fecha = fecha; old.metodo = metodo; }
@@ -521,7 +521,7 @@ async function guardarGasto() {
     const _movId = getId();
     const _movData = { id:_movId, tipo:'egreso', desc:`Gasto: ${desc} (${tipo}, ${metodo})`, monto, hora:nowTime(), fecha, usuario:currentUser, sedeId: sede };
     batch.set(docM(dbModular, 'movimientos', String(_movId)), _movData);
-
+ 
     _sincIniciar('gasto_lote', _gastoFinal.id);
     try {
       await batch.commit();
@@ -530,14 +530,14 @@ async function guardarGasto() {
       _sincError('gasto_lote', _gastoFinal.id, e, 'el gasto — no se aplicó nada');
       return;
     }
-
+ 
     DB_EXT.gastos.push(_gastoFinal);
     DB.caja.egresos = (DB.caja.egresos||0) + monto;
     if (metodo === 'Efectivo') DB.caja.egresosEfectivo = (DB.caja.egresosEfectivo||0) + monto;
     if (!DB.movimientos) DB.movimientos = [];
     DB.movimientos.push(_movData);
   }
-
+ 
   fbGuardar();
   cerrarModal('modal-gasto');
   renderGastos();
@@ -545,17 +545,17 @@ async function guardarGasto() {
   try { renderDashboard(); } catch(e){}
   try { generarReporte(); } catch(e){}
 }
-
+ 
 async function eliminarGasto(id) {
   if (currentRole !== 'admin') { alert('⛔ Solo el administrador puede eliminar gastos. Puedes crear y editar, pero no borrar lo ya registrado.'); return; }
   const gastoLocal = DB_EXT.gastos.find(x => x.id === id);
   if (!confirm('¿Eliminar este gasto? Se devolverá el monto al efectivo disponible como corrección.')) return;
-
+ 
   if (gastoLocal && gastoLocal.monto > 0) {
     if (!dbModular) { alert('⚠️ Sin conexión con el sistema en este momento. Espera unos segundos e intenta de nuevo.'); return; } // [SDK modular]
     await ensureCajaAbierta(); // antes de la transaccion — ver nota en ensureCajaAbierta()
     const sede = sedeAdminEfectiva();
-
+ 
     // CRITICO: runTransaction — lee el gasto real del servidor antes de borrarlo, para
     // devolver a caja el monto correcto aunque el gasto haya sido editado justo antes sin
     // reflejarse todavia en memoria local.
@@ -566,7 +566,7 @@ async function eliminarGasto(id) {
         const snap = await tx.get(gastoRef); // lectura garantizada real del servidor
         if (!snap.exists()) throw new Error('Este gasto ya no existe — puede que ya se haya eliminado.'); // en modular, exists es un METODO
         const gastoServidor = snap.data();
-
+ 
         tx.delete(gastoRef);
         tx.set(docM(dbModular, 'caja', sede), {
           ingresos: incrementM(gastoServidor.monto),
@@ -575,18 +575,18 @@ async function eliminarGasto(id) {
         const _movId = getId();
         const _movData = { id:_movId, tipo:'ingreso', desc:`Corrección por eliminación de gasto: ${gastoServidor.desc} (${gastoServidor.tipo})`, monto: gastoServidor.monto, hora: nowTime(), fecha: today(), usuario: currentUser, sedeId: sede };
         tx.set(docM(dbModular, 'movimientos', String(_movId)), _movData);
-
+ 
         return { montoDevuelto: gastoServidor.monto, _movData };
       });
     } catch (e) {
       alert('⚠️ No se pudo eliminar el gasto: ' + (e.message || 'intenta de nuevo') + '\n\nNo se aplicó nada.');
       return;
     }
-
+ 
     DB_EXT.gastos = DB_EXT.gastos.filter(x => x.id !== id);
     DB.caja.ingresos = (DB.caja.ingresos||0) + _r.montoDevuelto;
     DB.caja.ingresosEfectivo = (DB.caja.ingresosEfectivo||0) + _r.montoDevuelto;
-
+ 
     if (!DB.movimientos) DB.movimientos = [];
     DB.movimientos.push(_r._movData);
     fbGuardar();
@@ -603,23 +603,23 @@ function abrirModalGastoRec() {
   ['gr-desc','gr-monto'].forEach(id => document.getElementById(id).value = '');
   abrirModal('modal-gasto-rec');
 }
-
+ 
 function guardarGastoRec() {
   if (currentRole !== 'admin') { alert('⛔ Solo el administrador puede modificar gastos recurrentes.'); return; }
   const desc  = document.getElementById('gr-desc').value.trim();
   const monto = parseFloat(document.getElementById('gr-monto').value) || 0;
   if (!desc || monto <= 0) { alert('Completa los campos'); return; }
   DB_EXT.gastosRec.push({ id: getId(), desc, tipo: document.getElementById('gr-tipo').value, monto });
-  fbGuardarExt();
+  fbGuardarExt('gastosRec');
   cerrarModal('modal-gasto-rec');
   renderGastos();
 }
-
+ 
 function elimGastoRec(id) {
   if (currentRole !== 'admin') { alert('⛔ Solo el administrador puede eliminar gastos recurrentes.'); return; }
   if (!confirm('¿Eliminar este gasto recurrente?')) return;
   DB_EXT.gastosRec = DB_EXT.gastosRec.filter(g => g.id !== id);
-  fbGuardarExt();
+  fbGuardarExt('gastosRec');
   renderGastos();
 }
 // ===================== CAPITAL =====================
@@ -630,7 +630,7 @@ function renderCapital() {
   document.getElementById('cap-inp-meta').value    = DB_EXT.capital.meta;
   updateCapStats();
 }
-
+ 
 // ── Trae ventas del rango una sola vez (Cobrado, caja real) — usado por Capital y Cierre de mes ──
 async function _cargarCobradoRango(desde, hasta) {
   const lista = await _fetchVentasRango(desde, hasta);
@@ -652,14 +652,14 @@ function _costoDeVenta(v) {
   }
   return 0;
 }
-
+ 
 async function updateCapStats() {
   const prestamo      = DB_EXT.capital.prestamo     || 0;
   const prestamoPagado= DB_EXT.capital.prestamoPagado|| 0;
   const prestamoPend  = Math.max(0, prestamo - prestamoPagado);
   const capitalReal   = DB_EXT.capital.total - prestamoPend + DB_EXT.capital.recuperado;
   const pct = prestamo > 0 ? Math.min(100, prestamoPagado / prestamo * 100) : 0;
-
+ 
   // Stat cards
   document.getElementById('cap-total').textContent = sol(DB_EXT.capital.total);
   const recupEl = document.getElementById('cap-recup');
@@ -667,14 +667,14 @@ async function updateCapStats() {
   recupEl.style.color   = DB_EXT.capital.recuperado < 0 ? 'var(--danger)' : '';
   document.getElementById('cap-pend').textContent  = prestamo > 0 ? sol(prestamoPend) : '—';
   document.getElementById('cap-real').textContent  = sol(capitalReal);
-
+ 
   // Barra préstamo
   document.getElementById('cap-prog').style.width = pct + '%';
   document.getElementById('cap-pct').textContent  = prestamo > 0 ? pct.toFixed(1) + '% pagado' : '—';
   document.getElementById('cap-meta-lbl').textContent = prestamo > 0
     ? `Pagado: ${sol(prestamoPagado)} / ${sol(prestamo)}`
     : 'Préstamo: S/ 0.00';
-
+ 
   // Panel rentabilidad — mes y año, una sola consulta (el año contiene al mes)
   const mes = getMesActual();
   const anio = today().substring(0,4);
@@ -687,7 +687,7 @@ async function updateCapStats() {
     return;
   }
   const cobradoMes = cobradoAnio.filter(v => v.fecha && v.fecha.startsWith(mes));
-
+ 
   const ventasMes = cobradoMes.reduce((s,v) => s+v.total, 0);
   const costoMes  = cobradoMes.reduce((s,v) => s+_costoDeVenta(v), 0);
   const gastosMes  = DB_EXT.gastos.filter(g => g.fecha && g.fecha.startsWith(mes)).reduce((s,g) => s+g.monto, 0);
@@ -700,14 +700,14 @@ async function updateCapStats() {
   const rentReal    = ganBruta - totalGastos - mermasMes - DB_EXT.capital.cuota;
   const deficit     = rentReal - DB_EXT.capital.meta;
   const reinvertir  = Math.max(0, DB_EXT.capital.total * 0.1);
-
+ 
   const ventasAnio = cobradoAnio.reduce((s,v) => s+v.total, 0);
   const costoAnio  = cobradoAnio.reduce((s,v) => s+_costoDeVenta(v), 0);
   const gastosAnio = DB_EXT.gastos.filter(g => g.fecha && g.fecha.startsWith(anio)).reduce((s,g) => s+g.monto, 0);
   const mermasAnio = DB.mermas.filter(m => m.fecha && m.fecha.startsWith(anio))
     .reduce((s,m) => s + costoMerma(m), 0);
   const rentAnio = (ventasAnio - costoAnio) - gastosAnio - mermasAnio;
-
+ 
   document.getElementById('rent-real-detalle').innerHTML = `
     <div style="display:flex;flex-direction:column;gap:.5rem;font-size:.85rem">
       <div style="font-size:.78rem;font-weight:700;color:var(--gray-500);margin-bottom:.2rem">📅 Mes actual (${mes})</div>
@@ -739,7 +739,7 @@ async function updateCapStats() {
         </div>
       </div>
     </div>`;
-
+ 
   // Historial con tipos coloreados — ordenado por fecha para calcular el acumulado en vivo
   // (ya no se guarda un "acum" congelado por registro, se calcula siempre desde la fuente real).
   const tipoConfig = {
@@ -765,14 +765,14 @@ async function updateCapStats() {
     </tr>`;
   }).join('') || '<tr><td colspan="5" style="text-align:center;padding:1rem;color:var(--gray-400)">Sin historial</td></tr>';
 }
-
+ 
 async function guardarCapital() {
   if (currentRole !== 'admin') { alert('⛔ Solo el administrador puede modificar el capital.'); return; }
   const totalInicial = parseFloat(document.getElementById('cap-inp-total').value) || 0;
   DB_EXT.capital.prestamo= parseFloat(document.getElementById('cap-inp-prestamo').value) || 0;
   DB_EXT.capital.cuota   = parseFloat(document.getElementById('cap-inp-cuota').value)   || 0;
   DB_EXT.capital.meta    = parseFloat(document.getElementById('cap-inp-meta').value)    || 0;
-
+ 
   // Capital total ya NO es un campo que se pueda "reescribir" — se calcula solo desde los
   // aportes reales registrados (ver DB_EXT.capital.total, un getter en core.js). Este campo
   // del formulario solo sirve para registrar el aporte inicial, y solo si todavia no hay
@@ -791,17 +791,17 @@ async function guardarCapital() {
       return;
     }
   }
-  fbGuardarExt();
+  fbGuardarExt('capital');
   updateCapStats();
   alert('✅ Configuración guardada');
 }
-
+ 
 function abrirAddCapital() {
   document.getElementById('ac-monto').value = '';
   document.getElementById('ac-desc').value  = '';
   abrirModal('modal-add-capital');
 }
-
+ 
 async function confirmarAddCapital() {
   if (currentRole !== 'admin') { alert('⛔ Solo el administrador puede agregar capital.'); return; }
   const monto = parseFloat(document.getElementById('ac-monto').value) || 0;
@@ -824,7 +824,7 @@ async function confirmarAddCapital() {
   const _capMovId = getId();
   const _capMovData = { id:_capMovId, tipo:'aporte', fecha: today(), desc, monto, usuario: currentUser, sedeId: sede };
   batch.set(docM(dbModular, 'capital_movimientos', String(_capMovId)), _capMovData);
-
+ 
   _sincIniciar('add_capital_lote', _movId);
   try {
     await batch.commit();
@@ -833,7 +833,7 @@ async function confirmarAddCapital() {
     _sincError('add_capital_lote', _movId, e, 'el aporte de capital — no se aplicó nada');
     return;
   }
-
+ 
   DB.capitalMovimientos.push(_capMovData);
   DB.caja.ingresos = (DB.caja.ingresos||0) + monto;
   DB.caja.ingresosEfectivo = (DB.caja.ingresosEfectivo||0) + monto;
@@ -845,14 +845,14 @@ async function confirmarAddCapital() {
   try { renderCaja(); } catch(e){}
   try { renderDashboard(); } catch(e){}
 }
-
+ 
 async function abrirCerrarMes() {
   const mes = getMesActual();
   document.getElementById('cm-mes').value = mes;
   document.getElementById('cm-monto').value = '';
   document.getElementById('cm-detalle').textContent = '⏳ Calculando...';
   abrirModal('modal-cerrar-mes');
-
+ 
   let cobradoMes;
   try {
     cobradoMes = await _cargarCobradoRango(mes + '-01', today());
@@ -872,14 +872,14 @@ async function abrirCerrarMes() {
   document.getElementById('cm-detalle').textContent =
     `Ventas ${sol(ventasMes)} − Costos ${sol(costoMes)} − Gastos ${sol(gastosMes+gastosRec+sueldosMes)} − Mermas ${sol(mermasMes)}`;
 }
-
+ 
 async function confirmarCerrarMes() {
   if (currentRole !== 'admin') { alert('⛔ Solo el administrador puede cerrar el mes.'); return; }
   const mes   = document.getElementById('cm-mes').value;
   const monto = parseFloat(document.getElementById('cm-monto').value) || 0;
   if (!mes) { alert('Selecciona el mes'); return; }
   if (!dbModular) { alert('⚠️ Sin conexión con el sistema en este momento. Espera unos segundos e intenta de nuevo.'); return; } // [SDK modular]
-
+ 
   // CRITICO: ID deterministico (no getId()) en vez de solo chequear duplicado por memoria
   // local — si 2 cierres casi simultaneos del mismo mes ocurren, ambos apuntan al MISMO
   // documento en vez de crear 2 registros distintos. Mismo patron ya probado en
@@ -892,7 +892,7 @@ async function confirmarCerrarMes() {
   } catch (e) {
     console.warn('confirmarCerrarMes: no se pudo verificar si el mes ya está cerrado, continuando con el chequeo local', e);
   }
-
+ 
   const _capMovData = { id:_capMovId, tipo:'ganancia', fecha: mes+'-01', desc: 'Ganancia mensual — '+mes, monto, usuario: currentUser, sedeId: sedeAdminEfectiva() };
   _sincIniciar('cerrar_mes', _capMovId);
   try {
@@ -908,7 +908,7 @@ async function confirmarCerrarMes() {
   try { renderDashboard(); } catch(e){}
   alert('✅ Ganancia del mes registrada: '+sol(monto));
 }
-
+ 
 function abrirPagoCuota() {
   document.getElementById('pc-fecha').value = today();
   document.getElementById('pc-monto').value = DB_EXT.capital.cuota || '';
@@ -917,7 +917,7 @@ function abrirPagoCuota() {
   if (ref && DB_EXT.capital.cuota > 0) ref.textContent = '(cuota ref: '+sol(DB_EXT.capital.cuota)+')';
   abrirModal('modal-pago-cuota');
 }
-
+ 
 async function confirmarPagoCuota() {
   if (currentRole !== 'admin') { alert('⛔ Solo el administrador puede registrar pagos de cuota.'); return; }
   const monto = parseFloat(document.getElementById('pc-monto').value) || 0;
@@ -944,7 +944,7 @@ async function confirmarPagoCuota() {
   const _capMovId = getId();
   const _capMovData = { id:_capMovId, tipo:'pago_prestamo', fecha, desc, monto, usuario: currentUser, sedeId: sede };
   batch.set(docM(dbModular, 'capital_movimientos', String(_capMovId)), _capMovData);
-
+ 
   _sincIniciar('pago_cuota_lote', _movId);
   try {
     await batch.commit();
@@ -953,7 +953,7 @@ async function confirmarPagoCuota() {
     _sincError('pago_cuota_lote', _movId, e, 'el pago de la cuota — no se aplicó nada');
     return;
   }
-
+ 
   DB.capitalMovimientos.push(_capMovData);
   DB.caja.egresos = (DB.caja.egresos||0) + monto;
   DB.caja.egresosEfectivo = (DB.caja.egresosEfectivo||0) + monto;
