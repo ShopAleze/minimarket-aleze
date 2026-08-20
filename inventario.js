@@ -462,7 +462,9 @@ function updateModalCats() {
 
 function updateModalProvs() {
   const sel = document.getElementById('prod-prov');
-  sel.innerHTML = '<option value="">Sin proveedor</option>';
+  // Selector múltiple: no hay opción "Sin proveedor" — ningún ítem marcado YA significa
+  // sin proveedor asignado (ver texto de ayuda bajo el campo en index.html).
+  sel.innerHTML = '';
   DB.proveedores.forEach(p => sel.innerHTML += `<option value="${p.id}">${p.nombre}</option>`);
   const sp = document.getElementById('promo-prod1');
   const sp2 = document.getElementById('promo-prod2');
