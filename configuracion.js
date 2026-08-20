@@ -354,14 +354,15 @@ function agregarUsuarioStaff() {
   const nombre = document.getElementById('nuevo-usr-nombre').value.trim();
   const email  = document.getElementById('nuevo-usr-email').value.trim();
   const rol    = document.getElementById('nuevo-usr-rol').value || 'cajero';
-  const sedeId = document.getElementById('nuevo-usr-sede').value.trim() || 'principal';
+  const sedeId = document.getElementById('nuevo-usr-sede')?.value.trim() || 'principal';
   if (!nombre || !email) { alert('Nombre y correo son obligatorios'); return; }
   if (!DB.config.usuariosStaff) DB.config.usuariosStaff = [];
   if (DB.config.usuariosStaff.some(u => u.nombre === nombre)) { alert('Ya existe un usuario con ese nombre'); return; }
   DB.config.usuariosStaff = [...DB.config.usuariosStaff, { nombre, email, rol, sedeId }];
   document.getElementById('nuevo-usr-nombre').value = '';
   document.getElementById('nuevo-usr-email').value = '';
-  document.getElementById('nuevo-usr-sede').value = '';
+const _elUsrSede = document.getElementById('nuevo-usr-sede');
+if (_elUsrSede) _elUsrSede.value = '';
   renderUsuariosStaff(); renderLoginDropdown(); renderCfgUserSelect();
   fbGuardarProductos('config'); fbGuardar(); fbGuardarConfig('usuariosStaff');
   alert('✅ Usuario agregado. Recuerda crear su cuenta (correo + contraseña) directamente en Firebase Authentication — el sistema no la crea automáticamente.');
