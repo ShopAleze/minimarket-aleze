@@ -29,6 +29,25 @@ function updateInvProvFilter() {
   (DB.proveedores || []).forEach(p => sel.innerHTML += `<option value="${p.id}">${p.nombre}</option>`);
 }
 
+// ── Proveedor(es) de un producto — un producto puede conseguirse de varios proveedores
+// distintos (cercanía de reparto, fecha, precio del momento), no solo uno. `provs` es el campo
+// real (arreglo de ids); `prov` (un solo id o null) es el campo viejo de antes de este cambio
+// — se mantiene sin tocar en cualquier producto que ya lo tuviera, nunca se pierde un dato ya
+// guardado. Este helper es la ÚNICA forma correcta de leer los proveedores de un producto en
+// todo el sistema — nunca leer `p.prov`/`p.provs` directo fuera de acá.
+function _provsDeProducto(p) {
+  if (!p) return [];
+  if (Array.isArray(p.provs)) return p.provs;
+  return (p.prov != null && p.prov !== '') ? [p.prov] : [];
+}
+
+// Celda "ID_Proveedor" del Excel de inventario — uno o varios ids separados por coma/punto y
+// coma (ej. "3,7" o "3; 7"). Usado tanto al detectar diferencias como al crear un producto
+// nuevo desde el Excel (ver reportes.js).
+function _parseProveedoresExcel(v) {
+  return String(v||'').split(/[,;]/).map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+}
+
 function renderInvTable(prods) {
   prods = prods || DB.productos;
   const tbody = document.getElementById('inv-tbody');
@@ -92,7 +111,7 @@ function filterInventario() {
   let prods = DB.productos;
 if (s) prods = prods.filter(p => _norm(p.nombre).includes(_norm(s)) || _norm(p.codigo||'').includes(_norm(s)));
   if (cat) prods = prods.filter(p => p.cat == cat);
-  if (prov) prods = prods.filter(p => p.prov == prov);
+  if (prov) prods = prods.filter(p => _provsDeProducto(p).some(id => id == prov));
   if (estado === 'bajo') prods = prods.filter(p => stockEnSede(p) <= p.stockMin);
   if (estado === 'vence') prods = prods.filter(p => p.venc && diasHasta(p.venc) <= 7 && diasHasta(p.venc) >= 0);
   if (estado === 'ok') prods = prods.filter(p => stockEnSede(p) > p.stockMin && (!p.venc || diasHasta(p.venc) > 7));
@@ -235,7 +254,10 @@ function editarProducto(id) {
   updateModalCats();
   document.getElementById('prod-cat').value = p.cat;
   updateModalProvs();
-  document.getElementById('prod-prov').value = p.prov || '';
+  const _provsSel = _provsDeProducto(p);
+  Array.from(document.getElementById('prod-prov').options).forEach(o => {
+    o.selected = _provsSel.includes(parseInt(o.value));
+  });
   calcMargen();
   actualizarPrecioSugerido();
   if (p.codigo) {
@@ -679,7 +701,10 @@ function guardarProducto() {
     stockMin: parseFloat(document.getElementById('prod-stock-min').value) || 5,
     venc: document.getElementById('prod-venc').value,
     codigo: document.getElementById('prod-codigo').value || '7' + getId().toString().slice(-12),
-    prov: parseInt(document.getElementById('prod-prov').value) || null,
+    // provs: arreglo — un producto puede conseguirse de varios proveedores distintos (cercanía
+    // de reparto, fecha, precio del momento). Reemplaza al viejo campo `prov` (un solo id) ver
+    // _provsDeProducto() más arriba para la compatibilidad con productos ya guardados.
+    provs: Array.from(document.getElementById('prod-prov').selectedOptions).map(o => parseInt(o.value)).filter(n => !isNaN(n)),
     imagen: document.getElementById('prod-img-data').value || '',
     tieneDetalle
   };
