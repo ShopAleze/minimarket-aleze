@@ -255,8 +255,8 @@ function editarProducto(id) {
   document.getElementById('prod-cat').value = p.cat;
   updateModalProvs();
   const _provsSel = _provsDeProducto(p);
-  Array.from(document.getElementById('prod-prov').options).forEach(o => {
-    o.selected = _provsSel.includes(parseInt(o.value));
+  document.querySelectorAll('#prod-prov-lista input[type="checkbox"]').forEach(chk => {
+    chk.checked = _provsSel.includes(parseInt(chk.value));
   });
   calcMargen();
   actualizarPrecioSugerido();
@@ -461,15 +461,32 @@ function updateModalCats() {
 }
 
 function updateModalProvs() {
-  const sel = document.getElementById('prod-prov');
-  // Selector múltiple: no hay opción "Sin proveedor" — ningún ítem marcado YA significa
-  // sin proveedor asignado (ver texto de ayuda bajo el campo en index.html).
-  sel.innerHTML = '';
-  DB.proveedores.forEach(p => sel.innerHTML += `<option value="${p.id}">${p.nombre}</option>`);
+  // Checklist con buscador (reemplaza al <select multiple> nativo — con Ctrl/Cmd+clic
+  // funcionaba pero era confuso para un usuario sin ese hábito, y no escalaba a listas
+  // largas de proveedores). Se pinta la lista COMPLETA una sola vez aquí; buscar solo
+  // oculta/muestra filas (_prodProvFiltrar) — nunca se reconstruye el HTML mientras se
+  // busca, así que lo marcado no se pierde al filtrar.
+  const cont = document.getElementById('prod-prov-lista');
+  cont.innerHTML = DB.proveedores.map(p => `
+    <label data-prov-nombre="${_norm(p.nombre)}" style="display:flex;align-items:center;gap:.45rem;padding:.3rem 0;cursor:pointer">
+      <input type="checkbox" value="${p.id}" style="width:auto;margin:0">
+      <span>${escapeHtml(p.nombre)}</span>
+    </label>`).join('') || '<div style="color:var(--gray-400);padding:.3rem 0">No hay proveedores registrados todavía.</div>';
+  const buscar = document.getElementById('prod-prov-buscar');
+  if (buscar) buscar.value = '';
   const sp = document.getElementById('promo-prod1');
   const sp2 = document.getElementById('promo-prod2');
   if (sp) { sp.innerHTML = DB.productos.map(p => `<option value="${p.id}">${p.nombre}</option>`).join(''); }
   if (sp2) { sp2.innerHTML = '<option value="">Segundo producto (opcional)</option>' + DB.productos.map(p => `<option value="${p.id}">${p.nombre}</option>`).join(''); }
+}
+
+// Filtra visualmente el checklist de proveedores del modal de producto — no toca los
+// checkboxes marcados, solo oculta/muestra filas (ver comentario en updateModalProvs).
+function _prodProvFiltrar() {
+  const q = _norm((document.getElementById('prod-prov-buscar')?.value || '').trim());
+  document.querySelectorAll('#prod-prov-lista label[data-prov-nombre]').forEach(lbl => {
+    lbl.style.display = (!q || lbl.dataset.provNombre.includes(q)) ? 'flex' : 'none';
+  });
 }
 
 function calcMargen() {
@@ -706,7 +723,7 @@ function guardarProducto() {
     // provs: arreglo — un producto puede conseguirse de varios proveedores distintos (cercanía
     // de reparto, fecha, precio del momento). Reemplaza al viejo campo `prov` (un solo id) ver
     // _provsDeProducto() más arriba para la compatibilidad con productos ya guardados.
-    provs: Array.from(document.getElementById('prod-prov').selectedOptions).map(o => parseInt(o.value)).filter(n => !isNaN(n)),
+    provs: Array.from(document.querySelectorAll('#prod-prov-lista input[type="checkbox"]:checked')).map(chk => parseInt(chk.value)).filter(n => !isNaN(n)),
     imagen: document.getElementById('prod-img-data').value || '',
     tieneDetalle
   };
