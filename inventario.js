@@ -2,6 +2,7 @@
 function renderInventario() {
   try { initExcelPanel(); } catch(e) {}
   updateInvCatFilter();
+  updateInvProvFilter();
   renderInvTable();
 }
 
@@ -13,6 +14,19 @@ function updateInvCatFilter() {
     const label = c.emoji ? c.emoji + ' ' + c.nombre : c.nombre;
     sel.innerHTML += `<option value="${c.id}">${label}</option>`;
   });
+}
+
+// ── Filtro de proveedor en Inventario ─────────────────────────────────────
+// Objetivo real (pedido explícito del usuario): con el filtro de "Stock bajo" solo, la lista
+// mezcla productos de TODOS los proveedores — para el caso de uso real (vendedor con el
+// proveedor en llamada, decidiendo qué pedir ahí mismo) hace falta acotar además por
+// proveedor, para ver de un vistazo solo lo que ESE proveedor puede reponer. Mismo patrón que
+// updateInvCatFilter() — reconstruye el <select> desde DB.proveedores en cada render.
+function updateInvProvFilter() {
+  const sel = document.getElementById('inv-prov');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">Todos los proveedores</option>';
+  (DB.proveedores || []).forEach(p => sel.innerHTML += `<option value="${p.id}">${p.nombre}</option>`);
 }
 
 function renderInvTable(prods) {
@@ -74,9 +88,11 @@ function filterInventario() {
   const s = document.getElementById('inv-search').value.toLowerCase();
   const cat = document.getElementById('inv-cat').value;
   const estado = document.getElementById('inv-estado').value;
+  const prov = document.getElementById('inv-prov')?.value || '';
   let prods = DB.productos;
 if (s) prods = prods.filter(p => _norm(p.nombre).includes(_norm(s)) || _norm(p.codigo||'').includes(_norm(s)));
   if (cat) prods = prods.filter(p => p.cat == cat);
+  if (prov) prods = prods.filter(p => p.prov == prov);
   if (estado === 'bajo') prods = prods.filter(p => stockEnSede(p) <= p.stockMin);
   if (estado === 'vence') prods = prods.filter(p => p.venc && diasHasta(p.venc) <= 7 && diasHasta(p.venc) >= 0);
   if (estado === 'ok') prods = prods.filter(p => stockEnSede(p) > p.stockMin && (!p.venc || diasHasta(p.venc) > 7));
