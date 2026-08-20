@@ -519,7 +519,7 @@ window.addEventListener('error', function(e) {
             </div>
           </div>
         </div>
-        <div class="card" style="padding:0.75rem 1rem;margin-bottom:0.75rem">
+               <div class="card" style="padding:0.75rem 1rem;margin-bottom:0.75rem">
           <div style="display:flex;gap:0.75rem;flex-wrap:wrap;align-items:center">
       <input type="text" class="form-control" id="inv-search" placeholder="Buscar..." style="width:200px" oninput="filterInventario()" onkeydown="if(event.key==='Enter')_invEnterScan()" />
             <select class="form-control" id="inv-cat" style="width:160px" onchange="filterInventario()">
@@ -530,6 +530,9 @@ window.addEventListener('error', function(e) {
               <option value="bajo">Stock bajo</option>
               <option value="vence">Vence pronto</option>
               <option value="ok">OK</option>
+            </select>
+            <select class="form-control" id="inv-prov" style="width:180px" onchange="filterInventario()">
+              <option value="">Todos los proveedores</option>
             </select>
           </div>
         </div>
