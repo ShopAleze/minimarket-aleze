@@ -1150,14 +1150,8 @@ function fbPatchDB() {
         _huboMigracion = true;
       }
     });
-    // Elimina activamente cualquier registro de "Aleze III"/Betty que ya estuviera guardado en
-    // Firestore desde antes — el negocio pasa a operar con una sola sede, esa cuenta no existe
-    // más. Sin esto, ya no se vuelve a crear, pero la que ya estaba guardada seguiria ahi.
-    const _cantAntesLimpieza = DB.config.usuariosStaff.length;
-    DB.config.usuariosStaff = DB.config.usuariosStaff.filter(u => u.nombre !== 'Aleze III' && u.email !== 'sccp.jlezama@gmail.com');
-    if (DB.config.usuariosStaff.length !== _cantAntesLimpieza) _huboMigracion = true;
-    if (_huboMigracion) {
-      console.warn('[Migración] usuariosStaff actualizado (nombres/eliminación de sede 2) — guardando de vuelta.');
+      if (_huboMigracion) {
+      console.warn('[Migración] usuariosStaff actualizado (nombres) — guardando de vuelta.');
       try { fbGuardarConfig('usuariosStaff'); } catch(e) {}
       try { fbGuardarProductos('config'); } catch(e) {}
     }
