@@ -1226,7 +1226,7 @@ function _tndRedondearPrecioBonito(n) {
 // en el contexto actual. Con menos de 2 marcas distintas no aporta nada elegir, se oculta.
 function _tndRenderRielMarcas(prodsBase) {
   const wrap = document.getElementById('tnd-marcas');
-  const sel = document.getElementById('tnd-marca-select');if (p.oculto) return false;  
+  const sel = document.getElementById('tnd-marca-select');
   if (!wrap || !sel) return;
   const marcas = [...new Set(prodsBase.map(p => p.marca).filter(Boolean))].sort();
   if (_tndMarcaActiva && !marcas.includes(_tndMarcaActiva)) _tndMarcaActiva = ''; // ya no aplica a este contexto
@@ -1296,6 +1296,7 @@ function tndFiltrar() {
   // quedar invisible en este filtro solo por no tener su propia categoria.
   const _catPromoActiva = _tndCatActiva && (DB.categorias||[]).find(c => c.id == _tndCatActiva && c.nombre === 'Promociones');
 let prods = (DB.productos||[]).filter(p => {
+    if (p.oculto) return false; // oculto de tienda publica — sigue disponible por link directo (tndVerDetalle)
     if (_tndCatActiva) {
       const _esDescuentoIndividual = _catPromoActiva && !p.esCombo && !!_getPromoTienda(p);
       if (p.cat != _tndCatActiva && !_esDescuentoIndividual) return false;
