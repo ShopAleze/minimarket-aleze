@@ -968,7 +968,7 @@ function _tndRenderHome() {
 
   const hoy = new Date().toISOString().slice(0,10);
 const promsActivas = (DB.promociones||[]).filter(p => p.activa && p.hasta >= hoy && _promoAplicaSede(p, 'principal'));
-const prodsPromo = promsActivas.map(pr => (DB.productos||[]).find(p => p.id === (pr.packProdId || pr.prod1) && stockTotal(p) > 0 && !(p.esCombo && p.promoActiva === false))).filter(Boolean);
+const prodsPromo = promsActivas.map(pr => (DB.productos||[]).find(p => p.id === (pr.packProdId || pr.prod1) && !p.oculto && stockTotal(p) > 0 && !(p.esCombo && p.promoActiva === false))).filter(Boolean);
   const promosHtml = prodsPromo.length ? `<div class="tnd-section-title">🔥 Promociones activas</div><div class="tnd-scroll-wrap"><button type="button" class="tnd-arrow tnd-arrow-left" onclick="_scrollRielCats('tnd-riel-promos',-1)" aria-label="Anteriores">‹</button><div class="tnd-scroll-row" id="tnd-riel-promos">${prodsPromo.slice(0,10).map(p => _tarjetaProdRail(p, false)).join('')}</div><button type="button" class="tnd-arrow tnd-arrow-right" onclick="_scrollRielCats('tnd-riel-promos',1)" aria-label="Siguientes">›</button></div>` : '';
 
   // Categorias como riel de burbujas — reemplaza las fotos-collage con texto incrustado (ver
@@ -991,7 +991,7 @@ const prodsPromo = promsActivas.map(pr => (DB.productos||[]).find(p => p.id === 
   // Recien agregados — dato real (ordenado por id, que ya incluye el momento de creacion),
   // no una seccion inventada. Le da a la home algo que cambie con el tiempo, ademas de las
   // categorias fijas — sensacion de tienda con movimiento, no un catalogo estatico.
-  const recientes = (DB.productos||[]).filter(p => stockTotal(p) > 0).slice().sort((a,b) => b.id - a.id).slice(0, 10);
+ const recientes = (DB.productos||[]).filter(p => !p.oculto && stockTotal(p) > 0).slice().sort((a,b) => b.id - a.id).slice(0, 10);
   const recientesHtml = recientes.length ? `<div class="tnd-section-title">✨ Recién agregados</div><div class="tnd-scroll-wrap"><button type="button" class="tnd-arrow tnd-arrow-left" onclick="_scrollRielCats('tnd-riel-recientes',-1)" aria-label="Anteriores">‹</button><div class="tnd-scroll-row" id="tnd-riel-recientes">${recientes.map(p => _tarjetaProdRail(p, true)).join('')}</div><button type="button" class="tnd-arrow tnd-arrow-right" onclick="_scrollRielCats('tnd-riel-recientes',1)" aria-label="Siguientes">›</button></div>` : '';
 
   const servicios = (cfg.serviciosWa||[]).filter(s => s.visible);
@@ -1226,7 +1226,7 @@ function _tndRedondearPrecioBonito(n) {
 // en el contexto actual. Con menos de 2 marcas distintas no aporta nada elegir, se oculta.
 function _tndRenderRielMarcas(prodsBase) {
   const wrap = document.getElementById('tnd-marcas');
-  const sel = document.getElementById('tnd-marca-select');
+  const sel = document.getElementById('tnd-marca-select');if (p.oculto) return false;  
   if (!wrap || !sel) return;
   const marcas = [...new Set(prodsBase.map(p => p.marca).filter(Boolean))].sort();
   if (_tndMarcaActiva && !marcas.includes(_tndMarcaActiva)) _tndMarcaActiva = ''; // ya no aplica a este contexto
@@ -1590,7 +1590,7 @@ function tndRenderPanel() {
 // sessionStorage que ya usa el catalogo principal para el orden aleatorio estable.
 function _tndProductosImpulso() {
   const candidatos = (DB.productos||[]).filter(p =>
-    p.esImpulso && !p.esCombo && stockTotal(p) > 0 && !_tiendaCart.some(i => i.prodId === p.id)
+  p.esImpulso && !p.oculto && !p.esCombo && stockTotal(p) > 0 && !_tiendaCart.some(i => i.prodId === p.id)
   );
   if (!candidatos.length) return [];
   const claveSesion = 'tnd_impulso_orden';
