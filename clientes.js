@@ -208,7 +208,11 @@ function renderFiados() {
     const pagadoCli = Math.round(fiados.reduce((s, f) => s + f.pagado, 0) * 100) / 100;
     const pendienteCli = Math.round((totalCli - pagadoCli) * 100) / 100;
     const detalleId = 'fiado-detalle-' + cid;
-    const detalle = [...fiados].sort((a,b) => a.fecha < b.fecha ? 1 : a.fecha > b.fecha ? -1 : b.id - a.id).map(f => {
+    // Vista por defecto = solo pendientes, sin límite de cantidad ni de fecha (mismo criterio
+    // que el filtro principal) — separado a propósito de "fiados" de arriba, que sigue
+    // alimentando totalCli/pagadoCli/pendienteCli sin ningún cambio.
+    const fiadosDetalle = fiados.filter(f => fiadoPendiente(f));
+    const detalle = [...fiadosDetalle].sort((a,b) => a.fecha < b.fecha ? 1 : a.fecha > b.fecha ? -1 : b.id - a.id).map(f => {
       const pend = fiadoMontoPendiente(f);
       return `<div style="border-left:3px solid var(--warning);padding:.5rem .75rem;margin-bottom:.5rem;background:white;border-radius:0 6px 6px 0">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.3rem">
@@ -245,8 +249,8 @@ function renderFiados() {
       <div id="${detalleId}" style="display:none;margin-top:.75rem">
         <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;margin-bottom:.75rem;padding:.5rem;background:var(--gray-50);border-radius:8px">
           <select class="form-control" id="fi-tipo-${cid}" style="width:150px;font-size:.78rem" onchange="renderDetalleFiado(${cid})">
-            <option value="todo">Todo</option>
-            <option value="pendiente">Solo pendientes</option>
+           <option value="todo">Todo</option>
+            <option value="pendiente" selected>Solo pendientes</option>
             <option value="pagado">Solo pagados</option>
           </select>
           <input type="date" class="form-control" id="fi-int-desde-${cid}" value="${_hace30diasStr}" style="width:140px;font-size:.78rem" onchange="renderDetalleFiado(${cid})"/>
