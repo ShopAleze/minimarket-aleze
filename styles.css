@@ -264,12 +264,17 @@ background: linear-gradient(180deg, #FFFFFF 0%, #F5F3FF 100%);
     flex-shrink: 0;
   }
   .nav-section { padding: 0.5rem 0.65rem 0.15rem; }
+ /* Después: */
   .nav-section-label {
     font-size: 0.62rem; font-weight: 700;
     text-transform: uppercase; letter-spacing: 0.08em;
     color: var(--gray-400); margin-bottom: 0.2rem;
     padding: 0 0.1rem;
+    cursor: pointer; user-select: none;
+    display: flex; align-items: center; justify-content: space-between;
   }
+  .nav-collapse-arrow { font-size: 0.6rem; transition: transform 0.15s; }
+  .nav-section-label.collapsed .nav-collapse-arrow { transform: rotate(-90deg); }
 
   /* CONTENT */
   main {
