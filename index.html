@@ -243,11 +243,23 @@ window.addEventListener('error', function(e) {
         <div class="nav-item" onclick="navigate('fiados')" title="Control de fiados">
           <span class="icon">📋</span><span class="nav-label">Fiados</span>
         </div>
-        <div class="nav-item" onclick="navigate('historial-ventas')" title="Historial de todas las ventas">
+             <div class="nav-item" onclick="navigate('historial-ventas')" title="Historial de todas las ventas">
           <span class="icon">📜</span><span class="nav-label">Historial Ventas</span>
         </div>
       </div>
     </aside>
+    <script>
+      // Estado inicial del menu: todas las secciones colapsadas salvo la primera (Principal),
+      // para no tener que ir cerrando una por una en pantallas chicas (ej. laptop 14"). Se
+      // ejecuta al parsear el HTML, antes de que carguen pos.js/toggleNavSection — por eso
+      // repite la misma logica de ocultar hermanos en vez de llamar a esa funcion directamente.
+      document.querySelectorAll('.nav-section-label').forEach((label, i) => {
+        if (i === 0) return; // Principal queda abierta por defecto
+        label.classList.add('collapsed');
+        let el = label.nextElementSibling;
+        while (el && el.classList.contains('nav-item')) { el.style.display = 'none'; el = el.nextElementSibling; }
+      });
+    </script>
 
     <main id="main-content">
 
