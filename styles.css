@@ -273,7 +273,7 @@ background: linear-gradient(180deg, #FFFFFF 0%, #F5F3FF 100%);
     cursor: pointer; user-select: none;
     display: flex; align-items: center; justify-content: space-between;
   }
-  .nav-collapse-arrow { font-size: 0.6rem; transition: transform 0.15s; }
+  .nav-collapse-arrow { font-size: 1.2rem; transition: transform 0.15s; }
   .nav-section-label.collapsed .nav-collapse-arrow { transform: rotate(-90deg); }
 
   /* CONTENT */
